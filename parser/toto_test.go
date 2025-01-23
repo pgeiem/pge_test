@@ -60,7 +60,7 @@ func TestExpandDateComponentList(t *testing.T) {
 		{"1,3-5,7", []int{1, 3, 4, 5, 7}, false},
 		{"1-5,10-15", []int{1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 15}, false},
 		{"1-3,5-7,9-11,13-15", []int{1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15}, false},
-		{"", nil, true},                    // Empty string
+		{"", []int{}, false},               // Empty string
 		{"1,,2", nil, true},                // Double comma
 		{"1-2-3", nil, true},               // Invalid range
 		{"1-2,", nil, true},                // Trailing comma
@@ -273,6 +273,101 @@ func TestRecurrentDateCron(t *testing.T) {
 				t.Errorf("Prev() = %v, want %v", prev, expectedPrev)
 			}
 			now = prev
+		}
+	}
+}
+
+func TestBuilRRuleFromDatePattern(t *testing.T) {
+
+	tests := []struct {
+		pattern       string
+		expectedrrule string
+		hasError      bool
+	}{
+		{
+			"2023/10/* MON 12:00:00",
+			"FREQ=DAILY;BYMONTH=10;BYDAY=MO;BYHOUR=12;BYMINUTE=0;BYSECOND=0",
+			false,
+		},
+		{
+			"2023/*/* Mon-Fri 12:00:00",
+			"FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=12;BYMINUTE=0;BYSECOND=0",
+			false,
+		},
+		{
+			"2023/9-10/* Mon,Fri,SUN 12:00:00",
+			"FREQ=DAILY;BYMONTH=9,10;BYDAY=MO,FR,SU;BYHOUR=12;BYMINUTE=0;BYSECOND=0",
+			false,
+		},
+		{
+			"2023/*/* 12:00:00",
+			"FREQ=DAILY;BYHOUR=12;BYMINUTE=0;BYSECOND=0",
+			false,
+		},
+		{
+			"2023/10/* * 12,23:00",
+			"FREQ=DAILY;BYMONTH=10;BYHOUR=12,23;BYMINUTE=0",
+			false,
+		},
+		{
+			"2023/10/* 17:00",
+			"FREQ=DAILY;BYMONTH=10;BYHOUR=17;BYMINUTE=0",
+			false,
+		},
+		{
+			"2023/*/* Mon,FRI 12:00",
+			"FREQ=DAILY;BYDAY=MO,FR;BYHOUR=12;BYMINUTE=0",
+			false,
+		},
+		{
+			"2023/*/* Mon,FRI 12:00 COUNT=5",
+			"FREQ=DAILY;COUNT=5;BYDAY=MO,FR;BYHOUR=12;BYMINUTE=0",
+			false,
+		},
+		{
+			"2023/10/01 Mon 12:00:00",
+			"",
+			true,
+		},
+		{
+			"2023/10/01 Mon *:*:00",
+			"FREQ=MINUTELY;BYMONTH=10;BYMONTHDAY=1;BYDAY=MO;BYSECOND=0",
+			false,
+		},
+		{
+			"2023/10/01 Mon 12:00:00:00",
+			"",
+			true,
+		},
+		{
+			"2023/10/01 Mon 12:00:xx",
+			"",
+			true,
+		},
+		{
+			"2023/10/01 Mon 12:xx:00",
+			"",
+			true,
+		},
+		{
+			"2023/10/01 Mon xx:00:00",
+			"",
+			true,
+		},
+	}
+
+	for _, test := range tests {
+		fmt.Println("Testing pattern", test.pattern)
+		rrule, err := BuilRRuleFromDatePattern(test.pattern)
+		if (err != nil) != test.hasError {
+			t.Errorf("BuilRRuleFromDatePattern(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
+			continue
+		}
+		if err != nil {
+			continue
+		}
+		if rrule.String() != test.expectedrrule {
+			t.Errorf("BuilRRuleFromDatePattern(%q) = %v, want %v", test.pattern, rrule, test.expectedrrule)
 		}
 	}
 }

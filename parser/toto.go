@@ -18,8 +18,10 @@ type RecurrentDate interface {
 	Prev(now time.Time) (time.Time, error)
 }
 
+var functionRegex = regexp.MustCompile(`^(\w+)\((.+)\)$`)
+
 func ParseRecurrentDate(pattern string) (RecurrentDate, error) {
-	matches := regexp.MustCompile(`^(\w+)\((.+)\)$`).FindStringSubmatch(pattern)
+	matches := functionRegex.FindStringSubmatch(pattern)
 	if matches == nil || pattern == "" {
 		return nil, fmt.Errorf("error while parsing %s pattern, invalid pattern, expected form 'type(pattern)'", pattern)
 	}
@@ -215,6 +217,10 @@ func (r RecurrentDatePatternRule) Prev(now time.Time) (time.Time, error) {
 
 // Take a string describing a list or a range or a mix of both and return a list of integers representing the expanded list of values
 func expandDateComponentList(pattern string) ([]int, error) {
+	if pattern == "*" || pattern == "" {
+		return []int{}, nil
+	}
+
 	components := strings.Split(pattern, ",")
 	var output []int
 	for _, component := range components {
@@ -274,50 +280,113 @@ func expandDateComponentList(pattern string) ([]int, error) {
 
 }
 
+// Regular expression to parse a date pattern in the form of "<yyyy/>mm/dd <weekdays> hh:mm<:ss> <extra>"
+var rrule_regex = regexp.MustCompile(`^(?:([\d\-,*]+)\/)?([\d\-,*]+)\/([\d\-,*]+)\s+(?:([\w\-,*]*)\s+)?([\d\-,*]+):([\d\-,*]+)(?::([\d\-,*]*))?(?: (.*))?$`)
 
 func BuilRRuleFromDatePattern(pattern string) (*rrule.RRule, error) {
-	//Parse the date pattern
-	matches := regexp.MustCompile(`^([\d\-,*¦]+)\/([\d\-,*¦]+)\/([\d\-,*¦]+)\s+(?:([\w\-,*¦]*)\s+)?([\d\-,*¦]+):([\d\-,*¦]+):?([\d\-,*¦]*)$`).FindStringSubmatch(pattern)
-	if matches == nil {
-		return nil, fmt.Errorf("error while parsing %s pattern, invalid pattern, expected form 'yyyy/mm/dd <weekdays> hh:mm:ss'", pattern)
-	}
 
-	// Find the frequency looking for the first "*"" field
-	frequencyList := []rrule.Frequency{rrule.SECONDLY, rrule.MINUTELY, rrule.HOURLY, rrule.WEEKLY, rrule.DAILY, rrule.MONTHLY, rrule.YEARLY}
-	for i := len(matches) - 1; i > 0; i-- {
-		if matches[i] == "*" {
+	//Parse the date pattern
+	matches := rrule_regex.FindStringSubmatch(pattern)
+	if matches == nil || len(matches) != 9 {
+		return nil, fmt.Errorf("error while parsing %s pattern, invalid pattern, expected 'yyyy/mm/dd <weekdays> hh:mm:ss <extra>'", pattern)
+	}
+	extra_str := matches[8]
+
+	fmt.Println("\nHandling pattern: ", pattern)
+	fmt.Printf("%#v\n", matches)
+
+	// Find the frequency looking for the first "*" field
+	frequency := rrule.YEARLY
+	frequencyList := []rrule.Frequency{rrule.YEARLY, rrule.MONTHLY, rrule.WEEKLY, rrule.DAILY, rrule.HOURLY, rrule.MINUTELY, rrule.SECONDLY}
+	matchFrequencyList := []string{matches[1], matches[2], matches[4], matches[3], matches[5], matches[6], matches[7]}
+	found := false
+	for i, match := range matchFrequencyList {
+		if match == "*" {
 			frequency = frequencyList[i]
-			break
+			found = true
 		}
 	}
-	rrule := rrule.RRule{}
-	rrule.Freq = frequency
-
-	rrule.By
-
-
-
-
-
-	year := matches[1]
-	month := matches[2]
-	day := matches[3]
-	weekdaysPart := strings.ToUpper(matches[4])
-	if weekdaysPart == "" {
-		weekdaysPart = "*"
-	}
-	hour := matches[5]
-	minute := matches[6]
-	second := matches[7]
-	if second == "" {
-		second = "0"
+	if !found {
+		return nil, fmt.Errorf("error while parsing '%s' pattern, no '*' field found to determine frequency", pattern)
 	}
 
+	rropt := &rrule.ROption{}
+	if extra_str != "" {
+		var err error
+		extra_str = "FREQ=" + frequency.String() + ";" + extra_str //Add the frequency to the extra part as this is mendatory accordingly to RFC 5545
+		rropt, err = rrule.StrToROption(extra_str)
+		if err != nil {
+			return nil, fmt.Errorf("error while parsing '%s' pattern, invalid extra part, %v", pattern, err)
+		}
+	}
+	rropt.Freq = frequency
+	rropt.Wkst = rrule.MO
 
+	//Decode month
+	byMonth, err := expandDateComponentList(matches[2])
+	if err != nil {
+		return nil, err
+	}
+	if len(byMonth) > 0 {
+		rropt.Bymonth = byMonth
+	}
+	//Decode day
+	byMonthDay, err := expandDateComponentList(matches[3])
+	if err != nil {
+		return nil, err
+	}
+	if len(byMonthDay) > 0 {
+		rropt.Bymonthday = byMonthDay
+	}
+	//Decode weekday
+	byWeekday, err := expandDateComponentList(matches[4])
+	if err != nil {
+		return nil, err
+	}
+	if len(byWeekday) > 0 {
+		//Convert list of int to list of rrule.Weekday
+		var weekdays []rrule.Weekday
+		weekdayList := []rrule.Weekday{rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR, rrule.SA, rrule.SU}
+		for _, day := range byWeekday {
+			weekdays = append(weekdays, weekdayList[day])
+		}
+		rropt.Byweekday = weekdays
+	}
+	//Decode hour
+	byHour, err := expandDateComponentList(matches[5])
+	if err != nil {
+		return nil, err
+	}
+	if len(byHour) > 0 {
+		rropt.Byhour = byHour
+	}
+	//Decode minute
+	byMinute, err := expandDateComponentList(matches[6])
+	if err != nil {
+		return nil, err
+	}
+	if len(byMinute) > 0 {
+		rropt.Byminute = byMinute
+	}
+	//Decode second
+	bySecond, err := expandDateComponentList(matches[7])
+	if err != nil {
+		return nil, err
+	}
+	if len(bySecond) > 0 {
+		rropt.Bysecond = bySecond
+	}
 
-	return rule, nil
+	//Create the RRule
+	rrule, err := rrule.NewRRule(*rropt)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(rrule.String())
+
+	return rrule, nil
 }
-*/
 
 /*
 // RecurrentDateList represents a list of RecurrentDate.
