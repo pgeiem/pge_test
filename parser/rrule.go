@@ -14,22 +14,32 @@ import (
 type RecurrentDate interface {
 	Next(now time.Time) (time.Time, error)
 	Prev(now time.Time) (time.Time, error)
+	Between(from, to time.Time) []time.Time
 }
 
 var functionRegex = regexp.MustCompile(`^(\w+)\((.+)\)$`)
 
 func ParseRecurrentDate(pattern string) (RecurrentDate, error) {
 	recurrentDateTypes := map[string]func(string) (RecurrentDate, error){
+		// Periodic reccurence
 		"periodic": func(arg string) (RecurrentDate, error) {
 			r := RecurrentDatePeriodic{}
 			err := r.Parse(arg)
 			return r, err
 		},
+		// Duration is an alias for periodic reccurence
+		"duration": func(arg string) (RecurrentDate, error) {
+			r := RecurrentDatePeriodic{}
+			err := r.Parse(arg)
+			return r, err
+		},
+		// Date pattern based reccurence
 		"pattern": func(arg string) (RecurrentDate, error) {
 			r := RecurrentDatePattern{}
 			err := r.ParseFromDatePattern(arg)
 			return r, err
 		},
+		// RRule RFC 5545 based reccurence
 		"rrule": func(arg string) (RecurrentDate, error) {
 			r := RecurrentDatePattern{}
 			err := r.ParseFromRRule(arg)
@@ -73,6 +83,15 @@ func (r RecurrentDatePeriodic) Next(now time.Time) (time.Time, error) {
 // Prev returns the previous occurrence based on the current time.
 func (r RecurrentDatePeriodic) Prev(now time.Time) (time.Time, error) {
 	return now.Add(-r.Period.toDuration()), nil
+}
+
+// Between returns the time segments between the given time range.
+func (r RecurrentDatePeriodic) Between(from, to time.Time) []time.Time {
+	segments := []time.Time{}
+	for t := from; t.Before(to); t = t.Add(r.Period.toDuration()) {
+		segments = append(segments, t)
+	}
+	return segments
 }
 
 // RecurrentDatePattern represents a pattern based recurrent date.
@@ -122,6 +141,11 @@ func (r RecurrentDatePattern) Prev(now time.Time) (time.Time, error) {
 	return prev, nil
 }
 
+// Between returns the time segments between the given time range.
+func (r RecurrentDatePattern) Between(from, to time.Time) []time.Time {
+	return r.rule.Between(from, to, false)
+}
+
 // Take a string describing a list or a range or a mix of both and return a list of integers representing the expanded list of values
 func expandDateComponentList(pattern string) ([]int, error) {
 
@@ -156,8 +180,6 @@ func expandDateComponentList(pattern string) ([]int, error) {
 	components := strings.Split(pattern, ",")
 	var output []int
 	for _, component := range components {
-		fmt.Println("handling component", component)
-
 		if strings.Contains(component, "-") {
 			limits := strings.Split(component, "-")
 			if len(limits) != 2 {
