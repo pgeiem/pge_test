@@ -164,119 +164,6 @@ func TestRecurrentDatePeriodic(t *testing.T) {
 	}
 }
 
-func TestRecurrentDateCron(t *testing.T) {
-	tests := []struct {
-		pattern      string
-		now          time.Time
-		expectedNext []time.Time
-		expectedPrev []time.Time
-	}{
-		{
-			"0 0 * * *",
-			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
-			[]time.Time{
-				time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC),
-				time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC),
-				time.Date(2023, 10, 4, 0, 0, 0, 0, time.UTC),
-			},
-			[]time.Time{
-				time.Date(2023, 9, 30, 0, 0, 0, 0, time.UTC),
-				time.Date(2023, 9, 29, 0, 0, 0, 0, time.UTC),
-				time.Date(2023, 9, 28, 0, 0, 0, 0, time.UTC),
-			},
-		},
-		{
-			"0 12 * * *",
-			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
-			[]time.Time{
-				time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC),
-				time.Date(2023, 10, 2, 12, 0, 0, 0, time.UTC),
-				time.Date(2023, 10, 3, 12, 0, 0, 0, time.UTC),
-			},
-			[]time.Time{
-				time.Date(2023, 9, 30, 12, 0, 0, 0, time.UTC),
-				time.Date(2023, 9, 29, 12, 0, 0, 0, time.UTC),
-				time.Date(2023, 9, 28, 12, 0, 0, 0, time.UTC),
-			},
-		},
-		{
-			"0 0 1 * *",
-			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
-			[]time.Time{
-				time.Date(2023, 11, 1, 0, 0, 0, 0, time.UTC),
-				time.Date(2023, 12, 1, 0, 0, 0, 0, time.UTC),
-				time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-			},
-			[]time.Time{
-				time.Date(2023, 9, 1, 0, 0, 0, 0, time.UTC),
-				time.Date(2023, 8, 1, 0, 0, 0, 0, time.UTC),
-				time.Date(2023, 7, 1, 0, 0, 0, 0, time.UTC),
-			},
-		},
-		{
-			"0 0 * * 0",
-			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
-			[]time.Time{
-				time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC),
-				time.Date(2023, 10, 15, 0, 0, 0, 0, time.UTC),
-				time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC),
-			},
-			[]time.Time{
-				time.Date(2023, 9, 24, 0, 0, 0, 0, time.UTC),
-				time.Date(2023, 9, 17, 0, 0, 0, 0, time.UTC),
-				time.Date(2023, 9, 10, 0, 0, 0, 0, time.UTC),
-			},
-		},
-		{
-			"0 0 1 1 *",
-			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
-			[]time.Time{
-				time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-				time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-				time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
-			},
-			[]time.Time{
-				time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
-				time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC),
-				time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
-			},
-		},
-	}
-
-	for _, test := range tests {
-		fmt.Println("Testing cron", test.pattern)
-		r := &RecurrentDateCron{}
-		err := r.Parse(test.pattern)
-		if err != nil {
-			t.Fatalf("Parse failed: %v", err)
-		}
-
-		now := test.now
-		for _, expectedNext := range test.expectedNext {
-			next, err := r.Next(now)
-			if err != nil {
-				t.Fatalf("Next failed: %v", err)
-			}
-			if !next.Equal(expectedNext) {
-				t.Errorf("Next() = %v, want %v", next, expectedNext)
-			}
-			now = next
-		}
-
-		now = test.now
-		for _, expectedPrev := range test.expectedPrev {
-			prev, err := r.Prev(now)
-			if err != nil {
-				t.Fatalf("Prev failed: %v", err)
-			}
-			if !prev.Equal(expectedPrev) {
-				t.Errorf("Prev() = %v, want %v", prev, expectedPrev)
-			}
-			now = prev
-		}
-	}
-}
-
 func TestBuilRRuleFromDatePattern(t *testing.T) {
 
 	tests := []struct {
@@ -425,7 +312,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 			false,
 		},
 		{
-			"2023/*/* 12¦2:00:00",
+			"2023/*/* 12,14,16,18,20,22:00:00",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
 			[]time.Time{
 				time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC),
@@ -485,13 +372,6 @@ func TestRecurrentDatePattern(t *testing.T) {
 			false,
 		},
 		{
-			"2023/10/01 Mon 12:00:00", // valid rules but too much constraints no next or prev may be found
-			time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC),
-			[]time.Time{time.Date(2023, 10, 2, 12, 0, 0, 0, time.UTC)}, // This is incorrect as day is 2 and should be 1 !
-			[]time.Time{time.Unix(0, 0)},
-			false,
-		},
-		{
 			"2023/10/01 Mon 12:00:00:00",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
 			[]time.Time{},
@@ -519,27 +399,12 @@ func TestRecurrentDatePattern(t *testing.T) {
 			[]time.Time{},
 			true,
 		},
-		{
-			"2023/10/01 Mon *:*:00¦5",
-			time.Date(2023, 10, 1, 10, 0, 0, 0, time.UTC),
-			[]time.Time{
-				time.Date(2023, 10, 1, 10, 0, 5, 0, time.UTC),
-				time.Date(2023, 10, 1, 10, 0, 10, 0, time.UTC),
-				time.Date(2023, 10, 1, 10, 0, 15, 0, time.UTC),
-			},
-			[]time.Time{
-				time.Date(2023, 10, 1, 9, 59, 55, 0, time.UTC),
-				time.Date(2023, 10, 1, 9, 59, 50, 0, time.UTC),
-				time.Date(2023, 10, 1, 9, 59, 45, 0, time.UTC),
-			},
-			false,
-		},
 	}
 
 	for _, test := range tests {
 		r := &RecurrentDatePattern{}
 		fmt.Println("Testing pattern", test.pattern)
-		err := r.Parse(test.pattern)
+		err := r.ParseFromDatePattern(test.pattern)
 		if (err != nil) != test.hasError {
 			t.Errorf("ParseRecurrentDatePattern(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
 			continue
@@ -555,7 +420,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 				t.Fatalf("Next failed: %v", err)
 			}
 			if !next.Equal(expectedNext) {
-				t.Errorf("Next() = %v, want %v", next, expectedNext)
+				t.Errorf("Next(%v) = %v, want %v", now, next, expectedNext)
 			}
 			now = next
 		}
@@ -590,13 +455,6 @@ func TestParseRecurrentDate(t *testing.T) {
 			false,
 		},
 		{
-			"cron(0 0 * * *)",
-			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
-			time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC),
-			time.Date(2023, 9, 30, 0, 0, 0, 0, time.UTC),
-			false,
-		},
-		{
 			"pattern(2023/10/* MON 12:00:00)",
 			time.Date(2023, 10, 16, 0, 0, 0, 0, time.UTC),
 			time.Date(2023, 10, 16, 12, 0, 0, 0, time.UTC),
@@ -618,10 +476,10 @@ func TestParseRecurrentDate(t *testing.T) {
 			false,
 		},
 		{
-			"pattern(2023/*/* 12¦2:00:00)",
+			"pattern(2023/*/* 12:00:00)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
 			time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC),
-			time.Date(2023, 9, 30, 22, 0, 0, 0, time.UTC),
+			time.Date(2023, 9, 30, 12, 0, 0, 0, time.UTC),
 			false,
 		},
 		{
@@ -660,13 +518,6 @@ func TestParseRecurrentDate(t *testing.T) {
 			true,
 		},
 		{
-			"cron(invalid)",
-			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
-			time.Time{},
-			time.Time{},
-			true,
-		},
-		{
 			"pattern(invalid)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
 			time.Time{},
@@ -689,13 +540,6 @@ func TestParseRecurrentDate(t *testing.T) {
 		},
 		{
 			"periodic()",
-			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
-			time.Time{},
-			time.Time{},
-			true,
-		},
-		{
-			"cron()",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
 			time.Time{},
 			time.Time{},
@@ -732,6 +576,7 @@ func TestParseRecurrentDate(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		fmt.Println("Testing pattern", test.pattern)
 		recurrentDate, err := ParseRecurrentDate(test.pattern)
 		if (err != nil) != test.hasError {
 			t.Errorf("ParseRecurrentDate(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
@@ -746,7 +591,7 @@ func TestParseRecurrentDate(t *testing.T) {
 			t.Fatalf("Next failed: %v", err)
 		}
 		if !next.Equal(test.expectedNext) {
-			t.Errorf("Next() = %v, want %v", next, test.expectedNext)
+			t.Errorf("Next(%v) = %v, want %v", test.now, next, test.expectedNext)
 		}
 
 		prev, err := recurrentDate.Prev(test.now)
@@ -754,7 +599,7 @@ func TestParseRecurrentDate(t *testing.T) {
 			t.Fatalf("Prev failed: %v", err)
 		}
 		if !prev.Equal(test.expectedPrev) {
-			t.Errorf("Prev() = %v, want %v", prev, test.expectedPrev)
+			t.Errorf("Prev(%v) = %v, want %v", test.now, prev, test.expectedPrev)
 		}
 	}
 }

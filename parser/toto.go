@@ -7,13 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adhocore/gronx"
 	"github.com/teambition/rrule-go"
 )
 
 // RecurrentDate represents an interface for recurrent date operations.
 type RecurrentDate interface {
-	Parse(pattern string) error
 	Next(now time.Time) (time.Time, error)
 	Prev(now time.Time) (time.Time, error)
 }
@@ -21,30 +19,36 @@ type RecurrentDate interface {
 var functionRegex = regexp.MustCompile(`^(\w+)\((.+)\)$`)
 
 func ParseRecurrentDate(pattern string) (RecurrentDate, error) {
+	recurrentDateTypes := map[string]func(string) (RecurrentDate, error){
+		"periodic": func(arg string) (RecurrentDate, error) {
+			r := RecurrentDatePeriodic{}
+			err := r.Parse(arg)
+			return r, err
+		},
+		"pattern": func(arg string) (RecurrentDate, error) {
+			r := RecurrentDatePattern{}
+			err := r.ParseFromDatePattern(arg)
+			return r, err
+		},
+		"rrule": func(arg string) (RecurrentDate, error) {
+			r := RecurrentDatePattern{}
+			err := r.ParseFromRRule(arg)
+			return r, err
+		},
+	}
+
+	// Split function name anf function arguments
 	matches := functionRegex.FindStringSubmatch(pattern)
-	if matches == nil || pattern == "" {
+	if matches == nil || len(matches) != 3 {
 		return nil, fmt.Errorf("error while parsing %s pattern, invalid pattern, expected form 'type(pattern)'", pattern)
 	}
 
-	recurrentDateTypes := map[string]func() RecurrentDate{
-		"cron":     func() RecurrentDate { return &RecurrentDateCron{} },
-		"periodic": func() RecurrentDate { return &RecurrentDatePeriodic{} },
-		"pattern":  func() RecurrentDate { return &RecurrentDatePattern{} },
-	}
-
+	// Create the recurrent date object
 	createRecurrentDate, exists := recurrentDateTypes[matches[1]]
 	if !exists {
 		return nil, fmt.Errorf("error while parsing %s pattern, unknown type %s", pattern, matches[1])
 	}
-
-	recurrentDate := createRecurrentDate()
-
-	if err := recurrentDate.Parse(matches[2]); err != nil {
-		return nil, err
-	}
-
-	return recurrentDate, nil
-
+	return createRecurrentDate(matches[2])
 }
 
 // RecurrentDatePeriodic represents a periodic recurrent date.
@@ -71,134 +75,35 @@ func (r RecurrentDatePeriodic) Prev(now time.Time) (time.Time, error) {
 	return now.Add(-r.Period.toDuration()), nil
 }
 
-// RecurrentDateCron represents a cron-based recurrent date.
-type RecurrentDateCron struct {
-	pattern string
-}
-
-func (r *RecurrentDateCron) Parse(pattern string) error {
-	if !gronx.IsValid(pattern) {
-		return fmt.Errorf("error while parsing %s cron pattern, invalid pattern", pattern)
-	}
-	r.pattern = pattern
-	return nil
-}
-
-// Next returns the next occurrence based on the current time.
-func (r RecurrentDateCron) Next(now time.Time) (time.Time, error) {
-	out, err := gronx.NextTickAfter(r.pattern, now, false)
-	if err != nil {
-		return out, err
-	}
-	if out == now {
-		now = now.Add(time.Second)
-		out, err = gronx.NextTickAfter(r.pattern, now, false)
-	}
-	return out, err
-}
-
-// Prev returns the previous occurrence based on the current time.
-func (r RecurrentDateCron) Prev(now time.Time) (time.Time, error) {
-	out, err := gronx.PrevTickBefore(r.pattern, now, false)
-	if err != nil {
-		return out, err
-	}
-	if out == now {
-		now = now.Add(-time.Second)
-		out, err = gronx.PrevTickBefore(r.pattern, now, false)
-	}
-	return out, err
-}
-
-// RecurrentDatePattern represents a date-like pattern recurrent date.
+// RecurrentDatePattern represents a pattern based recurrent date.
 type RecurrentDatePattern struct {
-	cronExpression string
-}
-
-func (r *RecurrentDatePattern) Parse(pattern string) error {
-	RemoveLeadingZeros := func(input string) string {
-		re := regexp.MustCompile(`\b0+(\d+)\b`)
-		return re.ReplaceAllStringFunc(input, func(match string) string {
-			trimmed := strings.TrimLeft(match, "0")
-			if trimmed == "" {
-				trimmed = "0"
-			}
-			return trimmed
-		})
-	}
-
-	matches := regexp.MustCompile(`^([\d\-,*¦]+)\/([\d\-,*¦]+)\/([\d\-,*¦]+)\s+(?:([\w\-,*¦]*)\s+)?([\d\-,*¦]+):([\d\-,*¦]+):?([\d\-,*¦]*)$`).FindStringSubmatch(pattern)
-	if matches == nil {
-		return fmt.Errorf("error while parsing %s pattern, invalid pattern, expected form 'yyyy/mm/dd <weekdays> hh:mm:ss'", pattern)
-	}
-
-	year := RemoveLeadingZeros(matches[1])
-	month := RemoveLeadingZeros(matches[2])
-	day := RemoveLeadingZeros(matches[3])
-	weekdaysPart := strings.ToUpper(RemoveLeadingZeros(matches[4]))
-	if weekdaysPart == "" {
-		weekdaysPart = "*"
-	}
-	hour := RemoveLeadingZeros(matches[5])
-	minute := RemoveLeadingZeros(matches[6])
-	second := RemoveLeadingZeros(matches[7])
-	if second == "" {
-		second = "0"
-	}
-
-	cronExpression := fmt.Sprintf("%s %s %s %s %s %s %s", second, minute, hour, day, month, weekdaysPart, year)
-	cronExpression = strings.ReplaceAll(cronExpression, "¦", "/")
-
-	if !gronx.IsValid(cronExpression) {
-		return fmt.Errorf("error while parsing %s pattern, generated invalid cron expression %s", pattern, cronExpression)
-	}
-
-	r.cronExpression = cronExpression
-	return nil
-}
-
-// Next returns the next occurrence based on the current time.
-func (r RecurrentDatePattern) Next(now time.Time) (time.Time, error) {
-	out, err := gronx.NextTickAfter(r.cronExpression, now, false)
-	if err != nil {
-		return out, err
-	}
-	if out == now {
-		now = now.Add(time.Second)
-		out, err = gronx.NextTickAfter(r.cronExpression, now, false)
-	}
-	return out, err
-}
-
-// Prev returns the previous occurrence based on the current time.
-func (r RecurrentDatePattern) Prev(now time.Time) (time.Time, error) {
-	out, err := gronx.PrevTickBefore(r.cronExpression, now, false)
-	if err != nil {
-		return out, err
-	}
-	if out == now {
-		now = now.Add(-time.Second)
-		out, err = gronx.PrevTickBefore(r.cronExpression, now, false)
-	}
-	return out, err
-}
-
-// RecurrentDatePatternRule represents a rule-based recurrent date.
-type RecurrentDatePatternRule struct {
 	rule *rrule.RRule
 }
 
-func (r *RecurrentDatePatternRule) Parse(pattern string) error {
+func (r *RecurrentDatePattern) ParseFromDatePattern(pattern string) error {
+	rule, err := BuilRRuleFromDatePattern(pattern)
+	if err != nil {
+		return fmt.Errorf("error while parsing %s rule pattern, %v", pattern, err)
+	}
+	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
+	r.rule = rule
+	return nil
+}
+
+func (r *RecurrentDatePattern) ParseFromRRule(pattern string) error {
 	rule, err := rrule.StrToRRule(pattern)
 	if err != nil {
 		return fmt.Errorf("error while parsing %s rule pattern, %v", pattern, err)
 	}
+	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
 	r.rule = rule
 	return nil
 }
 
 // Next returns the next occurrence based on the current time.
-func (r RecurrentDatePatternRule) Next(now time.Time) (time.Time, error) {
+func (r RecurrentDatePattern) Next(now time.Time) (time.Time, error) {
+	//TODO: check if now is not too much in the past, before DTStart constant date
+	fmt.Println("Next: ", r.rule.String(), now)
 	next := r.rule.After(now, false)
 	if next.IsZero() {
 		return next, fmt.Errorf("no next occurrence found")
@@ -207,7 +112,9 @@ func (r RecurrentDatePatternRule) Next(now time.Time) (time.Time, error) {
 }
 
 // Prev returns the previous occurrence based on the current time.
-func (r RecurrentDatePatternRule) Prev(now time.Time) (time.Time, error) {
+func (r RecurrentDatePattern) Prev(now time.Time) (time.Time, error) {
+	//TODO: check if now is not too much in the past, before DTStart constant date
+	fmt.Println("Prev: ", r.rule.String(), now)
 	prev := r.rule.Before(now, false)
 	if prev.IsZero() {
 		return prev, fmt.Errorf("no previous occurrence found")
@@ -217,37 +124,39 @@ func (r RecurrentDatePatternRule) Prev(now time.Time) (time.Time, error) {
 
 // Take a string describing a list or a range or a mix of both and return a list of integers representing the expanded list of values
 func expandDateComponentList(pattern string) ([]int, error) {
+
 	if pattern == "*" || pattern == "" {
 		return []int{}, nil
+	}
+
+	convertToInt := func(component string) (int, error) {
+		dayMap := map[string]int{
+			"MON": 0, "TUE": 1, "WED": 2, "THU": 3, "FRI": 4, "SAT": 5, "SUN": 6,
+		}
+		monthMap := map[string]int{
+			"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+			"JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
+		}
+
+		day, exists := dayMap[strings.ToUpper(component)]
+		if exists {
+			return day, nil
+		}
+		month, exists := monthMap[strings.ToUpper(component)]
+		if exists {
+			return month, nil
+		}
+		number, err := strconv.Atoi(component)
+		if err != nil {
+			return 0, fmt.Errorf("error while parsing %s date component, invalid date, %v", component, err)
+		}
+		return number, nil
 	}
 
 	components := strings.Split(pattern, ",")
 	var output []int
 	for _, component := range components {
 		fmt.Println("handling component", component)
-		convertToInt := func(component string) (int, error) {
-			dayMap := map[string]int{
-				"MON": 0, "TUE": 1, "WED": 2, "THU": 3, "FRI": 4, "SAT": 5, "SUN": 6,
-			}
-			monthMap := map[string]int{
-				"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
-				"JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
-			}
-
-			day, exists := dayMap[strings.ToUpper(component)]
-			if exists {
-				return day, nil
-			}
-			month, exists := monthMap[strings.ToUpper(component)]
-			if exists {
-				return month, nil
-			}
-			number, err := strconv.Atoi(component)
-			if err != nil {
-				return 0, fmt.Errorf("error while parsing %s date component, invalid date, %v", component, err)
-			}
-			return number, nil
-		}
 
 		if strings.Contains(component, "-") {
 			limits := strings.Split(component, "-")
@@ -283,6 +192,7 @@ func expandDateComponentList(pattern string) ([]int, error) {
 // Regular expression to parse a date pattern in the form of "<yyyy/>mm/dd <weekdays> hh:mm<:ss> <extra>"
 var rrule_regex = regexp.MustCompile(`^(?:([\d\-,*]+)\/)?([\d\-,*]+)\/([\d\-,*]+)\s+(?:([\w\-,*]*)\s+)?([\d\-,*]+):([\d\-,*]+)(?::([\d\-,*]*))?(?: (.*))?$`)
 
+// BuilRRuleFromDatePattern takes a date pattern in the form of "<yyyy/>mm/dd <weekdays> hh:mm<:ss> <extra>" and returns a RRule object
 func BuilRRuleFromDatePattern(pattern string) (*rrule.RRule, error) {
 
 	//Parse the date pattern
