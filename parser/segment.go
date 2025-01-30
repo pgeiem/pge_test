@@ -20,7 +20,7 @@ func (s *Segment) Duration() time.Duration {
 }
 
 func (s *Segment) IsWithin(t time.Time) bool {
-	return TimeAfterOrEqual(t, s.Start) && TimeBeforeOrEqual(t, s.End)
+	return TimeAfterOrEqual(t, s.Start) && time.Now().Before(s.End)
 }
 
 type RecurrentSegment struct {
