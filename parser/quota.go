@@ -25,16 +25,29 @@ type DurationDetail struct {
 
 // AssignedRight represents the parking assigned rights (a ticket)
 type AssignedRight struct {
-	Area    string
-	Start   time.Time
-	End     time.Time
+	ParkingArea []string
+	Start       time.Time
+	//End         time.Time
 	Details []DurationDetail
+}
+
+func (ar AssignedRight) MatchParkingArea(pattern string) (bool, error) {
+	for _, area := range ar.ParkingArea {
+		match, err := globMatch(pattern, area)
+		if err != nil {
+			return false, err
+		}
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // MatchingRule represents a rule to match the parking assigned rights to be used in a quota
 type MatchingRule struct {
-	AreaPattern string
-	TypePattern string
+	ParkingAreaPattern  string
+	DurationTypePattern string
 }
 
 // Quota represents a quota to be used to limit the parking assigned rights
@@ -44,8 +57,10 @@ type Quota interface {
 
 // AbstractQuota is a helper to ease the implementation of different quotas types
 type AbstractQuota struct {
-	MatchingRules   []MatchingRule
-	PeriodicityRule RecurrentDate
+	MatchingRules      []MatchingRule
+	PeriodicityRule    RecurrentDate
+	DefaultAreaPattern string
+	DefaultTypePattern string
 }
 
 // SelectReferenceTime selects the reference time to be used to filter the assigned rights based on the matching rules
@@ -57,36 +72,41 @@ func SelectReferenceTime(rule MatchingRule, detail DurationDetail, right Assigne
 	return reftime
 }
 
-const DefaultAreaPattern = "*"
-const DefaultTypePattern = string(FreeDuration)
-
 // Helper function to match a glob string pattern, in a case-insensitive way
 func globMatch(pattern, name string) (bool, error) {
 	return filepath.Match(strings.ToLower(pattern), strings.ToLower(name))
 }
 
 // Filter filters the history of assigned rights based on the matching rules and calls the matchHandler for each matching detail
-func (q AbstractQuota) Filter(from time.Time, history []AssignedRight, matchHandler func(detail DurationDetail)) error {
+func (q AbstractQuota) Filter(from time.Time, history []AssignedRight, matchAssignedRightHandler func(right AssignedRight),
+	matchDurationDetailsHandler func(detail DurationDetail)) error {
 	rules := q.MatchingRules
 	if len(rules) == 0 {
 		rules = []MatchingRule{{}}
 	}
+	// Iterate over all matching rules of the quota
 	for _, rule := range rules {
+		// Iterate over all assigned rights in the history
 		for _, right := range history {
-			areaPattern := rule.AreaPattern
+			areaPattern := rule.ParkingAreaPattern
 			if areaPattern == "" {
-				areaPattern = DefaultAreaPattern
+				areaPattern = q.DefaultAreaPattern
 			}
-			match, err := globMatch(areaPattern, right.Area)
+			match, err := right.MatchParkingArea(areaPattern)
 			if err != nil {
 				return err
 			}
-			if match {
+			// If set, call the Assigned Right callback
+			if match && matchAssignedRightHandler != nil {
+				matchAssignedRightHandler(right)
+			}
+			// If set, check duration details matches and call the Duration Detail callback
+			if match && matchDurationDetailsHandler != nil {
+				typePattern := rule.DurationTypePattern
+				if typePattern == "" {
+					typePattern = q.DefaultTypePattern
+				}
 				for _, detail := range right.Details {
-					typePattern := rule.TypePattern
-					if typePattern == "" {
-						typePattern = DefaultTypePattern
-					}
 					match, err := globMatch(typePattern, string(detail.Type))
 					if err != nil {
 						return err
@@ -94,7 +114,7 @@ func (q AbstractQuota) Filter(from time.Time, history []AssignedRight, matchHand
 					if match {
 						reftime := SelectReferenceTime(rule, detail, right)
 						if !reftime.IsZero() && TimeAfterOrEqual(reftime, from) {
-							matchHandler(detail)
+							matchDurationDetailsHandler(detail)
 						}
 					}
 				}
@@ -111,39 +131,122 @@ func (q AbstractQuota) PeriodStart(now time.Time) (time.Time, error) {
 // DurationQuota represents a quota based on the duration of the parking assigned rights
 type DurationQuota struct {
 	AbstractQuota
-	Duration time.Duration
+	Allowance time.Duration
+	used      time.Duration
+}
+
+func NewDurationQuota(allowance time.Duration, period RecurrentDate, rules []MatchingRule) *DurationQuota {
+	return &DurationQuota{
+		AbstractQuota: AbstractQuota{
+			MatchingRules:      rules,
+			PeriodicityRule:    period,
+			DefaultAreaPattern: "*",
+			DefaultTypePattern: string(FreeDuration),
+		},
+		Allowance: allowance,
+	}
 }
 
 // Update updates the quota based on the history of assigned rights
 func (q *DurationQuota) Update(now time.Time, history []AssignedRight) error {
 	total := time.Duration(0)
+	// Compute the start period of quota calculation
 	start, err := q.PeriodStart(now)
 	if err != nil {
 		return err
 	}
-	err = q.Filter(start, history, func(detail DurationDetail) {
+	// Compute the total duration of matching assigned rights
+	err = q.Filter(start, history, nil, func(detail DurationDetail) {
 		total += detail.Duration
 	})
-	q.Duration = total
+	q.used = total
 	return err
+}
+
+func (q *DurationQuota) Available() time.Duration {
+	available := time.Duration(0)
+	if q.Allowance > q.used {
+		available = q.Allowance - q.used
+	}
+	return available
+}
+
+func (q *DurationQuota) Used() time.Duration {
+	return q.used
 }
 
 // CounterQuota represents a quota based on the number of parking assigned rights
 type CounterQuota struct {
 	AbstractQuota
-	Counter int
+	Allowance int
+	used      int
+}
+
+func NewCounterQuota(allowance int, period RecurrentDate, rules []MatchingRule) *CounterQuota {
+	return &CounterQuota{
+		AbstractQuota: AbstractQuota{
+			MatchingRules:      rules,
+			PeriodicityRule:    period,
+			DefaultAreaPattern: "*",
+		},
+		Allowance: allowance,
+	}
 }
 
 // Update updates the quota based on the history of assigned rights
 func (q *CounterQuota) Update(now time.Time, history []AssignedRight) error {
 	counter := 0
+	// Compute the start period of quota calculation
 	start, err := q.PeriodStart(now)
 	if err != nil {
 		return err
 	}
-	err = q.Filter(start, history, func(detail DurationDetail) {
+	// Compute the number of matching assigned rights
+	err = q.Filter(start, history, func(detail AssignedRight) {
 		counter++
-	})
-	q.Counter = counter
+	}, nil)
+	q.used = counter
 	return err
+}
+
+func (q *CounterQuota) Available() int {
+	var available int
+	if q.Allowance > q.used {
+		available = q.Allowance - q.used
+	}
+	return available
+}
+
+func (q *CounterQuota) Used() int {
+	return q.used
+}
+
+type QuotaInventory map[string]Quota
+
+func (qi QuotaInventory) Update(now time.Time, history []AssignedRight) error {
+	for _, quota := range qi {
+		err := quota.Update(now, history)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (qi QuotaInventory) GetDurationQuota(name string) (*DurationQuota, bool) {
+	quota, ok := qi[name]
+	if !ok {
+		return nil, false
+	}
+	dq, ok := quota.(*DurationQuota)
+	return dq, ok
+}
+
+func (qi QuotaInventory) GetCounterQuota(name string) (*CounterQuota, bool) {
+	quota, ok := qi[name]
+	if !ok {
+		return nil, false
+	}
+	cq, ok := quota.(*CounterQuota)
+	return cq, ok
 }
