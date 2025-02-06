@@ -94,17 +94,22 @@ func (r RecurrentDatePeriodic) Between(from, to time.Time) []time.Time {
 	return segments
 }
 
+// Stringer for RecurrentDatePeriodic, print the period
+func (r RecurrentDatePeriodic) String() string {
+	return fmt.Sprintf("Period: %s", r.Period.toDuration().String())
+}
+
 // RecurrentDatePattern represents a pattern based recurrent date.
 type RecurrentDatePattern struct {
 	rule *rrule.RRule
 }
 
 func (r *RecurrentDatePattern) ParseFromDatePattern(pattern string) error {
-	rule, err := BuilRRuleFromDatePattern(pattern)
+	rule, err := builRRuleFromDatePattern(pattern)
 	if err != nil {
 		return fmt.Errorf("error while parsing %s rule pattern, %v", pattern, err)
 	}
-	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
+	rule.DTStart(time.Time{}) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
 	r.rule = rule
 	return nil
 }
@@ -114,7 +119,7 @@ func (r *RecurrentDatePattern) ParseFromRRule(pattern string) error {
 	if err != nil {
 		return fmt.Errorf("error while parsing %s rule pattern, %v", pattern, err)
 	}
-	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
+	rule.DTStart(time.Time{}) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
 	r.rule = rule
 	return nil
 }
@@ -144,6 +149,11 @@ func (r RecurrentDatePattern) Prev(now time.Time) (time.Time, error) {
 // Between returns the time segments between the given time range.
 func (r RecurrentDatePattern) Between(from, to time.Time) []time.Time {
 	return r.rule.Between(from, to, false)
+}
+
+// Stringer for RecurrentDatePattern, print the rule
+func (r RecurrentDatePattern) String() string {
+	return fmt.Sprintf("Rule: %s", r.rule.String())
 }
 
 // Take a string describing a list or a range or a mix of both and return a list of integers representing the expanded list of values
@@ -214,8 +224,8 @@ func expandDateComponentList(pattern string) ([]int, error) {
 // Regular expression to parse a date pattern in the form of "<yyyy/>mm/dd <weekdays> hh:mm<:ss> <extra>"
 var rrule_regex = regexp.MustCompile(`^(?:([\d\-,*]+)\/)?([\d\-,*]+)\/([\d\-,*]+)\s+(?:([\w\-,*]*)\s+)?([\d\-,*]+):([\d\-,*]+)(?::([\d\-,*]*))?(?: (.*))?$`)
 
-// BuilRRuleFromDatePattern takes a date pattern in the form of "<yyyy/>mm/dd <weekdays> hh:mm<:ss> <extra>" and returns a RRule object
-func BuilRRuleFromDatePattern(pattern string) (*rrule.RRule, error) {
+// builRRuleFromDatePattern takes a date pattern in the form of "<yyyy/>mm/dd <weekdays> hh:mm<:ss> <extra>" and returns a RRule object
+func builRRuleFromDatePattern(pattern string) (*rrule.RRule, error) {
 
 	//Parse the date pattern
 	matches := rrule_regex.FindStringSubmatch(pattern)
@@ -224,8 +234,8 @@ func BuilRRuleFromDatePattern(pattern string) (*rrule.RRule, error) {
 	}
 	extra_str := matches[8]
 
-	fmt.Println("\nHandling pattern: ", pattern)
-	fmt.Printf("%#v\n", matches)
+	//fmt.Println("\nHandling pattern: ", pattern)
+	//fmt.Printf("%#v\n", matches)
 
 	// Find the frequency looking for the first "*" field
 	frequency := rrule.YEARLY

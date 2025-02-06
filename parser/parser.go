@@ -32,6 +32,15 @@ func unmarshalDuration(duration *Duration, data []byte) error {
 	return nil
 }
 
+func unmarshalRecurrentDate(rec *RecurrentDate, data []byte) error {
+	tmp, err := ParseRecurrentDate(string(data))
+	if err != nil {
+		return err
+	}
+	*rec = tmp
+	return nil
+}
+
 func ParseTariffDefinition(r io.Reader) (TariffDefinition, error) {
 	validate := validator.New()
 
@@ -39,6 +48,7 @@ func ParseTariffDefinition(r io.Reader) (TariffDefinition, error) {
 		yaml.Strict(),
 		yaml.CustomUnmarshaler(unmarshalDuration),
 		yaml.CustomUnmarshaler(unmarshalTimeDuration),
+		yaml.CustomUnmarshaler(unmarshalRecurrentDate),
 		yaml.Validator(validate),
 	)
 

@@ -11,14 +11,19 @@ func main() {
 	sampleyaml := `
 quotas:
   - duration: 
-      name: "duration"
+      name: "Plop"
       allowance: 2h10m
+      periodicity: duration(4h)
+      matching: 
+        - area: z*
+          type: paying
+        - area: t*
+          type: nonpaying
   - counter:
-      name: "counter"
+      name: "Plip"
       allowance: 42
-  - counter:
-      allowance: 42
-      name: plop
+      periodicity: pattern(*/* 12:00)
+
 `
 
 	x, err := parser.ParseTariffDefinitionString(sampleyaml)

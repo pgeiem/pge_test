@@ -49,8 +49,28 @@ func (ar AssignedRight) MatchParkingArea(pattern string) (bool, error) {
 
 // MatchingRule represents a rule to match the parking assigned rights to be used in a quota
 type MatchingRule struct {
-	ParkingAreaPattern  string
-	DurationTypePattern string
+	ParkingAreaPattern  string `yaml:"area"`
+	DurationTypePattern string `yaml:"type"`
+}
+
+// Stringer for MatchingRule, print the area and type patterns
+func (m MatchingRule) String() string {
+	return fmt.Sprintf("(%s, %s)", m.ParkingAreaPattern, m.DurationTypePattern)
+}
+
+// MatchingRules is a list of MatchingRule
+type MatchingRules []MatchingRule
+
+// Stringer for MatchingRules, iterate over all rules and print them
+func (m MatchingRules) String() string {
+	var str strings.Builder
+	str.WriteString("[")
+	for _, rule := range m {
+		str.WriteString(rule.String())
+		str.WriteString(" ")
+	}
+	str.WriteString("]")
+	return str.String()
 }
 
 // Quota represents a quota to be used to limit the parking assigned rights
@@ -61,11 +81,11 @@ type Quota interface {
 
 // AbstractQuota is a helper to ease the implementation of different quotas types
 type AbstractQuota struct {
-	Name               string `yaml:"name" validate:"required"`
-	MatchingRules      []MatchingRule
-	PeriodicityRule    RecurrentDate
-	DefaultAreaPattern string
-	DefaultTypePattern string
+	Name               string        `yaml:"name" validate:"required"`
+	MatchingRules      MatchingRules `yaml:"matching"`
+	PeriodicityRule    RecurrentDate `yaml:"periodicity" validate:"required"`
+	DefaultAreaPattern string        `yaml:"-"`
+	DefaultTypePattern string        `yaml:"-"`
 }
 
 func (q AbstractQuota) GetName() string {
@@ -137,6 +157,11 @@ func (q AbstractQuota) PeriodStart(now time.Time) (time.Time, error) {
 	return q.PeriodicityRule.Prev(now)
 }
 
+// Stringer for AbstractQuota, print the matching rule and periodicity rule
+func (q AbstractQuota) String() string {
+	return fmt.Sprintf("PeriodicityRule: %v, MatchingRules: %v", q.PeriodicityRule, q.MatchingRules)
+}
+
 // DurationQuota represents a quota based on the duration of the parking assigned rights
 type DurationQuota struct {
 	AbstractQuota `yaml:",inline"`
@@ -186,7 +211,7 @@ func (q *DurationQuota) Used() time.Duration {
 
 // Stringer for DurationQuota, print the name and the used/allowed values
 func (q DurationQuota) String() string {
-	return fmt.Sprintf("DurationQuota(%s): %s/%s", q.Name, q.used, q.Allowance)
+	return fmt.Sprintf("DurationQuota(%s): Usage  %s/%s %v", q.Name, q.used, q.Allowance, q.AbstractQuota)
 }
 
 // CounterQuota represents a quota based on the number of parking assigned rights
@@ -237,7 +262,7 @@ func (q *CounterQuota) Used() int {
 
 // Stringer for CounterQuota, print the name and the used/allowed values
 func (q CounterQuota) String() string {
-	return fmt.Sprintf("CounterQuota(%s): %d/%d", q.Name, q.used, q.Allowance)
+	return fmt.Sprintf("CounterQuota(%s): Usage %d/%d %v", q.Name, q.used, q.Allowance, q.AbstractQuota)
 }
 
 type QuotaInventory struct {

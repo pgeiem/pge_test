@@ -208,7 +208,7 @@ func TestBuilRRuleFromDatePattern(t *testing.T) {
 
 	for _, test := range tests {
 		fmt.Println("Testing pattern", test.pattern)
-		rrule, err := BuilRRuleFromDatePattern(test.pattern)
+		rrule, err := builRRuleFromDatePattern(test.pattern)
 		if (err != nil) != test.hasError {
 			t.Errorf("BuilRRuleFromDatePattern(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
 			continue
