@@ -1,9 +1,12 @@
 package parser
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/elliotchance/orderedmap/v3"
 )
 
 // DurationType represents the different type of parking duration
@@ -52,15 +55,21 @@ type MatchingRule struct {
 
 // Quota represents a quota to be used to limit the parking assigned rights
 type Quota interface {
+	GetName() string
 	Update(now time.Time, history []AssignedRight) error
 }
 
 // AbstractQuota is a helper to ease the implementation of different quotas types
 type AbstractQuota struct {
+	Name               string `yaml:"name" validate:"required"`
 	MatchingRules      []MatchingRule
 	PeriodicityRule    RecurrentDate
 	DefaultAreaPattern string
 	DefaultTypePattern string
+}
+
+func (q AbstractQuota) GetName() string {
+	return q.Name
 }
 
 // SelectReferenceTime selects the reference time to be used to filter the assigned rights based on the matching rules
@@ -130,9 +139,9 @@ func (q AbstractQuota) PeriodStart(now time.Time) (time.Time, error) {
 
 // DurationQuota represents a quota based on the duration of the parking assigned rights
 type DurationQuota struct {
-	AbstractQuota
-	Allowance time.Duration
-	used      time.Duration
+	AbstractQuota `yaml:",inline"`
+	Allowance     time.Duration `yaml:"allowance"`
+	used          time.Duration
 }
 
 func NewDurationQuota(allowance time.Duration, period RecurrentDate, rules []MatchingRule) *DurationQuota {
@@ -175,11 +184,16 @@ func (q *DurationQuota) Used() time.Duration {
 	return q.used
 }
 
+// Stringer for DurationQuota, print the name and the used/allowed values
+func (q DurationQuota) String() string {
+	return fmt.Sprintf("DurationQuota(%s): %s/%s", q.Name, q.used, q.Allowance)
+}
+
 // CounterQuota represents a quota based on the number of parking assigned rights
 type CounterQuota struct {
-	AbstractQuota
-	Allowance int
-	used      int
+	AbstractQuota `yaml:",inline"`
+	Allowance     int `yaml:"allowance"`
+	used          int
 }
 
 func NewCounterQuota(allowance int, period RecurrentDate, rules []MatchingRule) *CounterQuota {
@@ -221,10 +235,17 @@ func (q *CounterQuota) Used() int {
 	return q.used
 }
 
-type QuotaInventory map[string]Quota
+// Stringer for CounterQuota, print the name and the used/allowed values
+func (q CounterQuota) String() string {
+	return fmt.Sprintf("CounterQuota(%s): %d/%d", q.Name, q.used, q.Allowance)
+}
+
+type QuotaInventory struct {
+	*orderedmap.OrderedMap[string, Quota]
+}
 
 func (qi QuotaInventory) Update(now time.Time, history []AssignedRight) error {
-	for _, quota := range qi {
+	for quota := range qi.Values() {
 		err := quota.Update(now, history)
 		if err != nil {
 			return err
@@ -234,7 +255,7 @@ func (qi QuotaInventory) Update(now time.Time, history []AssignedRight) error {
 }
 
 func (qi QuotaInventory) GetDurationQuota(name string) (*DurationQuota, bool) {
-	quota, ok := qi[name]
+	quota, ok := qi.Get(name)
 	if !ok {
 		return nil, false
 	}
@@ -243,10 +264,51 @@ func (qi QuotaInventory) GetDurationQuota(name string) (*DurationQuota, bool) {
 }
 
 func (qi QuotaInventory) GetCounterQuota(name string) (*CounterQuota, bool) {
-	quota, ok := qi[name]
+	quota, ok := qi.Get(name)
 	if !ok {
 		return nil, false
 	}
 	cq, ok := quota.(*CounterQuota)
 	return cq, ok
+}
+
+// Stringer for QuotaInventory, iterate over all quotas and print some details
+func (qi QuotaInventory) String() string {
+	var str strings.Builder
+	for key, quota := range qi.AllFromFront() {
+		str.WriteString(fmt.Sprintf("%s: %s\n", key, quota))
+	}
+	return str.String()
+}
+
+func (qi *QuotaInventory) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Temporary struct to unmarshal the different types of quotas
+	temp := []struct {
+		DurationQuota *DurationQuota `yaml:"duration"`
+		CounterQuota  *CounterQuota  `yaml:"counter"`
+	}{}
+
+	err := unmarshal(&temp)
+	if err != nil {
+		return err
+	}
+
+	// Convert from the temporary struct to the QuotaInventory
+	qi.OrderedMap = orderedmap.NewOrderedMapWithCapacity[string, Quota](len(temp))
+	var quota Quota
+	for _, t := range temp {
+		quota = nil
+		if t.DurationQuota != nil {
+			quota = t.DurationQuota
+		} else if t.CounterQuota != nil {
+			quota = t.CounterQuota
+		}
+		if quota != nil {
+			if quota.GetName() == "" {
+				return fmt.Errorf("missing quota name")
+			}
+			qi.OrderedMap.Set(quota.GetName(), quota)
+		}
+	}
+	return nil
 }
