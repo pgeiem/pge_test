@@ -1,6 +1,8 @@
 package parser
 
-import "time"
+import (
+	"time"
+)
 
 func TimeAfterOrEqual(t1, t2 time.Time) bool {
 	return t1.Equal(t2) || t1.After(t2)
@@ -20,7 +22,7 @@ func (s *Segment) Duration() time.Duration {
 }
 
 func (s *Segment) IsWithin(t time.Time) bool {
-	return TimeAfterOrEqual(t, s.Start) && time.Now().Before(s.End)
+	return TimeAfterOrEqual(t, s.Start) && t.Before(s.End)
 }
 
 type RecurrentSegment struct {

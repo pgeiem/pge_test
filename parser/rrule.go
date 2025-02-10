@@ -109,7 +109,7 @@ func (r *RecurrentDatePattern) ParseFromDatePattern(pattern string) error {
 	if err != nil {
 		return fmt.Errorf("error while parsing %s rule pattern, %v", pattern, err)
 	}
-	rule.DTStart(time.Time{}) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
+	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
 	r.rule = rule
 	return nil
 }
@@ -119,7 +119,7 @@ func (r *RecurrentDatePattern) ParseFromRRule(pattern string) error {
 	if err != nil {
 		return fmt.Errorf("error while parsing %s rule pattern, %v", pattern, err)
 	}
-	rule.DTStart(time.Time{}) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
+	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
 	r.rule = rule
 	return nil
 }

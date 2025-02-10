@@ -31,13 +31,15 @@ func TestParseDuration(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result, err := ParseDuration(test.input)
-		if (err != nil) != test.hasError {
-			t.Errorf("ParseDuration(%q) error = %v, wantErr %v", test.input, err, test.hasError)
-			continue
-		}
-		if result != test.expected {
-			t.Errorf("ParseDuration(%q) = %v, want %v", test.input, result, test.expected)
-		}
+		t.Run(test.input, func(t *testing.T) {
+			result, err := ParseDuration(test.input)
+			if (err != nil) != test.hasError {
+				t.Errorf("ParseDuration(%q) error = %v, wantErr %v", test.input, err, test.hasError)
+				return
+			}
+			if result != test.expected {
+				t.Errorf("ParseDuration(%q) = %v, want %v", test.input, result, test.expected)
+			}
+		})
 	}
 }

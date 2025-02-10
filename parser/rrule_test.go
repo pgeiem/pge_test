@@ -33,14 +33,16 @@ func TestExpandDateComponentList(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result, err := expandDateComponentList(test.input)
-		if (err != nil) != test.hasError {
-			t.Errorf("ExpandDateComponentList(%q) error = %v, wantErr %v", test.input, err, test.hasError)
-			continue
-		}
-		if !equal(result, test.expected) {
-			t.Errorf("ExpandDateComponentList(%q) = %v, want %v", test.input, result, test.expected)
-		}
+		t.Run(test.input, func(t *testing.T) {
+			result, err := expandDateComponentList(test.input)
+			if (err != nil) != test.hasError {
+				t.Errorf("ExpandDateComponentList(%q) error = %v, wantErr %v", test.input, err, test.hasError)
+				return
+			}
+			if !equal(result, test.expected) {
+				t.Errorf("ExpandDateComponentList(%q) = %v, want %v", test.input, result, test.expected)
+			}
+		})
 	}
 }
 
@@ -94,36 +96,37 @@ func TestRecurrentDatePeriodic(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		fmt.Println("Testing periodic", test.pattern)
-		r := &RecurrentDatePeriodic{}
-		err := r.Parse(test.pattern)
-		if err != nil {
-			t.Fatalf("Parse failed: %v", err)
-		}
-
-		now := test.now
-		for _, expectedNext := range test.expectedNext {
-			next, err := r.Next(now)
+		t.Run(test.pattern, func(t *testing.T) {
+			r := &RecurrentDatePeriodic{}
+			err := r.Parse(test.pattern)
 			if err != nil {
-				t.Fatalf("Next failed: %v", err)
+				t.Fatalf("Parse failed: %v", err)
 			}
-			if !next.Equal(expectedNext) {
-				t.Errorf("Next() = %v, want %v", next, expectedNext)
-			}
-			now = next
-		}
 
-		now = test.now
-		for _, expectedPrev := range test.expectedPrev {
-			prev, err := r.Prev(now)
-			if err != nil {
-				t.Fatalf("Prev failed: %v", err)
+			now := test.now
+			for _, expectedNext := range test.expectedNext {
+				next, err := r.Next(now)
+				if err != nil {
+					t.Fatalf("Next failed: %v", err)
+				}
+				if !next.Equal(expectedNext) {
+					t.Errorf("Next() = %v, want %v", next, expectedNext)
+				}
+				now = next
 			}
-			if !prev.Equal(expectedPrev) {
-				t.Errorf("Prev() = %v, want %v", prev, expectedPrev)
+
+			now = test.now
+			for _, expectedPrev := range test.expectedPrev {
+				prev, err := r.Prev(now)
+				if err != nil {
+					t.Fatalf("Prev failed: %v", err)
+				}
+				if !prev.Equal(expectedPrev) {
+					t.Errorf("Prev() = %v, want %v", prev, expectedPrev)
+				}
+				now = prev
 			}
-			now = prev
-		}
+		})
 	}
 }
 
@@ -207,18 +210,19 @@ func TestBuilRRuleFromDatePattern(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		fmt.Println("Testing pattern", test.pattern)
-		rrule, err := builRRuleFromDatePattern(test.pattern)
-		if (err != nil) != test.hasError {
-			t.Errorf("BuilRRuleFromDatePattern(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
-			continue
-		}
-		if err != nil {
-			continue
-		}
-		if rrule.String() != test.expectedrrule {
-			t.Errorf("BuilRRuleFromDatePattern(%q) = %v, want %v", test.pattern, rrule, test.expectedrrule)
-		}
+		t.Run(test.pattern, func(t *testing.T) {
+			rrule, err := builRRuleFromDatePattern(test.pattern)
+			if (err != nil) != test.hasError {
+				t.Errorf("BuilRRuleFromDatePattern(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
+				return
+			}
+			if err != nil {
+				return
+			}
+			if rrule.String() != test.expectedrrule {
+				t.Errorf("BuilRRuleFromDatePattern(%q) = %v, want %v", test.pattern, rrule, test.expectedrrule)
+			}
+		})
 	}
 }
 
@@ -365,40 +369,41 @@ func TestRecurrentDatePattern(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		r := &RecurrentDatePattern{}
-		fmt.Println("Testing pattern", test.pattern)
-		err := r.ParseFromDatePattern(test.pattern)
-		if (err != nil) != test.hasError {
-			t.Errorf("ParseRecurrentDatePattern(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
-			continue
-		}
-		if err != nil {
-			continue
-		}
-
-		now := test.now
-		for _, expectedNext := range test.expectedNext {
-			next, err := r.Next(now)
+		t.Run(test.pattern, func(t *testing.T) {
+			r := &RecurrentDatePattern{}
+			err := r.ParseFromDatePattern(test.pattern)
+			if (err != nil) != test.hasError {
+				t.Errorf("ParseRecurrentDatePattern(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
+				return
+			}
 			if err != nil {
-				t.Fatalf("Next failed: %v", err)
+				return
 			}
-			if !next.Equal(expectedNext) {
-				t.Errorf("Next(%v) = %v, want %v", now, next, expectedNext)
-			}
-			now = next
-		}
 
-		now = test.now
-		for _, expectedPrev := range test.expectedPrev {
-			prev, err := r.Prev(now)
-			if (err != nil) != (expectedPrev == time.Unix(0, 0)) {
-				t.Fatalf("Prev failed: %v", err)
+			now := test.now
+			for _, expectedNext := range test.expectedNext {
+				next, err := r.Next(now)
+				if err != nil {
+					t.Fatalf("Next failed: %v", err)
+				}
+				if !next.Equal(expectedNext) {
+					t.Errorf("Next(%v) = %v, want %v", now, next, expectedNext)
+				}
+				now = next
 			}
-			if (expectedPrev != time.Unix(0, 0)) && !prev.Equal(expectedPrev) {
-				t.Errorf("Prev(%v) = %v, want %v", now, prev, expectedPrev)
+
+			now = test.now
+			for _, expectedPrev := range test.expectedPrev {
+				prev, err := r.Prev(now)
+				if (err != nil) != (expectedPrev == time.Unix(0, 0)) {
+					t.Fatalf("Prev failed: %v", err)
+				}
+				if (expectedPrev != time.Unix(0, 0)) && !prev.Equal(expectedPrev) {
+					t.Errorf("Prev(%v) = %v, want %v", now, prev, expectedPrev)
+				}
+				now = prev
 			}
-			now = prev
-		}
+		})
 	}
 }
 
@@ -539,30 +544,32 @@ func TestParseRecurrentDate(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		fmt.Println("Testing pattern", test.pattern)
-		recurrentDate, err := ParseRecurrentDate(test.pattern)
-		if (err != nil) != test.hasError {
-			t.Errorf("ParseRecurrentDate(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
-			continue
-		}
-		if err != nil {
-			continue
-		}
+		t.Run(test.pattern, func(t *testing.T) {
+			fmt.Println("Testing pattern", test.pattern)
+			recurrentDate, err := ParseRecurrentDate(test.pattern)
+			if (err != nil) != test.hasError {
+				t.Errorf("ParseRecurrentDate(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
+				return
+			}
+			if err != nil {
+				return
+			}
 
-		next, err := recurrentDate.Next(test.now)
-		if err != nil {
-			t.Fatalf("Next failed: %v", err)
-		}
-		if !next.Equal(test.expectedNext) {
-			t.Errorf("Next(%v) = %v, want %v", test.now, next, test.expectedNext)
-		}
+			next, err := recurrentDate.Next(test.now)
+			if err != nil {
+				t.Fatalf("Next failed: %v", err)
+			}
+			if !next.Equal(test.expectedNext) {
+				t.Errorf("Next(%v) = %v, want %v", test.now, next, test.expectedNext)
+			}
 
-		prev, err := recurrentDate.Prev(test.now)
-		if err != nil {
-			t.Fatalf("Prev failed: %v", err)
-		}
-		if !prev.Equal(test.expectedPrev) {
-			t.Errorf("Prev(%v) = %v, want %v", test.now, prev, test.expectedPrev)
-		}
+			prev, err := recurrentDate.Prev(test.now)
+			if err != nil {
+				t.Fatalf("Prev failed: %v", err)
+			}
+			if !prev.Equal(test.expectedPrev) {
+				t.Errorf("Prev(%v) = %v, want %v", test.now, prev, test.expectedPrev)
+			}
+		})
 	}
 }
