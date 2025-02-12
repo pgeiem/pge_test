@@ -8,9 +8,27 @@ import (
 
 func main() {
 
+	// 	sampleyaml := `
+	// quotas:
+	//   - duration:
+	//       name: "Plop"
+	//       allowance: 2h10m
+	//       periodicity: duration(4h)
+	//       matching:
+	//         - area: z*
+	//           type: paying
+	//         - area: t*
+	//           type: nonpaying
+	//   - counter:
+	//       name: "Plip"
+	//       allowance: 42
+	//       periodicity: pattern(*/* 12:00)
+	// `
+
 	sampleyaml := `
 quotas:
-  - duration: 
+  plop:
+      type: duration
       name: "Plop"
       allowance: 2h10m
       periodicity: duration(4h)
@@ -19,11 +37,11 @@ quotas:
           type: paying
         - area: t*
           type: nonpaying
-  - counter:
+  plip:
+      type: counter
       name: "Plip"
       allowance: 42
       periodicity: pattern(*/* 12:00)
-
 `
 
 	x, err := parser.ParseTariffDefinitionString(sampleyaml)

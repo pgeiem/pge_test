@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/elliotchance/orderedmap/v3"
 )
 
 // DurationType represents the different type of parking duration
@@ -265,11 +263,13 @@ func (q CounterQuota) String() string {
 	return fmt.Sprintf("CounterQuota(%s): Usage %d/%d %v", q.Name, q.used, q.Allowance, q.AbstractQuota)
 }
 
-type QuotaInventory struct {
-	*orderedmap.OrderedMap[string, Quota]
-}
+type QuotaInventory map[string]Quota
 
-func (qi QuotaInventory) Update(now time.Time, history []AssignedRight) error {
+/*struct {
+	*orderedmap.OrderedMap[string, Quota]
+}*/
+
+/*func (qi QuotaInventory) Update(now time.Time, history []AssignedRight) error {
 	for quota := range qi.Values() {
 		err := quota.Update(now, history)
 		if err != nil {
@@ -304,8 +304,9 @@ func (qi QuotaInventory) String() string {
 		str.WriteString(fmt.Sprintf("%s: %s\n", key, quota))
 	}
 	return str.String()
-}
+}*/
 
+/*
 func (qi *QuotaInventory) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	// Temporary struct to unmarshal the different types of quotas
 	temp := []struct {
@@ -337,3 +338,58 @@ func (qi *QuotaInventory) UnmarshalYAML(unmarshal func(interface{}) error) error
 	}
 	return nil
 }
+*/
+/*
+func (qi *QuotaInventory) UnmarshalYAML(data []byte) error {
+	temp := map[string]struct {
+		Type string `yaml:"type"`
+	}{}
+
+	err := yaml.Unmarshal(data, &temp)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal quota type: %w", err)
+	}
+
+	fmt.Println("unmarshalQuotaInventory", temp, string(data))
+
+	*qi = make(QuotaInventory)
+	for name, t := range temp {
+		//var q map[string]Quota
+		switch t.Type {
+		case "duration":
+			var q DurationQuota
+			if err := yaml.UnmarshalWithOptions(data, &q, yaml.Strict()); err != nil {
+				return fmt.Errorf("failed to decode duration quota %q: %w", name, err)
+			}
+
+			(*qi)[name] = &q
+		case "counter":
+			var q CounterQuota
+			if err := yaml.UnmarshalWithOptions(data, &q, yaml.Strict()); err != nil {
+				return fmt.Errorf("failed to decode counter quota %q: %w", name, err)
+			}
+
+			(*qi)[name] = &q
+		default:
+			return fmt.Errorf("unknown quota type: %s", t.Type)
+		}
+
+	}
+	/*var q Quota
+	switch temp.Type {
+	case "duration":
+		q = &DurationQuota{}
+	case "counter":
+		q = &CounterQuota{}
+	default:
+		return fmt.Errorf("unknown quota type: %s", temp.Type)
+	}
+
+	if err := yaml.UnmarshalWithOptions(data, q, yaml.Strict()); err != nil {
+		return err
+	}
+
+	*quota = q
+	return nil
+}
+*/

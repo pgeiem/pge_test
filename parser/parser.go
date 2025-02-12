@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 type TariffDefinition struct {
 	Quotas QuotaInventory `yaml:"quotas"`
+	//NonPaying NonPayingInventory `yaml:"nonpaying"`
 }
 
 func unmarshalTimeDuration(duration *time.Duration, data []byte) error {
@@ -41,6 +43,52 @@ func unmarshalRecurrentDate(rec *RecurrentDate, data []byte) error {
 	return nil
 }
 
+func unmarshalQuota(quota *Quota, data []byte) error {
+	temp := struct {
+		Type string `yaml:"type"`
+	}{}
+
+	err := yaml.Unmarshal(data, &temp)
+	if err != nil {
+		return fmt.Errorf("failed to parse quota type: %w", err)
+	}
+
+	switch temp.Type {
+	case "duration":
+		q := struct {
+			DurationQuota `yaml:",inline"`
+			Type          string `yaml:"type"`
+		}{}
+		if err := yaml.UnmarshalWithOptions(data, &q, decoderOptions()...); err != nil {
+			return fmt.Errorf("failed to parse duration quota: %w", err)
+		}
+		*quota = &q.DurationQuota
+	case "counter":
+		q := struct {
+			CounterQuota `yaml:",inline"`
+			Type         string `yaml:"type"`
+		}{}
+		if err := yaml.UnmarshalWithOptions(data, &q, decoderOptions()...); err != nil {
+			return fmt.Errorf("failed to parse counter quota: %w", err)
+		}
+		*quota = &q.CounterQuota
+	default:
+		return fmt.Errorf("unknown quota type: %s", temp.Type)
+	}
+
+	return nil
+}
+
+func decoderOptions() []yaml.DecodeOption {
+	return []yaml.DecodeOption{
+		yaml.Strict(),
+		yaml.CustomUnmarshaler(unmarshalDuration),
+		yaml.CustomUnmarshaler(unmarshalTimeDuration),
+		yaml.CustomUnmarshaler(unmarshalRecurrentDate),
+		yaml.CustomUnmarshaler(unmarshalQuota),
+	}
+}
+
 func ParseTariffDefinition(r io.Reader) (TariffDefinition, error) {
 	validate := validator.New()
 
@@ -49,6 +97,7 @@ func ParseTariffDefinition(r io.Reader) (TariffDefinition, error) {
 		yaml.CustomUnmarshaler(unmarshalDuration),
 		yaml.CustomUnmarshaler(unmarshalTimeDuration),
 		yaml.CustomUnmarshaler(unmarshalRecurrentDate),
+		yaml.CustomUnmarshaler(unmarshalQuota),
 		yaml.Validator(validate),
 	)
 
@@ -71,8 +120,3 @@ func ParseTariffDefinitionFile(filename string) (TariffDefinition, error) {
 	defer f.Close()
 	return ParseTariffDefinition(f)
 }
-
-/*func ParseTariffDefinitionAST(r io.Reader) (TariffDefinition, error) {
-yaml
-
-}*/
