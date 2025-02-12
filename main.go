@@ -26,6 +26,23 @@ func main() {
 	// `
 
 	sampleyaml := `
+nonpaying:
+  - name: "christmas"
+    start: pattern(12/25 00:00)
+    end: pattern(12/25 23:59:59)
+  - name: "new year"
+    start: pattern(01/01 00:00)
+    end: pattern(01/01 23:59:59)
+  - name: "sunday"
+    start: pattern(*/* SUN 00:00)
+    end: pattern(*/* SUN 23:59:59)
+  - name: "lunch"
+    start: pattern(*/* * 12:00)
+    end: pattern(*/* * 13:00)
+  - name: "night"
+    start: pattern(*/* * 22:00)
+    end: pattern(*/* * 06:00)
+
 quotas:
   plop:
       type: duration

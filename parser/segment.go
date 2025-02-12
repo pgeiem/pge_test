@@ -13,8 +13,8 @@ func TimeBeforeOrEqual(t1, t2 time.Time) bool {
 }
 
 type Segment struct {
-	Start time.Time
-	End   time.Time
+	Start time.Time `yaml:"start" validate:"required"`
+	End   time.Time `yaml:"end" validate:"required"`
 }
 
 func (s *Segment) Duration() time.Duration {
@@ -25,9 +25,13 @@ func (s *Segment) IsWithin(t time.Time) bool {
 	return TimeAfterOrEqual(t, s.Start) && t.Before(s.End)
 }
 
+func (s *Segment) String() string {
+	return s.Start.String() + " -> " + s.End.String()
+}
+
 type RecurrentSegment struct {
-	Start RecurrentDate
-	End   RecurrentDate
+	Start RecurrentDate `yaml:"start" validate:"required"`
+	End   RecurrentDate `yaml:"end" validate:"required"`
 }
 
 func (rs *RecurrentSegment) Next(now time.Time) (Segment, error) {
@@ -81,3 +85,8 @@ func (rs *RecurrentSegment) IsWithin(t time.Time) bool {
 
 }
 */
+
+// Stringer for RecurrentSegment display start and end
+func (rs RecurrentSegment) String() string {
+	return rs.Start.String() + " -> " + rs.End.String()
+}

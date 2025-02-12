@@ -75,6 +75,7 @@ func (m MatchingRules) String() string {
 type Quota interface {
 	GetName() string
 	Update(now time.Time, history []AssignedRight) error
+	String() string
 }
 
 // AbstractQuota is a helper to ease the implementation of different quotas types
@@ -209,7 +210,7 @@ func (q *DurationQuota) Used() time.Duration {
 
 // Stringer for DurationQuota, print the name and the used/allowed values
 func (q DurationQuota) String() string {
-	return fmt.Sprintf("DurationQuota(%s): Usage  %s/%s %v", q.Name, q.used, q.Allowance, q.AbstractQuota)
+	return fmt.Sprintf("DurationQuota(%s): Usage %s/%s %v", q.Name, q.used, q.Allowance, q.AbstractQuota)
 }
 
 // CounterQuota represents a quota based on the number of parking assigned rights
@@ -295,16 +296,20 @@ func (qi QuotaInventory) GetCounterQuota(name string) (*CounterQuota, bool) {
 	}
 	cq, ok := quota.(*CounterQuota)
 	return cq, ok
-}
+}*/
 
 // Stringer for QuotaInventory, iterate over all quotas and print some details
 func (qi QuotaInventory) String() string {
 	var str strings.Builder
-	for key, quota := range qi.AllFromFront() {
-		str.WriteString(fmt.Sprintf("%s: %s\n", key, quota))
+	str.WriteString("Quotas:\n")
+	for _, quota := range qi {
+		str.WriteString(" - ")
+		str.WriteString(quota.String())
+		str.WriteString("\n")
 	}
+	str.WriteString("\n")
 	return str.String()
-}*/
+}
 
 /*
 func (qi *QuotaInventory) UnmarshalYAML(unmarshal func(interface{}) error) error {

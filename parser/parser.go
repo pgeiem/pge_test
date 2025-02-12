@@ -12,8 +12,8 @@ import (
 )
 
 type TariffDefinition struct {
-	Quotas QuotaInventory `yaml:"quotas"`
-	//NonPaying NonPayingInventory `yaml:"nonpaying"`
+	Quotas    QuotaInventory     `yaml:"quotas"`
+	NonPaying NonPayingInventory `yaml:"nonpaying"`
 }
 
 func unmarshalTimeDuration(duration *time.Duration, data []byte) error {

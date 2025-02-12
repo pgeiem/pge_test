@@ -15,6 +15,7 @@ type RecurrentDate interface {
 	Next(now time.Time) (time.Time, error)
 	Prev(now time.Time) (time.Time, error)
 	Between(from, to time.Time) []time.Time
+	String() string
 }
 
 var functionRegex = regexp.MustCompile(`^(\w+)\((.+)\)$`)
@@ -96,12 +97,13 @@ func (r RecurrentDatePeriodic) Between(from, to time.Time) []time.Time {
 
 // Stringer for RecurrentDatePeriodic, print the period
 func (r RecurrentDatePeriodic) String() string {
-	return fmt.Sprintf("Period: %s", r.Period.toDuration().String())
+	return fmt.Sprintf("periodic(%s)", r.Period.toDuration().String())
 }
 
 // RecurrentDatePattern represents a pattern based recurrent date.
 type RecurrentDatePattern struct {
-	rule *rrule.RRule
+	rule        *rrule.RRule
+	origPattern string
 }
 
 func (r *RecurrentDatePattern) ParseFromDatePattern(pattern string) error {
@@ -111,6 +113,7 @@ func (r *RecurrentDatePattern) ParseFromDatePattern(pattern string) error {
 	}
 	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
 	r.rule = rule
+	r.origPattern = pattern
 	return nil
 }
 
@@ -121,13 +124,13 @@ func (r *RecurrentDatePattern) ParseFromRRule(pattern string) error {
 	}
 	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
 	r.rule = rule
+	r.origPattern = pattern
 	return nil
 }
 
 // Next returns the next occurrence based on the current time.
 func (r RecurrentDatePattern) Next(now time.Time) (time.Time, error) {
 	//TODO: check if now is not too much in the past, before DTStart constant date
-	fmt.Println("Next: ", r.rule.String(), now)
 	next := r.rule.After(now, false)
 	if next.IsZero() {
 		return next, fmt.Errorf("no next occurrence found")
@@ -138,7 +141,6 @@ func (r RecurrentDatePattern) Next(now time.Time) (time.Time, error) {
 // Prev returns the previous occurrence based on the current time.
 func (r RecurrentDatePattern) Prev(now time.Time) (time.Time, error) {
 	//TODO: check if now is not too much in the past, before DTStart constant date
-	fmt.Println("Prev: ", r.rule.String(), now)
 	prev := r.rule.Before(now, false)
 	if prev.IsZero() {
 		return prev, fmt.Errorf("no previous occurrence found")
@@ -153,7 +155,7 @@ func (r RecurrentDatePattern) Between(from, to time.Time) []time.Time {
 
 // Stringer for RecurrentDatePattern, print the rule
 func (r RecurrentDatePattern) String() string {
-	return fmt.Sprintf("Rule: %s", r.rule.String())
+	return fmt.Sprintf("rrule(%s)", r.origPattern)
 }
 
 // Take a string describing a list or a range or a mix of both and return a list of integers representing the expanded list of values
@@ -234,9 +236,10 @@ func builRRuleFromDatePattern(pattern string) (*rrule.RRule, error) {
 	}
 	extra_str := matches[8]
 
-	//fmt.Println("\nHandling pattern: ", pattern)
-	//fmt.Printf("%#v\n", matches)
-
+	// If year is not provided, set it to default "*"
+	if matches[1] == "" {
+		matches[1] = "*"
+	}
 	// Find the frequency looking for the first "*" field
 	frequency := rrule.YEARLY
 	frequencyList := []rrule.Frequency{rrule.YEARLY, rrule.MONTHLY, rrule.WEEKLY, rrule.DAILY, rrule.HOURLY, rrule.MINUTELY, rrule.SECONDLY}
@@ -324,8 +327,6 @@ func builRRuleFromDatePattern(pattern string) (*rrule.RRule, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println(rrule.String())
 
 	return rrule, nil
 }

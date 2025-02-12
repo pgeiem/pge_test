@@ -1,10 +1,16 @@
 package parser
 
 import (
-	"fmt"
+	"regexp"
 	"testing"
 	"time"
 )
+
+var nonAlphanumericRegex = regexp.MustCompile(`[^a-zA-Z0-9-_()]+`)
+
+func clearString(str string) string {
+	return nonAlphanumericRegex.ReplaceAllString(str, "")
+}
 
 func TestExpandDateComponentList(t *testing.T) {
 	tests := []struct {
@@ -33,7 +39,7 @@ func TestExpandDateComponentList(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.input, func(t *testing.T) {
+		t.Run(clearString(test.input), func(t *testing.T) {
 			result, err := expandDateComponentList(test.input)
 			if (err != nil) != test.hasError {
 				t.Errorf("ExpandDateComponentList(%q) error = %v, wantErr %v", test.input, err, test.hasError)
@@ -96,7 +102,7 @@ func TestRecurrentDatePeriodic(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.pattern, func(t *testing.T) {
+		t.Run(clearString(test.pattern), func(t *testing.T) {
 			r := &RecurrentDatePeriodic{}
 			err := r.Parse(test.pattern)
 			if err != nil {
@@ -210,7 +216,7 @@ func TestBuilRRuleFromDatePattern(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.pattern, func(t *testing.T) {
+		t.Run(clearString(test.pattern), func(t *testing.T) {
 			rrule, err := builRRuleFromDatePattern(test.pattern)
 			if (err != nil) != test.hasError {
 				t.Errorf("BuilRRuleFromDatePattern(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
@@ -369,7 +375,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.pattern, func(t *testing.T) {
+		t.Run(clearString(test.pattern), func(t *testing.T) {
 			r := &RecurrentDatePattern{}
 			err := r.ParseFromDatePattern(test.pattern)
 			if (err != nil) != test.hasError {
@@ -472,6 +478,13 @@ func TestParseRecurrentDate(t *testing.T) {
 			false,
 		},
 		{
+			"pattern(12/25 12:00)",
+			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
+			time.Date(2023, 12, 25, 12, 0, 0, 0, time.UTC),
+			time.Date(2022, 12, 25, 12, 0, 0, 0, time.UTC),
+			false,
+		},
+		{
 			"invalid(1h30m)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
 			time.Time{},
@@ -544,8 +557,7 @@ func TestParseRecurrentDate(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.pattern, func(t *testing.T) {
-			fmt.Println("Testing pattern", test.pattern)
+		t.Run(clearString(test.pattern), func(t *testing.T) {
 			recurrentDate, err := ParseRecurrentDate(test.pattern)
 			if (err != nil) != test.hasError {
 				t.Errorf("ParseRecurrentDate(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
