@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 //Copied from https://github.com/rickb777/date/blob/v2/timespan/timespan_test.go
 
-package parser
+package engine
 
 import (
 	"fmt"

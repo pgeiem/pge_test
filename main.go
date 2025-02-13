@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	parser "github.com/iem-rd/tarif2/parser"
+	engine "github.com/iem-rd/quoteengine/engine"
 )
 
 func main() {
@@ -46,7 +46,6 @@ nonpaying:
 quotas:
   plop:
       type: duration
-      name: "Plop"
       allowance: 2h10m
       periodicity: duration(4h)
       matching: 
@@ -56,12 +55,21 @@ quotas:
           type: nonpaying
   plip:
       type: counter
-      name: "Plip"
       allowance: 42
       periodicity: pattern(*/* 12:00)
+
+sequences:
+  - name: "weekend"
+    start: pattern(*/* SAT 00:00)	
+    end: pattern(*/* MON 00:00)
+    quota: plop
+  - name: "weekdays"
+    start: pattern(*/* SAT 00:00)	
+    end: pattern(*/* MON 00:00)
+    quota: plop
 `
 
-	x, err := parser.ParseTariffDefinitionString(sampleyaml)
+	x, err := engine.ParseTariffDefinitionString(sampleyaml)
 	if err != nil {
 		panic(err)
 	}

@@ -1,4 +1,4 @@
-package parser
+package engine
 
 import (
 	"fmt"
@@ -205,7 +205,7 @@ func expandDateComponentList(pattern string) ([]int, error) {
 			if err != nil {
 				return nil, err
 			}
-			if start > end || end-start > 35 {
+			if start > end || end-start > 35 { //TODO 35 is the maximum size of sequence, slected arbitrary
 				return nil, fmt.Errorf("error while parsing %s date component, invalid range, start is greater than end or range is too large", component)
 			}
 			for i := start; i <= end; i++ {
