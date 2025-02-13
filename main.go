@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 
-	engine "github.com/iem-rd/quoteengine/engine"
+	"github.com/iem-rd/quoteengine/parser"
 )
+
+/*
 
 func main() {
 
@@ -26,6 +28,8 @@ func main() {
 	// `
 
 	sampleyaml := `
+version: "0.1"
+
 nonpaying:
   - name: "christmas"
     start: pattern(12/25 00:00)
@@ -69,7 +73,7 @@ sequences:
     quota: plop
 `
 
-	x, err := engine.ParseTariffDefinitionString(sampleyaml)
+	x, err := parser.ParseTariffDefinitionString(sampleyaml)
 	if err != nil {
 		panic(err)
 	}

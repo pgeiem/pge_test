@@ -8,7 +8,7 @@ import (
 func TestParseDuration(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected time
+		expected Duration
 		hasError bool
 	}{
 		{"1w", Duration(7 * 24 * time.Hour), false},

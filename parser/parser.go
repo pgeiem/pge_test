@@ -5,78 +5,17 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/go-playground/validator/v10"
-	yaml "github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
+	"github.com/iem-rd/quoteengine/engine"
 )
 
-type TariffDefinition struct {
-	Quotas    QuotaInventory     `yaml:"quotas"`
-	NonPaying NonPayingInventory `yaml:"nonpaying"`
-}
-
-func unmarshalTimeDuration(duration *time.Duration, data []byte) error {
-	d, err := ParseDuration(string(data))
-	if err != nil {
-		return err
-	}
-	*duration = d.toDuration()
-	return nil
-}
-
-func unmarshalDuration(duration *Duration, data []byte) error {
-	d, err := ParseDuration(string(data))
-	if err != nil {
-		return err
-	}
-	*duration = d
-	return nil
-}
-
-func unmarshalRecurrentDate(rec *RecurrentDate, data []byte) error {
-	tmp, err := ParseRecurrentDate(string(data))
-	if err != nil {
-		return err
-	}
-	*rec = tmp
-	return nil
-}
-
-func unmarshalQuota(quota *Quota, data []byte) error {
-	temp := struct {
-		Type string `yaml:"type"`
-	}{}
-
-	err := yaml.Unmarshal(data, &temp)
-	if err != nil {
-		return fmt.Errorf("failed to parse quota type: %w", err)
-	}
-
-	switch temp.Type {
-	case "duration":
-		q := struct {
-			DurationQuota `yaml:",inline"`
-			Type          string `yaml:"type"`
-		}{}
-		if err := yaml.UnmarshalWithOptions(data, &q, decoderOptions()...); err != nil {
-			return fmt.Errorf("failed to parse duration quota: %w", err)
-		}
-		*quota = &q.DurationQuota
-	case "counter":
-		q := struct {
-			CounterQuota `yaml:",inline"`
-			Type         string `yaml:"type"`
-		}{}
-		if err := yaml.UnmarshalWithOptions(data, &q, decoderOptions()...); err != nil {
-			return fmt.Errorf("failed to parse counter quota: %w", err)
-		}
-		*quota = &q.CounterQuota
-	default:
-		return fmt.Errorf("unknown quota type: %s", temp.Type)
-	}
-
-	return nil
+type TariffDescription struct {
+	Version   string   `yaml:"version"`
+	NonPaying ast.Node `yaml:"nonpaying"`
+	Quotas    ast.Node `yaml:"quotas"`
+	Sequences ast.Node `yaml:"sequences"`
 }
 
 func decoderOptions() []yaml.DecodeOption {
@@ -89,33 +28,59 @@ func decoderOptions() []yaml.DecodeOption {
 	}
 }
 
-func ParseTariffDefinition(r io.Reader) (TariffDefinition, error) {
-	validate := validator.New()
+func ParseTariffDefinition(r io.Reader) (engine.TariffDefinition, error) {
+	var tariff engine.TariffDefinition
+
+	//validate := validator.New()
 
 	dec := yaml.NewDecoder(r,
 		yaml.Strict(),
-		yaml.CustomUnmarshaler(unmarshalDuration),
-		yaml.CustomUnmarshaler(unmarshalTimeDuration),
-		yaml.CustomUnmarshaler(unmarshalRecurrentDate),
-		yaml.CustomUnmarshaler(unmarshalQuota),
-		yaml.Validator(validate),
+		//yaml.Validator(validate),
 	)
 
-	var tariff TariffDefinition
-	if err := dec.Decode(&tariff); err != nil {
+	// Parse YAML into a temporary root level only struct
+	var desc TariffDescription
+	err := dec.Decode(&desc)
+	if err != nil {
 		return tariff, err
 	}
+
+	// Check the version
+	if desc.Version != "0.1" {
+		return tariff, fmt.Errorf("invalid tariff version: %s", desc.Version)
+	}
+
+	// Decode the nonpaying section
+	err = yaml.NodeToValue(desc.NonPaying, &tariff.NonPaying, decoderOptions()...)
+	if err != nil {
+		return tariff, fmt.Errorf("failed to parse nonpaying section: %w", err)
+	}
+
+	// Decode the quotas section
+	err = yaml.NodeToValue(desc.Quotas, &tariff.Quotas, decoderOptions()...)
+	if err != nil {
+		return tariff, fmt.Errorf("failed to parse quotas section: %w", err)
+	}
+
+	// Decode the sequences section
+	tariff.Sequences, err = parseSequences(desc.Sequences, tariff.Quotas)
+	if err != nil {
+		return tariff, fmt.Errorf("failed to parse sequences section: %w", err)
+	}
+
+	//yaml.NodeToValue(desc.Sequences, &tariff.Sequences, decoderOptions()...)
+
 	return tariff, nil
 }
 
-func ParseTariffDefinitionString(s string) (TariffDefinition, error) {
+func ParseTariffDefinitionString(s string) (engine.TariffDefinition, error) {
 	return ParseTariffDefinition(strings.NewReader(s))
 }
 
-func ParseTariffDefinitionFile(filename string) (TariffDefinition, error) {
+func ParseTariffDefinitionFile(filename string) (engine.TariffDefinition, error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		return TariffDefinition{}, err
+		return engine.TariffDefinition{}, err
 	}
 	defer f.Close()
 	return ParseTariffDefinition(f)

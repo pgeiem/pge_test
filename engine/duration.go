@@ -11,7 +11,7 @@ import (
 type Duration time.Duration
 
 // toDuration converts Duration to time.Duration.
-func (d Duration) toDuration() time.Duration {
+func (d Duration) ToDuration() time.Duration {
 	return time.Duration(d)
 }
 

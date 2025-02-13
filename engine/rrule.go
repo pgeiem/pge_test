@@ -78,18 +78,18 @@ func (r *RecurrentDatePeriodic) Parse(pattern string) error {
 
 // Next returns the next occurrence based on the current time.
 func (r RecurrentDatePeriodic) Next(now time.Time) (time.Time, error) {
-	return now.Add(r.Period.toDuration()), nil
+	return now.Add(r.Period.ToDuration()), nil
 }
 
 // Prev returns the previous occurrence based on the current time.
 func (r RecurrentDatePeriodic) Prev(now time.Time) (time.Time, error) {
-	return now.Add(-r.Period.toDuration()), nil
+	return now.Add(-r.Period.ToDuration()), nil
 }
 
 // Between returns the time segments between the given time range.
 func (r RecurrentDatePeriodic) Between(from, to time.Time) []time.Time {
 	segments := []time.Time{}
-	for t := from; t.Before(to); t = t.Add(r.Period.toDuration()) {
+	for t := from; t.Before(to); t = t.Add(r.Period.ToDuration()) {
 		segments = append(segments, t)
 	}
 	return segments
@@ -97,7 +97,7 @@ func (r RecurrentDatePeriodic) Between(from, to time.Time) []time.Time {
 
 // Stringer for RecurrentDatePeriodic, print the period
 func (r RecurrentDatePeriodic) String() string {
-	return fmt.Sprintf("periodic(%s)", r.Period.toDuration().String())
+	return fmt.Sprintf("periodic(%s)", r.Period.ToDuration().String())
 }
 
 // RecurrentDatePattern represents a pattern based recurrent date.
