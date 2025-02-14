@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -311,9 +312,7 @@ func (qi QuotaInventory) String() string {
 	return str.String()
 }
 
-/*
-func (qi *QuotaInventory) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Temporary struct to unmarshal the different types of quotas
+func (qi *QuotaInventory) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
 	temp := []struct {
 		DurationQuota *DurationQuota `yaml:"duration"`
 		CounterQuota  *CounterQuota  `yaml:"counter"`
@@ -324,11 +323,9 @@ func (qi *QuotaInventory) UnmarshalYAML(unmarshal func(interface{}) error) error
 		return err
 	}
 
-	// Convert from the temporary struct to the QuotaInventory
-	qi.OrderedMap = orderedmap.NewOrderedMapWithCapacity[string, Quota](len(temp))
-	var quota Quota
+	*qi = make(QuotaInventory)
 	for _, t := range temp {
-		quota = nil
+		quota := Quota(nil)
 		if t.DurationQuota != nil {
 			quota = t.DurationQuota
 		} else if t.CounterQuota != nil {
@@ -338,39 +335,48 @@ func (qi *QuotaInventory) UnmarshalYAML(unmarshal func(interface{}) error) error
 			if quota.GetName() == "" {
 				return fmt.Errorf("missing quota name")
 			}
-			qi.OrderedMap.Set(quota.GetName(), quota)
+			(*qi)[quota.GetName()] = quota
 		}
 	}
 	return nil
 }
-*/
-/*
-func (qi *QuotaInventory) UnmarshalYAML(data []byte) error {
-	temp := map[string]struct {
-		Type string `yaml:"type"`
-	}{}
 
-	err := yaml.Unmarshal(data, &temp)
+/*
+func (qi *QuotaInventory) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	temp := map[string]ast.Node{}
+
+	err := unmarshal(&temp)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal quota type: %w", err)
+		return err
 	}
 
-	fmt.Println("unmarshalQuotaInventory", temp, string(data))
+	fmt.Println("unmarshalQuotaInventory", temp)
 
 	*qi = make(QuotaInventory)
 	for name, t := range temp {
-		//var q map[string]Quota
-		switch t.Type {
+
+		//Decode the type of the quota
+		qtype := struct {
+			Type string `yaml:"type"`
+		}{}
+		err := yaml.NodeToValue(t, &qtype)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("unmarshalQuotaInventory", name, qtype)
+
+		switch qtype.Type {
 		case "duration":
 			var q DurationQuota
-			if err := yaml.UnmarshalWithOptions(data, &q, yaml.Strict()); err != nil {
+			if err := yaml.NodeToValue(t, &q, yaml.Strict()); err != nil {
 				return fmt.Errorf("failed to decode duration quota %q: %w", name, err)
 			}
 
 			(*qi)[name] = &q
 		case "counter":
 			var q CounterQuota
-			if err := yaml.UnmarshalWithOptions(data, &q, yaml.Strict()); err != nil {
+			if err := yaml.NodeToValue(t, &q, yaml.Strict()); err != nil {
 				return fmt.Errorf("failed to decode counter quota %q: %w", name, err)
 			}
 
@@ -380,21 +386,6 @@ func (qi *QuotaInventory) UnmarshalYAML(data []byte) error {
 		}
 
 	}
-	/*var q Quota
-	switch temp.Type {
-	case "duration":
-		q = &DurationQuota{}
-	case "counter":
-		q = &CounterQuota{}
-	default:
-		return fmt.Errorf("unknown quota type: %s", temp.Type)
-	}
-
-	if err := yaml.UnmarshalWithOptions(data, q, yaml.Strict()); err != nil {
-		return err
-	}
-
-	*quota = q
 	return nil
 }
 */

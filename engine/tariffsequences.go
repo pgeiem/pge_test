@@ -1,6 +1,12 @@
 package engine
 
-import "strings"
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/goccy/go-yaml/ast"
+)
 
 type TariffSequence struct {
 	Name           string           `yaml:"name"`
@@ -52,4 +58,46 @@ func (tsi TariffSequenceInventory) String() string {
 		sb.WriteString("\n")
 	}
 	return sb.String()
+}
+
+func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+
+	// Temporarily unmarshal the sequences section in a temporary struct
+	temp := []struct {
+		Name           string           `yaml:"name"`
+		ValidityPeriod RecurrentSegment `yaml:",inline"`
+		Quota          string           `yaml:"quota,"`
+		Rules          []ast.Node       `yaml:"rules"`
+	}{}
+	err := unmarshal(&temp)
+	if err != nil {
+		return fmt.Errorf("failed to parse sequences section: %w", err)
+	}
+
+	// Convert the temporary struct into the final struct and link the referred quotas
+	*out = make(TariffSequenceInventory, 0, len(temp))
+	for _, n := range temp {
+
+		seq := TariffSequence{
+			Name:           n.Name,
+			ValidityPeriod: n.ValidityPeriod,
+		}
+
+		// Search the coresponding quota
+		if n.Quota != "" {
+			quotas, ok := ctx.Value("quotas").(QuotaInventory)
+			if !ok {
+				return fmt.Errorf("quotas not found in context")
+			}
+
+			quota, exists := quotas[n.Quota]
+			if !exists {
+				return fmt.Errorf("unknown quota: %s", n.Quota)
+			}
+			seq.Quota = quota
+		}
+		*out = append(*out, seq)
+	}
+
+	return nil
 }

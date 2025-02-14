@@ -6,26 +6,7 @@ import (
 	"github.com/iem-rd/quoteengine/parser"
 )
 
-/*
-
 func main() {
-
-	// 	sampleyaml := `
-	// quotas:
-	//   - duration:
-	//       name: "Plop"
-	//       allowance: 2h10m
-	//       periodicity: duration(4h)
-	//       matching:
-	//         - area: z*
-	//           type: paying
-	//         - area: t*
-	//           type: nonpaying
-	//   - counter:
-	//       name: "Plip"
-	//       allowance: 42
-	//       periodicity: pattern(*/* 12:00)
-	// `
 
 	sampleyaml := `
 version: "0.1"
@@ -48,17 +29,18 @@ nonpaying:
     end: pattern(*/* * 06:00)
 
 quotas:
-  plop:
-      type: duration
+  - duration:
+      name: "plop"
       allowance: 2h10m
       periodicity: duration(4h)
-      matching: 
+      matching:
         - area: z*
           type: paying
         - area: t*
           type: nonpaying
-  plip:
-      type: counter
+
+  - counter:
+      name: "plip"
       allowance: 42
       periodicity: pattern(*/* 12:00)
 
@@ -70,12 +52,31 @@ sequences:
   - name: "weekdays"
     start: pattern(*/* SAT 00:00)	
     end: pattern(*/* MON 00:00)
-    quota: plop
+    quota: plip
+    rules: 
+      - toto:
+          titi:42
+      - titi:
+          tatat: 42
 `
 
-	x, err := parser.ParseTariffDefinitionString(sampleyaml)
+	x, err := parser.ParseTariffDefinition([]byte(sampleyaml))
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("%v", x)
 }
+
+// plop:
+//       type: duration
+//       allowance: 2h10m
+//       periodicity: duration(4h)
+//       matching:
+//         - area: z*
+//           type: paying
+//         - area: t*
+//           type: nonpaying
+//   plip:
+//       type: counter
+//       allowance: 42
+//       periodicity: pattern(*/* 12:00)
