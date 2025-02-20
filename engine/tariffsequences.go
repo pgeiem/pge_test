@@ -9,9 +9,10 @@ import (
 )
 
 type TariffSequence struct {
-	Name           string           `yaml:"name"`
-	ValidityPeriod RecurrentSegment `yaml:",inline"`
-	Quota          Quota            `yaml:"quota,"`
+	Name           string             `yaml:"name"`
+	ValidityPeriod RecurrentSegment   `yaml:",inline"`
+	Quota          Quota              `yaml:"quota,"`
+	NonPaying      NonPayingInventory `yaml:"nonpaying"`
 	//Rules           []TariffRule `yaml:"rules"`
 }
 
@@ -64,10 +65,11 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 
 	// Temporarily unmarshal the sequences section in a temporary struct
 	temp := []struct {
-		Name           string           `yaml:"name"`
-		ValidityPeriod RecurrentSegment `yaml:",inline"`
-		Quota          string           `yaml:"quota,"`
-		Rules          []ast.Node       `yaml:"rules"`
+		Name           string             `yaml:"name"`
+		ValidityPeriod RecurrentSegment   `yaml:",inline"`
+		Quota          string             `yaml:"quota,"`
+		NonPaying      NonPayingInventory `yaml:"nonpaying"`
+		Rules          []ast.Node         `yaml:"rules"`
 	}{}
 	err := unmarshal(&temp)
 	if err != nil {
@@ -81,6 +83,7 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 		seq := TariffSequence{
 			Name:           n.Name,
 			ValidityPeriod: n.ValidityPeriod,
+			NonPaying:      n.NonPaying,
 		}
 
 		// Search the coresponding quota

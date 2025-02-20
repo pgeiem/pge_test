@@ -53,6 +53,10 @@ sequences:
     start: pattern(*/* SAT 00:00)	
     end: pattern(*/* MON 00:00)
     quota: plip
+    nonpaying:
+      - name: "saturday"
+        start: pattern(*/* SUN 00:00)
+        end: pattern(*/* SUN 23:59:59)
     rules: 
       - toto:
           titi:42

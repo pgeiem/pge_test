@@ -2,6 +2,7 @@ package engine
 
 import "strings"
 
+// Non paying rules
 type NonPayingRule struct {
 	Name             string `yaml:"name"`
 	RecurrentSegment `yaml:",inline"`
