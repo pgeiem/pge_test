@@ -2,8 +2,9 @@ package engine
 
 import (
 	"fmt"
-	"sort"
 	"time"
+
+	"github.com/google/btree"
 )
 
 // StartTimePolicy defines the policy used to move or not the beginning of the rule
@@ -129,12 +130,20 @@ type SolvableRule interface {
 
 type Solver struct {
 	now                time.Time
-	rules              []SolverRule
+	rules              *btree.BTreeG[SolverRule]
 	currentStartOffset time.Duration
 }
 
 func NewSolver(now time.Time) *Solver {
-	return &Solver{now: now}
+
+	Less := func(i, j SolverRule) bool {
+		return i.From < j.From
+	}
+
+	return &Solver{
+		now:   now,
+		rules: btree.NewG(2, Less),
+	}
 }
 
 // Add some SolvableRule to the solver
@@ -214,49 +223,41 @@ func (s *Solver) solveVsSingle(lprule, hpRule SolverRule) SolverRules {
 func (s *Solver) SolveAndAppend(lpRule SolverRule) {
 
 	var newRules SolverRules
-
-	s.Sort()
+	//fmt.Println("------ Solving rule", lpRule.Name, "from", lpRule.From, "to", lpRule.To)
 
 	// Shift the rule if needed using the current start offset
 	if lpRule.StartTimePolicy == ShiftablePolicy {
-		fmt.Println("### Shifting rule", lpRule.Name, "from", lpRule.From, "to", lpRule.From+s.currentStartOffset)
+		//fmt.Println("### Shifting rule", lpRule.Name, "from", lpRule.From, "to", lpRule.From+s.currentStartOffset)
 		lpRule = lpRule.Shift(s.currentStartOffset)
 		s.currentStartOffset += lpRule.Duration()
 	}
 
-solveloop: //TODO rewrite this loop in a cleaner way
-	for _, hpRule := range s.rules {
+	// Loop over all rules in the collection and solve the current rule against each of them
+	s.rules.Ascend(func(hpRule SolverRule) bool {
+		fmt.Println("### Solving rule", lpRule.Name, "vs", hpRule.Name)
 		ret := s.solveVsSingle(lpRule, hpRule)
 		switch len(ret) {
 		case 0: // Rule deleted
 			lpRule = SolverRule{}
-			break solveloop
+			return false
 		case 1: // Rule Shifted or untouched
 			lpRule = ret[0]
 		case 2: // Rule splitted
-			if lpRule.Duration() != time.Duration(0) {
-				newRules = append(newRules, ret[0])
-			}
-			lpRule = ret[1]
+			newRules = append(newRules, ret[0]) // Left part may be inserted in the new rules
+			lpRule = ret[1]                     // right part is the new rule to solve
+		}
+		return true
+	})
+
+	// Insert the last rule in the new rules collection
+	newRules = append(newRules, lpRule)
+
+	// Effectively insert all parts of the resolved rules in the rules collection
+	for _, rule := range newRules {
+		if rule.Duration() > time.Duration(0) {
+			s.rules.ReplaceOrInsert(rule)
 		}
 	}
-	if lpRule.Duration() != time.Duration(0) {
-		newRules = append(newRules, lpRule)
-	}
-
-	// Update the current start offset if needed using the last rule end time
-	/*if lpRule.StartTimePolicy == ShiftablePolicy && len(newRules) > 0 {
-		fmt.Println("### Updating current start offset: ", s.currentStartOffset, "=>", len(s.rules))
-		fmt.Println(newRules)
-		//s.currentStartOffset = newRules[len(newRules)-1].To
-		fmt.Println("### Updating current start offset: ", s.currentStartOffset)
-	}*/
-
-	fmt.Println("--------------------")
-	//fmt.Println("### SolveVsMany", lpRule.Name, "=>\n", newRules)
-	s.rules = append(s.rules, newRules...)
-
-	s.Sort()
 }
 
 /*
@@ -276,8 +277,9 @@ func (rules *SolverRules) Solve() {
 */
 
 // Sort the rule collection in start time order
-func (s *Solver) Sort() {
+/*func (s *Solver) Sort() {
 	sort.Slice(s.rules, func(i, j int) bool {
 		return s.rules[i].From < s.rules[j].From
 	})
 }
+*/

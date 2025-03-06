@@ -331,21 +331,25 @@ func TestSolveAndAppend(t *testing.T) {
 			for _, rule := range testcase.rules {
 				solver.SolveAndAppend(rule)
 			}
-			if len(solver.rules) != len(testcase.expected) {
-				t.Errorf("SolveAndAppend expected %v rules, got %v", len(testcase.expected), len(solver.rules))
+			if solver.rules.Len() != len(testcase.expected) {
+				t.Errorf("SolveAndAppend expected %v rules, got %v", len(testcase.expected), solver.rules.Len())
 			} else {
-				for i := range solver.rules {
-					if solver.rules[i].From != testcase.expected[i].From || solver.rules[i].To != testcase.expected[i].To {
-						t.Errorf("SolveAndAppend time error, expected from %s to %s, got  from %s to %s", testcase.expected[i].From, testcase.expected[i].To, solver.rules[i].From, solver.rules[i].To)
+				i := 0
+				solver.rules.Ascend(func(rule SolverRule) bool {
+					expected := testcase.expected[i]
+					if rule.From != expected.From || rule.To != expected.To {
+						t.Errorf("SolveAndAppend time error, expected from %s to %s, got  from %s to %s", expected.From, expected.To, rule.From, rule.To)
 					}
-					if solver.rules[i].StartAmount != testcase.expected[i].StartAmount || solver.rules[i].EndAmount != testcase.expected[i].EndAmount {
-						t.Errorf("SolveAndAppend amount error, expected rule %v, got %v", testcase.expected[i], solver.rules[i])
+					if rule.StartAmount != expected.StartAmount || rule.EndAmount != expected.EndAmount {
+						t.Errorf("SolveAndAppend amount error, expected rule %v, got %v", expected, rule)
 					}
 					// Test name
-					if solver.rules[i].Name != testcase.expected[i].Name {
-						t.Errorf("SolveAndAppend mismatch names, expected rule %s, got %s", testcase.expected[i].Name, solver.rules[i].Name)
+					if rule.Name != expected.Name {
+						t.Errorf("SolveAndAppend mismatch names, expected rule %s, got %s", expected.Name, rule.Name)
 					}
-				}
+					i++
+					return true
+				})
 			}
 		})
 	}
