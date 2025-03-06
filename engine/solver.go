@@ -24,7 +24,7 @@ const (
 	DeletePolicy   RuleResolutionPolicy = "delete"
 )
 
-//TOOD: merge RuleResolutionPolicy with StartTimePolicy as shiftable is usefull only with truncate
+//TOOD: merge RuleResolutionPolicy with StartTimePolicy as shiftable is usefull only with truncate ?
 
 // Define the solver rule
 type SolverRule struct {
@@ -36,29 +36,29 @@ type SolverRule struct {
 	StartAmount Amount
 	// Amount in cents at the end of the rule segment
 	EndAmount Amount
-	// Rule name, used only for debugging
-	Name string
 	// Trace buffer for debugging all rule changes
 	Trace string
 	// Rule type reported to output used for tariff details
 	Type string
-	// Solver policy to use when solving this rule start time
-	StartTimePolicy StartTimePolicy
-	// Solver policy to use when solving this rule vs others
-	RuleResolutionPolicy RuleResolutionPolicy
-	// ParentRule is the original rule, from which the SolverRule was derived
-	ParentRule *SolvableRule
+	// OriginalRule is the original rule, from which the SolverRule was derived
+	OriginalRule *SolvableRule
 }
-
-//TODO: Les policies sont nécessaire seuelemnt lors de l'ajout d'une règles et n'on probablement pas besoin d'^tre stockée dans la règle en elle même.
 
 func (rule SolverRule) Duration() time.Duration {
 	return rule.To - rule.From
 }
 
+func (rule SolverRule) Name() string {
+	if rule.OriginalRule == nil {
+		return "nil"
+	}
+
+	return (*rule.OriginalRule).Name()
+}
+
 func (rule SolverRule) String() string {
-	return fmt.Sprintf("%s(%s) From %s to %s,\tAmount %d to %d,\tType %s, Policy %s-%s",
-		rule.Name, rule.Trace, rule.From.String(), rule.To.String(), rule.StartAmount, rule.EndAmount, rule.Type, rule.StartTimePolicy, rule.RuleResolutionPolicy)
+	return fmt.Sprintf("%s(%s) From %s to %s,\tAmount %d to %d,\tType %s",
+		rule.Name(), rule.Trace, rule.From.String(), rule.To.String(), rule.StartAmount, rule.EndAmount, rule.Type)
 }
 
 // Shift the rule to the new start time, the new rule is returned and current rule is not changed
@@ -136,6 +136,7 @@ type Solver struct {
 
 func NewSolver(now time.Time) *Solver {
 
+	// Sorting function for B-Tree storing all solved rules segments
 	Less := func(i, j SolverRule) bool {
 		return i.From < j.From
 	}
@@ -148,19 +149,18 @@ func NewSolver(now time.Time) *Solver {
 
 // Add some SolvableRule to the solver
 func (s *Solver) Append(rules ...SolvableRule) {
-	for i := range rules {
+	for i := range rules { //Don't use iterator so we can get pointer on original rule
 		var r SolverRule
 		r.From, r.To = rules[i].RelativeTo(s.now)
-		r.Name = rules[i].Name()
-		r.StartTimePolicy, r.RuleResolutionPolicy = rules[i].Policies()
-		r.ParentRule = &rules[i]
-		s.SolveAndAppend(r)
+		r.OriginalRule = &rules[i]
+		startTimePolicy, ruleResolutionPolicy := rules[i].Policies()
+		s.solveAndAppend(r, startTimePolicy, ruleResolutionPolicy)
 	}
 }
 
 // Solve the rule against an Higer Priority Rule resolving the conflict according to rule policy
 // a collection of new rules containing 0, 1, or 2 rules is returned and current rule is not changed
-func (s *Solver) solveVsSingle(lprule, hpRule SolverRule) SolverRules {
+func (s *Solver) solveVsSingle(lprule, hpRule SolverRule, ruleResolutionPolicy RuleResolutionPolicy) SolverRules {
 
 	// trivial case, both rules don't overlap
 	if (hpRule.To <= lprule.From) ||
@@ -168,15 +168,16 @@ func (s *Solver) solveVsSingle(lprule, hpRule SolverRule) SolverRules {
 		return SolverRules{lprule}
 	}
 
+	switch ruleResolutionPolicy {
+
 	// both rules overlap at least slightly, if policy is 'remove' then remove the low priority rule
-	if lprule.RuleResolutionPolicy == DeletePolicy {
-		fmt.Println("## DeletePolicy", lprule.Name, "vs", hpRule.Name)
+	case DeletePolicy:
+		fmt.Println("## DeletePolicy", lprule.Name(), "vs", hpRule.Name())
 		return SolverRules{}
-	}
 
 	// both rules overlap at least slightly, if policy is 'resolve' then try to split rule to fill the holes
-	if lprule.RuleResolutionPolicy == ResolvePolicy {
-		fmt.Println("## ResolvePolicy", lprule.Name, "vs", hpRule.Name)
+	case ResolvePolicy:
+		fmt.Println("## ResolvePolicy", lprule.Name(), "vs", hpRule.Name())
 
 		// high priority rule is before low priority rule, then low priority rule is simply shifted
 		if hpRule.From <= lprule.From {
@@ -185,11 +186,10 @@ func (s *Solver) solveVsSingle(lprule, hpRule SolverRule) SolverRules {
 			// high priority rule is after or in middle of low priority rule, then low priority rule is split and shifted
 			return lprule.Split(hpRule.From, hpRule.To)
 		}
-	}
 
 	// both rules overlap at least slightly, if policy is 'truncate' then truncate overlapping rule
-	if lprule.RuleResolutionPolicy == TruncatePolicy {
-		fmt.Println("## TruncatePolicy", lprule.Name, "vs", hpRule.Name)
+	case TruncatePolicy:
+		fmt.Println("## TruncatePolicy", lprule.Name(), "vs", hpRule.Name())
 
 		// high priority rule is partially after low priority rule, then low priority rule end is truncated
 		if hpRule.From >= lprule.From && hpRule.To >= lprule.To {
@@ -210,23 +210,23 @@ func (s *Solver) solveVsSingle(lprule, hpRule SolverRule) SolverRules {
 		if hpRule.From >= lprule.From && hpRule.To <= lprule.To {
 			return lprule.TruncateBetween(hpRule.From, hpRule.To)
 		}
+
+	default:
+		panic(fmt.Errorf("unhandled solving policy %v between %v and %v", ruleResolutionPolicy, lprule, hpRule))
 	}
 
-	//TODO fixme add support for others policies
-	panic(fmt.Errorf("unhandled solving policy between %v and %v", lprule, hpRule))
-
-	//return SolverRules{lprule}
+	return SolverRules{}
 }
 
 // Solve the rule against a collection of Higer Priority Rule resolving the conflict according to rules policy
 // a collection of new rules is returned and current rule is not changed
-func (s *Solver) SolveAndAppend(lpRule SolverRule) {
+func (s *Solver) solveAndAppend(lpRule SolverRule, startTimePolicy StartTimePolicy, ruleResolutionPolicy RuleResolutionPolicy) {
 
 	var newRules SolverRules
 	//fmt.Println("------ Solving rule", lpRule.Name, "from", lpRule.From, "to", lpRule.To)
 
 	// Shift the rule if needed using the current start offset
-	if lpRule.StartTimePolicy == ShiftablePolicy {
+	if startTimePolicy == ShiftablePolicy {
 		//fmt.Println("### Shifting rule", lpRule.Name, "from", lpRule.From, "to", lpRule.From+s.currentStartOffset)
 		lpRule = lpRule.Shift(s.currentStartOffset)
 		s.currentStartOffset += lpRule.Duration()
@@ -234,8 +234,8 @@ func (s *Solver) SolveAndAppend(lpRule SolverRule) {
 
 	// Loop over all rules in the collection and solve the current rule against each of them
 	s.rules.Ascend(func(hpRule SolverRule) bool {
-		fmt.Println("### Solving rule", lpRule.Name, "vs", hpRule.Name)
-		ret := s.solveVsSingle(lpRule, hpRule)
+		fmt.Println("### Solving rule", lpRule.Name(), "vs", hpRule.Name())
+		ret := s.solveVsSingle(lpRule, hpRule, ruleResolutionPolicy)
 		switch len(ret) {
 		case 0: // Rule deleted
 			lpRule = SolverRule{}
@@ -243,13 +243,13 @@ func (s *Solver) SolveAndAppend(lpRule SolverRule) {
 		case 1: // Rule Shifted or untouched
 			lpRule = ret[0]
 		case 2: // Rule splitted
-			newRules = append(newRules, ret[0]) // Left part may be inserted in the new rules
+			newRules = append(newRules, ret[0]) // Left part may be inserted in the new rules collection
 			lpRule = ret[1]                     // right part is the new rule to solve
 		}
 		return true
 	})
 
-	// Insert the last rule in the new rules collection
+	// Insert the last rule part in the new rules collection
 	newRules = append(newRules, lpRule)
 
 	// Effectively insert all parts of the resolved rules in the rules collection
@@ -273,13 +273,5 @@ func (rules *SolverRules) Solve() {
 	*rules = solvedRules
 	rules.RemoveZeroDuration()
 	rules.Filter()
-}
-*/
-
-// Sort the rule collection in start time order
-/*func (s *Solver) Sort() {
-	sort.Slice(s.rules, func(i, j int) bool {
-		return s.rules[i].From < s.rules[j].From
-	})
 }
 */
