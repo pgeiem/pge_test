@@ -1,10 +1,6 @@
 package engine
 
-import (
-	"testing"
-	"time"
-)
-
+/*
 func RecurrentSegmentMustParse(start, end string) RecurrentSegment {
 	seg, err := NewRecurrentSegmentFromPatterns(start, end)
 	if err != nil {
@@ -76,3 +72,4 @@ func comparePrioritizedSequences(a, b PrioritizedSequences) bool {
 	}
 	return true
 }
+*/

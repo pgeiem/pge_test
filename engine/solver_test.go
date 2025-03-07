@@ -23,8 +23,16 @@ func (r TestSolverRule) RelativeTo(now time.Time) (time.Duration, time.Duration)
 	return r.From, r.To
 }
 
+func (r TestSolverRule) RelativeToWindow(from, to time.Time, iterator func(RelativeTimeSpan) bool) {
+	iterator(RelativeTimeSpan{From: r.From, To: r.To})
+}
+
 func (r TestSolverRule) Policies() (StartTimePolicy, RuleResolutionPolicy) {
 	return r.StartTimePolicy, r.RuleResolutionPolicy
+}
+
+func (r TestSolverRule) String() string {
+	return r.RuleName
 }
 
 func TestSolveVsSingle(t *testing.T) {
@@ -227,7 +235,8 @@ func TestSolveVsSingle(t *testing.T) {
 
 	for name, testcase := range tests {
 		t.Run(name, func(t *testing.T) {
-			solver := NewSolver(time.Now())
+			solver := NewSolver()
+			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
 			solver.currentStartOffset = 45 * time.Minute
 			out := solver.solveVsSingle(testcase.lpRule, testcase.hpRule, testcase.ruleResolutionPolicy)
 			if len(out) != len(testcase.expected) {
@@ -378,7 +387,8 @@ func TestSolveAndAppend(t *testing.T) {
 
 	for name, testcase := range tests {
 		t.Run(name, func(t *testing.T) {
-			solver := NewSolver(time.Now())
+			solver := NewSolver()
+			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
 			solver.Append(testcase.rules...)
 
 			if solver.rules.Len() != len(testcase.expected) {
@@ -406,7 +416,8 @@ func TestSolveAndAppend(t *testing.T) {
 
 	//Additional test to check that link to original rule is kept while running the solver
 	t.Run("OriginalRuleLinkCheck", func(t *testing.T) {
-		solver := NewSolver(time.Now())
+		solver := NewSolver()
+		solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
 		testcase := tests["0-NoConflictEmptyRules"]
 		solver.Append(testcase.rules...)
 
