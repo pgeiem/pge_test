@@ -18,6 +18,8 @@ const (
 	AmountZero Amount = 0
 	// AmountUnit represents the one amount
 	AmountUnit Amount = 1000000
+	// AmountMax represents the maximal amount
+	AmountMax Amount = 2147480000
 )
 
 var amountRegex = regexp.MustCompile(`^([+-]?\d+)(?:.(\d{0,6}))?$`)
@@ -60,6 +62,14 @@ func ParseAmount(s string) (Amount, error) {
 	return Amount(a), nil
 }
 
+func MustParseAmount(s string) Amount {
+	amount, err := ParseAmount(s)
+	if err != nil {
+		panic(err)
+	}
+	return amount
+}
+
 // MarshalText implements the encoding.TextMarshaler interface
 func (a *Amount) UnmarshalText(text []byte) error {
 	amount, err := ParseAmount(string(text))
@@ -71,6 +81,9 @@ func (a *Amount) UnmarshalText(text []byte) error {
 }
 
 // String returns the string representation of the amount
-func (a Amount) ToString() string {
+func (a Amount) String() string {
+	if a < 0 {
+		return fmt.Sprintf("-%d.%03d", -a/AmountUnit, -a%AmountUnit)
+	}
 	return fmt.Sprintf("%d.%03d", a/AmountUnit, a%AmountUnit)
 }

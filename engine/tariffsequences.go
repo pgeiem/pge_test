@@ -40,10 +40,12 @@ func (ts TariffSequence) Solve(now time.Time, window time.Duration) {
 	ts.Solver.SetWindow(now, window)
 	//TODO append NonPaying rules
 	//TODO append FlatRate rules
-	for i := range ts.NonPaying {
+	/*for i := range ts.NonPaying {
 		ts.Solver.Append(ts.NonPaying[i])
 	}
 	ts.Solver.Append(ts.RelativeRules...)
+	*/
+	//FIXME PGE
 }
 
 type TariffSequenceInventory []TariffSequence

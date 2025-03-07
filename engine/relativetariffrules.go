@@ -29,7 +29,7 @@ func (r RealtiveLinearPayingRule) Policies() (StartTimePolicy, RuleResolutionPol
 }
 
 func (r RealtiveLinearPayingRule) String() string {
-	return fmt.Sprintf("Linear %s: hourlyrate %s, duration %s", r.Name(), r.HourlyRate.ToString(), r.Duration)
+	return fmt.Sprintf("Linear %s: hourlyrate %s, duration %s", r.Name(), r.HourlyRate.String(), r.Duration)
 }
 
 type RelativeFlatRatePayingRule struct {
@@ -55,7 +55,18 @@ func (r RelativeFlatRatePayingRule) Policies() (StartTimePolicy, RuleResolutionP
 }
 
 func (r RelativeFlatRatePayingRule) String() string {
-	return fmt.Sprintf("FlatRate %s: amount %s, duration %s", r.Name(), r.Amount.ToString(), r.Duration)
+	return fmt.Sprintf("FlatRate %s: amount %s, duration %s", r.Name(), r.Amount.String(), r.Duration)
+}
+
+type SolvableRule interface {
+	// Name returns the name of the rule
+	Name() string
+	// RelativeToWindow returns the rule relative start/end to a given time
+	RelativeToWindow(from, to time.Time, iterator func(RelativeTimeSpan) bool)
+	// Policies returns the policies of the rule
+	Policies() (StartTimePolicy, RuleResolutionPolicy)
+
+	String() string
 }
 
 type RelativeTariffRulesSequence []SolvableRule
