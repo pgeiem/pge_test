@@ -11,7 +11,7 @@ import (
 // The amount is stored as an unsigned integer to avoid floating point rounding errors
 // For example 1.50€ is stored as 1500000.
 // Maximal amount is 2147.48 and minimal amount is -2147.48
-type Amount int32
+type Amount int32 //TODO replace by int64, and update min/max values
 
 const (
 	// AmountZero represents the zero amount

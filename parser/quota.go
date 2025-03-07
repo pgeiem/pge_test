@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/goccy/go-yaml"
 	"github.com/iem-rd/quoteengine/engine"
@@ -18,7 +19,7 @@ func unmarshalQuota(quota *engine.Quota, data []byte) error {
 		return fmt.Errorf("failed to parse quota type: %w", err)
 	}
 
-	switch temp.Type {
+	switch strings.ToLower(temp.Type) {
 	case "duration":
 		q := struct {
 			engine.DurationQuota `yaml:",inline"`

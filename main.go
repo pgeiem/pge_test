@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/iem-rd/quoteengine/parser"
 )
@@ -58,17 +59,24 @@ sequences:
         start: pattern(*/* SUN 00:00)
         end: pattern(*/* SUN 23:59:59)
     rules: 
-      - toto:
-          titi:42
-      - titi:
-          tatat: 42
+      - linear:
+          name: "A"
+          duration: 1h
+          hourlyrate: 1.0
+      - flatrate:
+          name: "B"
+          duration: 1h
+          amount: 1.0 
 `
 
-	x, err := parser.ParseTariffDefinition([]byte(sampleyaml))
+	t, err := parser.ParseTariffDefinition([]byte(sampleyaml))
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%v", x)
+	fmt.Printf("%v\n", t)
+
+	t.Sequences.Solve(time.Now(), time.Hour*24*7)
+
 }
 
 // plop:

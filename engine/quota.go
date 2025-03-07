@@ -8,16 +8,6 @@ import (
 	"time"
 )
 
-// DurationType represents the different type of parking duration
-type DurationType string
-
-const (
-	FreeDuration      DurationType = "free"
-	NonPayingDuration DurationType = "nonpaying"
-	PayingDuration    DurationType = "paying"
-	BannedDuration    DurationType = "banned"
-)
-
 // DurationDetail represents the details of a parking duration
 type DurationDetail struct {
 	Type     DurationType
@@ -267,12 +257,8 @@ func (q CounterQuota) String() string {
 
 type QuotaInventory map[string]Quota
 
-/*struct {
-	*orderedmap.OrderedMap[string, Quota]
-}*/
-
-/*func (qi QuotaInventory) Update(now time.Time, history []AssignedRight) error {
-	for quota := range qi.Values() {
+func (qi QuotaInventory) Update(now time.Time, history []AssignedRight) error {
+	for _, quota := range qi {
 		err := quota.Update(now, history)
 		if err != nil {
 			return err
@@ -280,24 +266,6 @@ type QuotaInventory map[string]Quota
 	}
 	return nil
 }
-
-func (qi QuotaInventory) GetDurationQuota(name string) (*DurationQuota, bool) {
-	quota, ok := qi.Get(name)
-	if !ok {
-		return nil, false
-	}
-	dq, ok := quota.(*DurationQuota)
-	return dq, ok
-}
-
-func (qi QuotaInventory) GetCounterQuota(name string) (*CounterQuota, bool) {
-	quota, ok := qi.Get(name)
-	if !ok {
-		return nil, false
-	}
-	cq, ok := quota.(*CounterQuota)
-	return cq, ok
-}*/
 
 // Stringer for QuotaInventory, iterate over all quotas and print some details
 func (qi QuotaInventory) String() string {
@@ -326,6 +294,7 @@ func (qi *QuotaInventory) UnmarshalYAML(ctx context.Context, unmarshal func(inte
 	*qi = make(QuotaInventory)
 	for _, t := range temp {
 		quota := Quota(nil)
+		// TODO return an error if both DurationQuota and CounterQuota are set
 		if t.DurationQuota != nil {
 			quota = t.DurationQuota
 		} else if t.CounterQuota != nil {
@@ -340,52 +309,3 @@ func (qi *QuotaInventory) UnmarshalYAML(ctx context.Context, unmarshal func(inte
 	}
 	return nil
 }
-
-/*
-func (qi *QuotaInventory) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	temp := map[string]ast.Node{}
-
-	err := unmarshal(&temp)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("unmarshalQuotaInventory", temp)
-
-	*qi = make(QuotaInventory)
-	for name, t := range temp {
-
-		//Decode the type of the quota
-		qtype := struct {
-			Type string `yaml:"type"`
-		}{}
-		err := yaml.NodeToValue(t, &qtype)
-		if err != nil {
-			return err
-		}
-
-		fmt.Println("unmarshalQuotaInventory", name, qtype)
-
-		switch qtype.Type {
-		case "duration":
-			var q DurationQuota
-			if err := yaml.NodeToValue(t, &q, yaml.Strict()); err != nil {
-				return fmt.Errorf("failed to decode duration quota %q: %w", name, err)
-			}
-
-			(*qi)[name] = &q
-		case "counter":
-			var q CounterQuota
-			if err := yaml.NodeToValue(t, &q, yaml.Strict()); err != nil {
-				return fmt.Errorf("failed to decode counter quota %q: %w", name, err)
-			}
-
-			(*qi)[name] = &q
-		default:
-			return fmt.Errorf("unknown quota type: %s", t.Type)
-		}
-
-	}
-	return nil
-}
-*/

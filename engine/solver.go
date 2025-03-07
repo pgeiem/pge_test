@@ -28,7 +28,8 @@ const (
 
 // Define the solver rule
 type SolverRule struct {
-	// Starting point in time
+	//TODO replace From/To by a RelativeTimeSpan
+	// Starting/End point in time
 	From time.Duration
 	// End point in time
 	To time.Duration
@@ -37,12 +38,15 @@ type SolverRule struct {
 	// Amount in cents at the end of the rule segment
 	EndAmount Amount
 	// Trace buffer for debugging all rule changes
-	Trace string
+	Trace []string
 	// Rule type reported to output used for tariff details
 	Type string
 	// OriginalRule is the original rule, from which the SolverRule was derived
 	OriginalRule *SolvableRule
 }
+
+// Define a collection of solver rule
+type SolverRules []SolverRule
 
 func (rule SolverRule) Duration() time.Duration {
 	return rule.To - rule.From
@@ -57,22 +61,22 @@ func (rule SolverRule) Name() string {
 }
 
 func (rule SolverRule) String() string {
-	return fmt.Sprintf("%s(%s) From %s to %s,\tAmount %d to %d,\tType %s",
-		rule.Name(), rule.Trace, rule.From.String(), rule.To.String(), rule.StartAmount, rule.EndAmount, rule.Type)
+	return fmt.Sprintf("%s From %s to %s,\tAmount %d to %d,\tType %s",
+		rule.Name(), rule.From.String(), rule.To.String(), rule.StartAmount, rule.EndAmount, rule.Type)
 }
 
 // Shift the rule to the new start time, the new rule is returned and current rule is not changed
 func (rule SolverRule) Shift(from time.Duration) SolverRule {
 	rule.To = from + rule.Duration()
 	rule.From = from
-	rule.Trace += "_S"
+	rule.Trace = append(rule.Trace, "shift to", from.String())
 	return rule
 }
 
 func (rule SolverRule) TruncateAfter(after time.Duration) SolverRule {
 	ruleA := rule
 	ruleA.To = after
-	ruleA.Trace += "_TA"
+	ruleA.Trace = append(rule.Trace, "truncate after", after.String())
 	if rule.Duration() != time.Duration(0) {
 		ruleA.EndAmount = Amount(int64(rule.EndAmount-rule.StartAmount)*int64(ruleA.Duration())/int64(rule.Duration())) + rule.StartAmount
 	}
@@ -82,7 +86,7 @@ func (rule SolverRule) TruncateAfter(after time.Duration) SolverRule {
 func (rule SolverRule) TruncateBefore(before time.Duration) SolverRule {
 	ruleA := rule
 	ruleA.From = before
-	ruleA.Trace += "_TB"
+	ruleA.Trace = append(rule.Trace, "truncate before", before.String())
 	ruleA.StartAmount = 0
 
 	if rule.Duration() != time.Duration(0) {
@@ -109,52 +113,62 @@ func (rule SolverRule) Split(splitStart, splitEnd time.Duration) SolverRules {
 	ruleB := rule
 	ruleB.From = splitEnd
 	ruleB.To = rule.To + splitEnd - splitStart
-	ruleB.Trace += "_B"
+	ruleB.Trace = append(rule.Trace, "truncate split between", splitStart.String(), "and", splitEnd.String())
+
 	ruleB.StartAmount = 0
 	ruleB.EndAmount = rule.EndAmount - ruleA.EndAmount
 
 	return SolverRules{ruleA, ruleB}
 }
 
-// Define a collection of solver rule
-type SolverRules []SolverRule
-
 type SolvableRule interface {
 	// Name returns the name of the rule
 	Name() string
-	// RelativeTo returns the rule relative start/end to a given time
-	RelativeTo(now time.Time) (time.Duration, time.Duration)
+	// RelativeToWindow returns the rule relative start/end to a given time
+	RelativeToWindow(from, to time.Time, iterator func(RelativeTimeSpan) bool)
 	// Policies returns the policies of the rule
 	Policies() (StartTimePolicy, RuleResolutionPolicy)
+
+	String() string
 }
 
 type Solver struct {
-	now                time.Time
+	now                time.Time //TODO rework name for now - window inconsistent with between from/to
+	window             time.Duration
 	rules              *btree.BTreeG[SolverRule]
 	currentStartOffset time.Duration
 }
 
-func NewSolver(now time.Time) *Solver {
+func NewSolver() Solver {
 
 	// Sorting function for B-Tree storing all solved rules segments
 	Less := func(i, j SolverRule) bool {
 		return i.From < j.From
 	}
 
-	return &Solver{
-		now:   now,
+	return Solver{
 		rules: btree.NewG(2, Less),
 	}
+}
+
+func (s *Solver) SetWindow(now time.Time, window time.Duration) {
+	s.now = now
+	s.window = window
 }
 
 // Add some SolvableRule to the solver
 func (s *Solver) Append(rules ...SolvableRule) {
 	for i := range rules { //Don't use iterator so we can get pointer on original rule
 		var r SolverRule
-		r.From, r.To = rules[i].RelativeTo(s.now)
-		r.OriginalRule = &rules[i]
-		startTimePolicy, ruleResolutionPolicy := rules[i].Policies()
-		s.solveAndAppend(r, startTimePolicy, ruleResolutionPolicy)
+		from := s.now
+		to := s.now.Add(s.window)
+		rules[i].RelativeToWindow(from, to, func(rts RelativeTimeSpan) bool {
+			r.From, r.To = rts.From, rts.To
+			r.OriginalRule = &rules[i]
+			startTimePolicy, ruleResolutionPolicy := rules[i].Policies()
+			s.solveAndAppend(r, startTimePolicy, ruleResolutionPolicy)
+			return true
+		})
 	}
 }
 
@@ -223,7 +237,7 @@ func (s *Solver) solveVsSingle(lprule, hpRule SolverRule, ruleResolutionPolicy R
 func (s *Solver) solveAndAppend(lpRule SolverRule, startTimePolicy StartTimePolicy, ruleResolutionPolicy RuleResolutionPolicy) {
 
 	var newRules SolverRules
-	//fmt.Println("------ Solving rule", lpRule.Name, "from", lpRule.From, "to", lpRule.To)
+	fmt.Println("------ Solving rule", lpRule.Name(), "from", lpRule.From, "to", lpRule.To)
 
 	// Shift the rule if needed using the current start offset
 	if startTimePolicy == ShiftablePolicy {

@@ -104,6 +104,55 @@ func TestSegment_IsWithin(t *testing.T) {
 	}
 }
 
+func TestSegment_ToRelativeTimeSpan(t *testing.T) {
+	testCases := []struct {
+		name     string
+		start    time.Time
+		end      time.Time
+		now      time.Time
+		expected RelativeTimeSpan
+	}{
+		{
+			name:     "FutureSegment",
+			start:    time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC),
+			end:      time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC),
+			now:      time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
+			expected: RelativeTimeSpan{From: 24 * time.Hour, To: 48 * time.Hour},
+		},
+		{
+			name:     "PastSegment",
+			start:    time.Date(2023, 9, 30, 0, 0, 0, 0, time.UTC),
+			end:      time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
+			now:      time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC),
+			expected: RelativeTimeSpan{From: -48 * time.Hour, To: -24 * time.Hour},
+		},
+		{
+			name:     "CurrentSegment",
+			start:    time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
+			end:      time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC),
+			now:      time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC),
+			expected: RelativeTimeSpan{From: -12 * time.Hour, To: 12 * time.Hour},
+		},
+		{
+			name:     "ZeroDurationSegment",
+			start:    time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
+			end:      time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
+			now:      time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC),
+			expected: RelativeTimeSpan{From: 0, To: 0},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			segment := Segment{Start: tc.start, End: tc.end}
+			relativeTimeSpan := segment.ToRelativeTimeSpan(tc.now)
+			if relativeTimeSpan != tc.expected {
+				t.Errorf("ToRelativeTimeSpan(%v) expected %v, got %v", tc.now, tc.expected, relativeTimeSpan)
+			}
+		})
+	}
+}
+
 func TestRecurrentSegment_NextAndPrev(t *testing.T) {
 	testCases := []struct {
 		name         string
@@ -120,6 +169,22 @@ func TestRecurrentSegment_NextAndPrev(t *testing.T) {
 			now:          time.Date(2023, 10, 15, 0, 0, 0, 0, time.UTC),
 			expectedNext: Segment{Start: time.Date(2023, 10, 15, 12, 0, 0, 0, time.UTC), End: time.Date(2023, 10, 15, 18, 0, 0, 0, time.UTC)},
 			expectedPrev: Segment{Start: time.Date(2023, 10, 14, 12, 0, 0, 0, time.UTC), End: time.Date(2023, 10, 14, 18, 0, 0, 0, time.UTC)},
+		},
+		{
+			name:         "AtStartPattern",
+			startPattern: "pattern(2023/10/* 12:00:00)",
+			endPattern:   "pattern(2023/10/* 18:00:00)",
+			now:          time.Date(2023, 10, 15, 12, 0, 0, 0, time.UTC),
+			expectedNext: Segment{Start: time.Date(2023, 10, 16, 12, 0, 0, 0, time.UTC), End: time.Date(2023, 10, 16, 18, 0, 0, 0, time.UTC)},
+			expectedPrev: Segment{Start: time.Date(2023, 10, 14, 12, 0, 0, 0, time.UTC), End: time.Date(2023, 10, 14, 18, 0, 0, 0, time.UTC)},
+		},
+		{
+			name:         "AtEndPattern",
+			startPattern: "pattern(2023/10/* 12:00:00)",
+			endPattern:   "pattern(2023/10/* 18:00:00)",
+			now:          time.Date(2023, 10, 15, 18, 0, 0, 0, time.UTC),
+			expectedNext: Segment{Start: time.Date(2023, 10, 16, 12, 0, 0, 0, time.UTC), End: time.Date(2023, 10, 16, 18, 0, 0, 0, time.UTC)},
+			expectedPrev: Segment{Start: time.Date(2023, 10, 15, 12, 0, 0, 0, time.UTC), End: time.Date(2023, 10, 15, 18, 0, 0, 0, time.UTC)},
 		},
 		{
 			name:         "MonthlyPattern",
@@ -269,6 +334,83 @@ func TestRecurrentSegment_Between(t *testing.T) {
 						t.Errorf("Between(%v, %v) expected segment %v, got %v", tc.from, tc.to, tc.expected[i], segment)
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestRecurrentSegment_IsWithin(t *testing.T) {
+	testCases := []struct {
+		name         string
+		startPattern string
+		endPattern   string
+		time         time.Time
+		expected     bool
+		expectedSeg  Segment
+	}{
+		{
+			name:         "WithinRecurrentSegment",
+			startPattern: "pattern(2023/10/* 12:00:00)",
+			endPattern:   "pattern(2023/10/* 18:00:00)",
+			time:         time.Date(2023, 10, 15, 14, 0, 0, 0, time.UTC),
+			expected:     true,
+			expectedSeg:  Segment{Start: time.Date(2023, 10, 15, 12, 0, 0, 0, time.UTC), End: time.Date(2023, 10, 15, 18, 0, 0, 0, time.UTC)},
+		},
+		{
+			name:         "BeforeRecurrentSegment",
+			startPattern: "pattern(2023/10/* 12:00:00)",
+			endPattern:   "pattern(2023/10/* 18:00:00)",
+			time:         time.Date(2023, 10, 15, 10, 0, 0, 0, time.UTC),
+			expected:     false,
+			expectedSeg:  Segment{},
+		},
+		{
+			name:         "AfterRecurrentSegment",
+			startPattern: "pattern(2023/10/* 12:00:00)",
+			endPattern:   "pattern(2023/10/* 18:00:00)",
+			time:         time.Date(2023, 10, 15, 19, 0, 0, 0, time.UTC),
+			expected:     false,
+			expectedSeg:  Segment{},
+		},
+		{
+			name:         "AtRecurrentSegmentStart",
+			startPattern: "pattern(2023/10/* 12:00:00)",
+			endPattern:   "pattern(2023/10/* 18:00:00)",
+			time:         time.Date(2023, 10, 15, 12, 0, 0, 0, time.UTC),
+			expected:     true,
+			expectedSeg:  Segment{Start: time.Date(2023, 10, 15, 12, 0, 0, 0, time.UTC), End: time.Date(2023, 10, 15, 18, 0, 0, 0, time.UTC)},
+		},
+		{
+			name:         "AtRecurrentSegmentEnd",
+			startPattern: "pattern(2023/10/* 12:00:00)",
+			endPattern:   "pattern(2023/10/* 18:00:00)",
+			time:         time.Date(2023, 10, 15, 18, 0, 0, 0, time.UTC),
+			expected:     false,
+			expectedSeg:  Segment{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			start, errStart := ParseRecurrentDate(tc.startPattern)
+			if errStart != nil {
+				t.Fatalf("unexpected error in ParseRecurrentDate for start: %v", errStart)
+			}
+			end, errEnd := ParseRecurrentDate(tc.endPattern)
+			if errEnd != nil {
+				t.Fatalf("unexpected error in ParseRecurrentDate for end: %v", errEnd)
+			}
+			rs := RecurrentSegment{Start: start, End: end}
+
+			isWithin, segment, err := rs.IsWithinWithSegment(tc.time)
+			if err != nil {
+				t.Errorf("unexpected error in IsWithinWithSegment: %v", err)
+			}
+			if isWithin != tc.expected {
+				t.Errorf("IsWithinWithSegment(%v) expected %v, got %v", tc.time, tc.expected, isWithin)
+			}
+			if !segment.Start.Equal(tc.expectedSeg.Start) || !segment.End.Equal(tc.expectedSeg.End) {
+				t.Errorf("IsWithinWithSegment(%v) expected segment %v, got %v", tc.time, tc.expectedSeg, segment)
 			}
 		})
 	}

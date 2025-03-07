@@ -16,6 +16,7 @@ type ParserTariffRoot struct {
 	NonPaying ast.Node `yaml:"nonpaying"`
 	Quotas    ast.Node `yaml:"quotas"`
 	Sequences ast.Node `yaml:"sequences"`
+	Config    ast.Node `yaml:"config"`
 }
 
 func decoderOptions() []yaml.DecodeOption {
@@ -26,6 +27,7 @@ func decoderOptions() []yaml.DecodeOption {
 		yaml.CustomUnmarshaler(unmarshalTimeDuration),
 		yaml.CustomUnmarshaler(unmarshalRecurrentDate),
 		yaml.CustomUnmarshaler(unmarshalQuota),
+		//yaml.CustomUnmarshaler(unmarshalTariffRule),
 		//yaml.Validator(validate),
 	}
 }
@@ -60,21 +62,37 @@ func ParseTariffDefinition(data []byte) (engine.TariffDefinition, error) {
 
 	ctx := context.Background()
 
+	// Decode the config section
+	if desc.Config != nil {
+		err = nodeToValueContext(ctx, desc.Config, &tariff.Config, decoderOptions()...)
+		if err != nil {
+			return tariff, fmt.Errorf("failed to parse nonpaying section: %w", err)
+		}
+	} else {
+		tariff.Config = engine.DefaultConfig()
+	}
+
 	// Decode the nonpaying section
-	err = nodeToValueContext(ctx, desc.NonPaying, &tariff.NonPaying, decoderOptions()...)
-	if err != nil {
-		return tariff, fmt.Errorf("failed to parse nonpaying section: %w", err)
+	if desc.NonPaying != nil {
+		err = nodeToValueContext(ctx, desc.NonPaying, &tariff.NonPaying, decoderOptions()...)
+		if err != nil {
+			return tariff, fmt.Errorf("failed to parse nonpaying section: %w", err)
+		}
 	}
 
 	// Decode the quotas section
-	err = nodeToValueContext(ctx, desc.Quotas, &tariff.Quotas, decoderOptions()...)
-	if err != nil {
-		return tariff, fmt.Errorf("failed to parse quotas section: %w", err)
+	if desc.Quotas != nil {
+		err = nodeToValueContext(ctx, desc.Quotas, &tariff.Quotas, decoderOptions()...)
+		if err != nil {
+			return tariff, fmt.Errorf("failed to parse quotas section: %w", err)
+		}
 	}
-	ctx = context.WithValue(ctx, "quotas", tariff.Quotas)
+	ctx = context.WithValue(ctx, "quotas", tariff.Quotas) //TODO use a proper context key
 
 	// Decode the sequences section
-	//tariff.Sequences, err = parseSequences(desc.Sequences, tariff.Quotas)
+	if desc.Sequences == nil {
+		return tariff, fmt.Errorf("sequences section is missing")
+	}
 	err = nodeToValueContext(ctx, desc.Sequences, &tariff.Sequences, decoderOptions()...)
 	if err != nil {
 		return tariff, fmt.Errorf("failed to parse sequences section: %w", err)

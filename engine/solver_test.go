@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -395,7 +394,6 @@ func TestSolveAndAppend(t *testing.T) {
 						t.Errorf("SolveAndAppend amount error, expected rule %v, got %v", expected, rule)
 					}
 					// Test name
-					fmt.Println(">>>>>", rule.Name())
 					if rule.Name() != expected.Name {
 						t.Errorf("SolveAndAppend mismatch names, expected name %s, got %s", expected.Name, rule.Name())
 					}
