@@ -350,7 +350,7 @@ func TestAppend(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			solver := NewSolver()
 			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
-			solver.AppendSolverRules(testcase.rules...)
+			solver.Append(testcase.rules...)
 
 			if solver.rules.Len() != len(testcase.expected) {
 				t.Errorf("SolveAndAppend expected %v rules, got %v", len(testcase.expected), solver.rules.Len())

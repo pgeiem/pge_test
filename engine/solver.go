@@ -223,14 +223,9 @@ func NewSolver() Solver {
 		return i.From < j.From
 	}
 
-	// Sorting function for B-Tree storing absolute flatrate rules segments
-	AmountLess := func(i, j *SolverRule) bool {
-		return i.EndAmount < j.EndAmount
-	}
-
 	return Solver{
 		rules:        btree.NewG(2, RulesLess),
-		absFlatRates: btree.NewG(2, AmountLess),
+		absFlatRates: btree.NewG(2, RulesLess),
 	}
 }
 
@@ -239,9 +234,13 @@ func (s *Solver) SetWindow(now time.Time, window time.Duration) {
 	s.window = window
 }
 
-func (s *Solver) AppendSolverRules(rules ...SolverRule) {
+func (s *Solver) Append(rules ...SolverRule) {
 	for i := range rules {
-		s.solveAndAppend(rules[i])
+		if rules[i].IsAbsoluteFlatRate() {
+			s.absFlatRates.ReplaceOrInsert(&rules[i])
+		} else {
+			s.solveAndAppend(rules[i])
+		}
 	}
 }
 
@@ -328,6 +327,7 @@ func (s *Solver) SelectFlatRate(lpRule SolverRule) {
 func (s *Solver) solveAndAppend(lpRule SolverRule) {
 
 	var newRules SolverRules
+	var postHandleRules SolverRules
 	//var sumAmount Amount
 	var incRelativeStartOffset time.Duration
 	var incRelativeAmountOffset Amount
@@ -339,41 +339,63 @@ func (s *Solver) solveAndAppend(lpRule SolverRule) {
 	if lpRule.StartTimePolicy == ShiftablePolicy {
 		//fmt.Println("### Shifting rule", lpRule.Name, "from", lpRule.From, "to", lpRule.From+s.currentStartOffset)
 		lpRule = lpRule.Shift(s.currentRelativeStartOffset)
-		incRelativeStartOffset = lpRule.Duration()
-		incRelativeAmountOffset = lpRule.EndAmount
+		//incRelativeStartOffset = lpRule.Duration()
+		//incRelativeAmountOffset = lpRule.EndAmount
+	}
+
+	hpRule := s.GetBestFlatRate(&lpRule)
+	if hpRule != nil {
+		fmt.Println("Solving rule vs FlatRate", lpRule.Name(), "vs", hpRule.Name())
+		intersectAfter := s.FindIntersectPositionFlatRate(&lpRule, hpRule)
+		tmpHpRule := hpRule.TruncateBefore(intersectAfter)
+		tmpHpRule.StartTimePolicy = ShiftablePolicy
+		s.activatedFlatRatesSum += hpRule.StartAmount
+		newRules = append(newRules, tmpHpRule)
+		ret := s.solveVsSingle(lpRule, tmpHpRule)
+		fmt.Println(" >>", len(ret), "rules returned:", ret)
+		switch len(ret) {
+		case 0: // Rule deleted
+			lpRule = SolverRule{}
+		case 1: // Rule Shifted or untouched
+			lpRule = ret[0]
+		case 2: // Rule splitted
+			postHandleRules = append(postHandleRules, ret[1])
+			lpRule = ret[0] // right part is the new rule to solve
+		}
 	}
 
 	// Loop over all rules in the collection and solve the current rule against each of them
 	s.rules.Ascend(func(hpRule *SolverRule) bool {
 		tmpHpRule := *hpRule
-		skip := false
+		//skip := false
 		fmt.Println("Solving rule", lpRule.Name(), "vs", hpRule.Name() /*, s.currentRelativeAmountOffset, s.currentRelativeStartOffset*/)
 
 		// If lpRule may intersect with hpRule flatrate
-		if lpRule.StartTimePolicy == ShiftablePolicy && hpRule.IsAbsoluteFlatRate() {
-			isBest, intersectAfter := s.IsBestFlatRateAvailable(&lpRule, hpRule)
-			skip = !isBest
-			if isBest {
+		/*if lpRule.StartTimePolicy == ShiftablePolicy && hpRule.IsAbsoluteFlatRate() {
+			skip = !s.IsBestFlatRateAvailable(&lpRule, hpRule)
+			if !skip {
 				s.activatedFlatRatesSum += hpRule.StartAmount
+				intersectAfter := s.FindIntersectPositionFlatRate(&lpRule, hpRule)
 				tmpHpRule = hpRule.TruncateBefore(intersectAfter)
 			}
 		}
 		fmt.Println(" skip", skip, "activatedFlatRatesSum", s.activatedFlatRatesSum)
 
-		if !skip {
-			ret := s.solveVsSingle(lpRule, tmpHpRule)
-			fmt.Println(" >>", len(ret), "rules returned:", ret)
-			switch len(ret) {
-			case 0: // Rule deleted
-				lpRule = SolverRule{}
-				return false
-			case 1: // Rule Shifted or untouched
-				lpRule = ret[0]
-			case 2: // Rule splitted
-				newRules = append(newRules, ret[0]) // Left part may be inserted in the new rules collection
-				lpRule = ret[1]                     // right part is the new rule to solve
-			}
+		if !skip {*/
+
+		ret := s.solveVsSingle(lpRule, tmpHpRule)
+		fmt.Println(" >>", len(ret), "rules returned:", ret)
+		switch len(ret) {
+		case 0: // Rule deleted
+			lpRule = SolverRule{}
+			return false
+		case 1: // Rule Shifted or untouched
+			lpRule = ret[0]
+		case 2: // Rule splitted
+			newRules = append(newRules, ret[0]) // Left part may be inserted in the new rules collection
+			lpRule = ret[1]                     // right part is the new rule to solve
 		}
+		//}
 		return true
 	})
 
@@ -384,8 +406,11 @@ func (s *Solver) solveAndAppend(lpRule SolverRule) {
 	for _, rule := range newRules {
 		if rule.Duration() > time.Duration(0) {
 			s.rules.ReplaceOrInsert(&rule)
-			if rule.IsAbsoluteFlatRate() {
-				s.absFlatRates.ReplaceOrInsert(&rule)
+			if rule.StartTimePolicy == ShiftablePolicy {
+				//fmt.Println("### Shifting rule", lpRule.Name, "from", lpRule.From, "to", lpRule.From+s.currentStartOffset)
+				fmt.Println(" Insert sub-rules", rule.Name(), "from", rule.From, "to", rule.To)
+				incRelativeStartOffset += rule.Duration()
+				incRelativeAmountOffset += rule.EndAmount
 			}
 		}
 	}
@@ -393,12 +418,75 @@ func (s *Solver) solveAndAppend(lpRule SolverRule) {
 	// Update the current start/amount offset used for relative rules
 	s.currentRelativeStartOffset += incRelativeStartOffset
 	s.currentRelativeAmountOffset += incRelativeAmountOffset
+
+	for i := range postHandleRules {
+		fmt.Println(" §§§§§§§ recursive start")
+		s.solveAndAppend(postHandleRules[i])
+		fmt.Println(" §§§§§§§ recursive end")
+	}
 }
 
-func (s *Solver) IsIntersectingFlatRate(relativeRule, flatRateRule *SolverRule) (bool, time.Duration) {
-	var intersectAfter time.Duration
-	intersect := flatRateRule.IsAbsoluteFlatRate() && relativeRule.IsRelative()
+/*
+func (s *Solver) SolveAgainstFlatRate(lpRule *SolverRule) SolverRules {
+	var bestFlatRate *SolverRule
+	minAmount := AmountMax
+	s.absFlatRates.Ascend(func(hpRule *SolverRule) bool {
+		if s.IsIntersectingFlatRate(lpRule, hpRule) {
+			if hpRule.StartAmount < minAmount {
+				minAmount = hpRule.StartAmount
+				bestFlatRate = hpRule
+			}
+		}
+		return true
+	})
+	if bestFlatRate != nil {
+		intersectAfter := s.FindIntersectPositionFlatRate(lpRule, bestFlatRate)
+		flatRate := bestFlatRate.TruncateBefore(intersectAfter)
+		return s.solveVsSingle(*lpRule, flatRate)
+	}
+	return SolverRules{*lpRule}
+}*/
+
+func (s *Solver) IsBestFlatRateAvailable(lpRule, hpRule *SolverRule) bool {
+	minAmount := AmountMax
+	bestRule := hpRule
+	s.rules.Ascend(func(rule *SolverRule) bool {
+		if s.IsIntersectingFlatRate(lpRule, rule) {
+			if rule.StartAmount < minAmount {
+				minAmount = rule.StartAmount
+				bestRule = rule
+			}
+		}
+		return true
+	})
+	fmt.Println(" >>>> minAmount", minAmount, "bestName", bestRule.Name(), "isBest", bestRule == hpRule)
+	return bestRule == hpRule
+}
+
+func (s *Solver) GetBestFlatRate(lpRule *SolverRule) *SolverRule {
+	var bestRule *SolverRule
+	minAmount := AmountMax
+	s.absFlatRates.Ascend(func(rule *SolverRule) bool {
+		if s.IsIntersectingFlatRate(lpRule, rule) {
+			flatrateAmount := rule.StartAmount + s.activatedFlatRatesSum
+			if flatrateAmount < minAmount {
+				minAmount = rule.StartAmount
+				bestRule = rule
+			}
+		}
+		return true
+	})
+	if bestRule != nil {
+		fmt.Println(" >>>> GetBestFlatRate for", lpRule, "is", bestRule.Name())
+	} else {
+		fmt.Println(" >>>> GetBestFlatRate for", lpRule, "is nil")
+	}
+	return bestRule
+}
+
+func (s *Solver) IsIntersectingFlatRate(relativeRule, flatRateRule *SolverRule) bool {
 	flatrateAmount := flatRateRule.StartAmount + s.activatedFlatRatesSum
+	intersect := flatRateRule.IsAbsoluteFlatRate() && relativeRule.IsRelative()
 	// StartAmount bigger than flatrate amount
 	intersect = intersect && !(s.currentRelativeAmountOffset+relativeRule.StartAmount > flatrateAmount)
 	// EndAmount lower than flatrate amount
@@ -408,33 +496,19 @@ func (s *Solver) IsIntersectingFlatRate(relativeRule, flatRateRule *SolverRule) 
 	// End before the flatrate start
 	intersect = intersect && !(s.currentRelativeStartOffset+relativeRule.To < flatRateRule.From)
 
-	if intersect {
-		intersectAfter = time.Duration(float64(relativeRule.Duration()) * float64(flatrateAmount-relativeRule.StartAmount) / float64(relativeRule.EndAmount-relativeRule.StartAmount))
-	}
-	fmt.Println(" >> IsIntersectingFlatRate", relativeRule.Name(), "vs", flatRateRule.Name(), intersect, intersectAfter /*, relativeRule, flatRateRule*/)
+	fmt.Println(" >> IsIntersectingFlatRate", relativeRule.Name(), "vs", flatRateRule.Name(), intersect, s.currentRelativeAmountOffset, s.activatedFlatRatesSum, s.currentRelativeStartOffset /*, relativeRule, flatRateRule*/)
 
-	return intersect, intersectAfter
+	return intersect
 }
 
-func (s *Solver) IsBestFlatRateAvailable(lpRule, hpRule *SolverRule) (bool, time.Duration) {
-	cpt := 0
-	minAmount := AmountMax
-	bestRule := hpRule
-	bestIntersectAfter := time.Duration(0)
-	s.rules.Ascend(func(rule *SolverRule) bool {
-		isIntersect, intersectAfter := s.IsIntersectingFlatRate(lpRule, rule)
-		if isIntersect {
-			cpt++
-			if rule.StartAmount < minAmount {
-				minAmount = rule.StartAmount
-				bestRule = rule
-				bestIntersectAfter = intersectAfter
-			}
-		}
-		return true
-	})
-	fmt.Println(" >>>> cpt", cpt, "minAmount", minAmount, "bestName", bestRule.Name(), "isBest", bestRule == hpRule)
-	return bestRule == hpRule, bestIntersectAfter //TODO call IntersectAfter function from here
+func (s *Solver) FindIntersectPositionFlatRate(relativeRule, flatRateRule *SolverRule) time.Duration {
+	var out time.Duration
+	if s.IsIntersectingFlatRate(relativeRule, flatRateRule) {
+		flatrateAmount := flatRateRule.StartAmount + s.activatedFlatRatesSum
+		out = time.Duration(float64(relativeRule.Duration()) * float64(flatrateAmount-relativeRule.StartAmount) / float64(relativeRule.EndAmount-relativeRule.StartAmount))
+	}
+	fmt.Println(" >> FindIntersectPositionFlatRate", relativeRule.Name(), "vs", flatRateRule.Name(), out /*, relativeRule, flatRateRule*/)
+	return out
 }
 
 func (s *Solver) SumAmount(until time.Duration) Amount {
