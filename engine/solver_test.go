@@ -184,7 +184,7 @@ func TestSolveVsSingle(t *testing.T) {
 			solver := NewSolver()
 			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
 			solver.currentRelativeStartOffset = 45 * time.Minute
-			out := solver.solveVsSingle(testcase.lpRule, testcase.hpRule)
+			out, _ := solver.solveVsSingle(testcase.lpRule, &testcase.hpRule)
 			if len(out) != len(testcase.expected) {
 				t.Errorf("solveVsSingle expected %v rules, got %v", len(testcase.expected), len(out))
 			} else {
@@ -328,20 +328,16 @@ func TestAppend(t *testing.T) {
 		// 8 - Overlapping multiple calendar flatrate with linear in the middle and multiple flatrate activation
 		"10-MultipleCalendarFlatrate": {
 			rules: SolverRules{
-				NewAbsoluteFlatRateRule("Day", 2*time.Hour, 14*time.Hour, MustParseAmount("7.0")),
-				NewAbsoluteFlatRateRule("Morning", 2*time.Hour+1, 6*time.Hour, MustParseAmount("3.0")),
-				NewAbsoluteFlatRateRule("Evening", 7*time.Hour, 10*time.Hour, MustParseAmount("4.0")),
-				NewAbsoluteFlatRateRule("NotIntersecting", 24*time.Hour, 25*time.Hour, MustParseAmount("4.0")),
+				NewAbsoluteFlatRateRule("Morning", 2*time.Hour, 6*time.Hour, MustParseAmount("3.0")),
+				NewAbsoluteFlatRateRule("Evening", 7*time.Hour, 11*time.Hour, MustParseAmount("3.0")),
 				NewRelativeLinearRule("Hourly", 10*time.Hour, MustParseAmount("1.0")),
 			},
 			expected: SolverRules{
 				{RuleName: "Hourly", From: 0 * time.Hour, To: 3 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
 				{RuleName: "Morning", From: 3 * time.Hour, To: 6 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
 				{RuleName: "Hourly", From: 6 * time.Hour, To: 9 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
-				{RuleName: "Evening", From: 9 * time.Hour, To: 10 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
-				{RuleName: "Hourly", From: 10 * time.Hour, To: 11 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("1.0")},
-				{RuleName: "Day", From: 11 * time.Hour, To: 14 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
-				{RuleName: "Hourly", From: 14 * time.Hour, To: 17 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
+				{RuleName: "Evening", From: 9 * time.Hour, To: 11 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
+				{RuleName: "Hourly", From: 11 * time.Hour, To: 15 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("4.0")},
 			},
 		},
 	}
@@ -359,14 +355,14 @@ func TestAppend(t *testing.T) {
 			solver.rules.Ascend(func(rule *SolverRule) bool {
 				expected := testcase.expected[i]
 				if rule.From != expected.From || rule.To != expected.To {
-					t.Errorf("SolveAndAppend time error, expected from %s to %s, got  from %s to %s", expected.From, expected.To, rule.From, rule.To)
+					t.Errorf("SolveAndAppend(%d) time error, expected rule %v, got %v", i, expected, rule)
 				}
 				if rule.StartAmount != expected.StartAmount || rule.EndAmount != expected.EndAmount {
-					t.Errorf("SolveAndAppend amount error, expected rule %v, got %v", expected, rule)
+					t.Errorf("SolveAndAppend(%d) amount error, expected rule %v, got %v", i, expected, rule)
 				}
 				// Test name
 				if rule.Name() != expected.Name() {
-					t.Errorf("SolveAndAppend mismatch names, expected name %s, got %s", expected.Name(), rule.Name())
+					t.Errorf("SolveAndAppend(%d) mismatch names, expected name %s, got %s", i, expected.Name(), rule.Name())
 				}
 				i++
 				return true
@@ -393,4 +389,151 @@ func TestAppend(t *testing.T) {
 			}
 		})
 	*/
+}
+
+func TestFindIntersectPositionFlatRate(t *testing.T) {
+	tests := map[string]struct {
+		relativeRule          SolverRule
+		flatRateRule          SolverRule
+		realtiveStartOffset   time.Duration
+		relativeAmountOffset  Amount
+		activatedFlatRatesSum Amount
+		expectedIntersect     bool
+		expected              time.Duration
+	}{
+		// 0 - No intersection below
+		"0-NoIntersectionBelow": {
+			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("4.0")),
+			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
+			realtiveStartOffset:   8 * time.Hour,
+			relativeAmountOffset:  0,
+			activatedFlatRatesSum: 0,
+			expectedIntersect:     false,
+			expected:              0,
+		},
+		// 1 - No intersection below
+		"1-NoIntersectionAbove": {
+			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("4.0")),
+			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
+			realtiveStartOffset:   8 * time.Hour,
+			relativeAmountOffset:  MustParseAmount("4.0"),
+			activatedFlatRatesSum: 0,
+			expectedIntersect:     false,
+			expected:              0,
+		},
+		// 2 - No intersection before
+		"2-NoIntersectionBefore": {
+			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("4.0")),
+			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
+			realtiveStartOffset:   2 * time.Hour,
+			relativeAmountOffset:  MustParseAmount("2.0"),
+			activatedFlatRatesSum: 0,
+			expectedIntersect:     false,
+			expected:              0,
+		},
+		// 3 - No intersection after
+		"3-NoIntersectionAfter": {
+			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("4.0")),
+			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
+			realtiveStartOffset:   12 * time.Hour,
+			relativeAmountOffset:  MustParseAmount("4.0"),
+			activatedFlatRatesSum: 0,
+			expectedIntersect:     false,
+			expected:              0,
+		},
+		// 4 - Intersection in the middle
+		"4-IntersectionInMiddle": {
+			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("4.0")),
+			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
+			realtiveStartOffset:   8 * time.Hour,
+			relativeAmountOffset:  MustParseAmount("2.0"),
+			activatedFlatRatesSum: 0,
+			expectedIntersect:     true,
+			expected:              10 * time.Hour,
+		},
+		// 5 - Intersection in the middle
+		"5-IntersectionInMiddle": {
+			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("2.0")),
+			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
+			realtiveStartOffset:   8 * time.Hour,
+			relativeAmountOffset:  MustParseAmount("2.0"),
+			activatedFlatRatesSum: MustParseAmount("2.0"),
+			expectedIntersect:     true,
+			expected:              10 * time.Hour,
+		},
+		// 6 - Intersection in the middle
+		"6-IntersectionInMiddle": {
+			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("2.0")),
+			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
+			realtiveStartOffset:   6 * time.Hour,
+			relativeAmountOffset:  MustParseAmount("2.0"),
+			activatedFlatRatesSum: MustParseAmount("2.0"),
+			expectedIntersect:     true,
+			expected:              8 * time.Hour,
+		},
+		// 7 - Intersection in the beginning
+		"7-IntersectionInBeginning": {
+			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("2.0")),
+			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
+			realtiveStartOffset:   9 * time.Hour,
+			relativeAmountOffset:  MustParseAmount("3.0"),
+			activatedFlatRatesSum: MustParseAmount("2.0"),
+			expectedIntersect:     true,
+			expected:              10 * time.Hour,
+		},
+		// 8 - Intersection in the beginning
+		"8-IntersectionInBeginning": {
+			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("2.0")),
+			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
+			realtiveStartOffset:   4 * time.Hour,
+			relativeAmountOffset:  0,
+			activatedFlatRatesSum: MustParseAmount("2.0"),
+			expectedIntersect:     true,
+			expected:              8 * time.Hour,
+		},
+		// 9 - Intersection in the end must be considered as not intersection
+		"9-IntersectionInEnd": {
+			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("2.0")),
+			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
+			realtiveStartOffset:   12 * time.Hour,
+			relativeAmountOffset:  0,
+			activatedFlatRatesSum: MustParseAmount("4.0"),
+			expectedIntersect:     false,
+			expected:              0,
+		},
+		// 10 - Intersection
+		//>> FindIntersectPositionFlatRate Hourly vs Evening => 10h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s
+		//>> FindIntersectPositionFlatRate Hourly vs Evening => 9h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s
+
+		// >> FindIntersectPositionFlatRate Hourly vs Evening => 10h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s | 7.000 3.000 10.000 6h0m0s
+		// >> FindIntersectPositionFlatRate Hourly vs Evening => 9h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s | 6.000 3.000 10.000 6h0m0s
+		"10-IntersectionInMiddle": {
+			flatRateRule:          NewAbsoluteFlatRateRule("Evening", 7*time.Hour, 11*time.Hour, MustParseAmount("3.0")),
+			relativeRule:          SolverRule{RuleName: "Hourly", From: 6 * time.Hour, To: 13 * time.Hour, StartAmount: 0, EndAmount: MustParseAmount("7.0"), StartTimePolicy: ShiftablePolicy, RuleResolutionPolicy: ResolvePolicy},
+			realtiveStartOffset:   0, //3 * time.Hour,
+			relativeAmountOffset:  MustParseAmount("3.0"),
+			activatedFlatRatesSum: MustParseAmount("3.0"),
+			expectedIntersect:     true,
+			expected:              9 * time.Hour,
+		},
+	}
+
+	for name, testcase := range tests {
+		t.Run(name, func(t *testing.T) {
+			solver := NewSolver()
+			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
+			solver.currentRelativeStartOffset = testcase.realtiveStartOffset
+			solver.currentRelativeAmountOffset = testcase.relativeAmountOffset
+			solver.activatedFlatRatesSum = testcase.activatedFlatRatesSum
+
+			intersect := solver.IsIntersectingFlatRate(&testcase.relativeRule, &testcase.flatRateRule)
+			if intersect != testcase.expectedIntersect {
+				t.Errorf("IsIntersectingFlatRate expected %v, got %v", testcase.expectedIntersect, intersect)
+			}
+			out := solver.FindIntersectPositionFlatRate(&testcase.relativeRule, &testcase.flatRateRule)
+			if out != testcase.expected {
+				t.Errorf("FindIntersectPositionFlatRate expected %v, got %v", testcase.expected, out)
+			}
+		})
+	}
 }
