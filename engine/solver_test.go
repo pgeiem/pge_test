@@ -204,8 +204,6 @@ func TestSolveVsSingle(t *testing.T) {
 
 func TestAppend(t *testing.T) {
 
-	DummyRule := SolverRule{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy}
-
 	tests := map[string]struct {
 		rules    SolverRules
 		expected SolverRules
@@ -213,7 +211,7 @@ func TestAppend(t *testing.T) {
 		// 0 - No conflict, empty rules§
 		"0-NoConflictEmptyRules": {
 			rules: SolverRules{
-				DummyRule,
+				SolverRule{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
 			},
 			expected: SolverRules{
 				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute},
@@ -286,11 +284,11 @@ func TestAppend(t *testing.T) {
 		// 6 - Overlapping rules, Truncate policy, Shiftable policy
 		"6-OverlapTruncateShiftablePolicy": {
 			rules: SolverRules{
-				NewAbsoluteFlatRateRule("A", 10*time.Minute, 20*time.Minute, MustParseAmount("0")),
-				NewAbsoluteFlatRateRule("B", 30*time.Minute, 40*time.Minute, MustParseAmount("0")),
+				NewAbsoluteNonPaying("A", 10*time.Minute, 20*time.Minute),
+				NewAbsoluteNonPaying("B", 30*time.Minute, 40*time.Minute),
 				{RuleName: "C", From: 0 * time.Minute, To: 10 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 				{RuleName: "D", From: 0 * time.Minute, To: 15 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				NewAbsoluteFlatRateRule("Z", 60*time.Minute, 90*time.Minute, MustParseAmount("0")),
+				NewAbsoluteNonPaying("Z", 60*time.Minute, 90*time.Minute),
 				{RuleName: "E", From: 5 * time.Minute, To: 15 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 				{RuleName: "F", From: 0 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 			},
@@ -307,11 +305,11 @@ func TestAppend(t *testing.T) {
 		// 7 - Overlapping rules, Truncate policy, Shiftable policy
 		"7-OverlapTruncateShiftablePolicy": {
 			rules: SolverRules{
-				NewAbsoluteFlatRateRule("A", 10*time.Minute, 20*time.Minute, MustParseAmount("0")),
-				NewAbsoluteFlatRateRule("B", 30*time.Minute, 40*time.Minute, MustParseAmount("0")),
+				NewAbsoluteNonPaying("A", 10*time.Minute, 20*time.Minute),
+				NewAbsoluteNonPaying("B", 30*time.Minute, 40*time.Minute),
 				{RuleName: "C", From: 15 * time.Minute, To: 25 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 				{RuleName: "D", From: 0 * time.Minute, To: 35 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				NewAbsoluteFlatRateRule("Z", 60*time.Minute, 90*time.Minute, MustParseAmount("0")),
+				NewAbsoluteNonPaying("Z", 60*time.Minute, 90*time.Minute),
 				{RuleName: "E", From: 5 * time.Minute, To: 25 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 			},
 			expected: SolverRules{
@@ -350,24 +348,24 @@ func TestAppend(t *testing.T) {
 
 			if solver.rules.Len() != len(testcase.expected) {
 				t.Errorf("SolveAndAppend expected %v rules, got %v", len(testcase.expected), solver.rules.Len())
-			} /*else  {*/
-			i := 0
-			solver.rules.Ascend(func(rule *SolverRule) bool {
-				expected := testcase.expected[i]
-				if rule.From != expected.From || rule.To != expected.To {
-					t.Errorf("SolveAndAppend(%d) time error, expected rule %v, got %v", i, expected, rule)
-				}
-				if rule.StartAmount != expected.StartAmount || rule.EndAmount != expected.EndAmount {
-					t.Errorf("SolveAndAppend(%d) amount error, expected rule %v, got %v", i, expected, rule)
-				}
-				// Test name
-				if rule.Name() != expected.Name() {
-					t.Errorf("SolveAndAppend(%d) mismatch names, expected name %s, got %s", i, expected.Name(), rule.Name())
-				}
-				i++
-				return true
-			})
-			/*}*/
+			} else {
+				i := 0
+				solver.rules.Ascend(func(rule *SolverRule) bool {
+					expected := testcase.expected[i]
+					if rule.From != expected.From || rule.To != expected.To {
+						t.Errorf("SolveAndAppend(%d) time error, expected rule %v, got %v", i, expected, rule)
+					}
+					if rule.StartAmount != expected.StartAmount || rule.EndAmount != expected.EndAmount {
+						t.Errorf("SolveAndAppend(%d) amount error, expected rule %v, got %v", i, expected, rule)
+					}
+					// Test name
+					if rule.Name() != expected.Name() {
+						t.Errorf("SolveAndAppend(%d) mismatch names, expected name %s, got %s", i, expected.Name(), rule.Name())
+					}
+					i++
+					return true
+				})
+			}
 		})
 	}
 	/*

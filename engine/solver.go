@@ -340,11 +340,15 @@ func (s *Solver) SolveVsAll(lpRule SolverRule) (SolverRules, bool) {
 	}
 
 	// Loop over all rules in the collection and solve the current rule against each of them
-	s.rules.Ascend(func(hpRule *SolverRule) bool {
-		newRules, changed = s.solveVsSingle(lpRule, hpRule)
-		fmt.Println(" >> solveVsSingle Result", newRules, changed)
-		return !changed // Stop the iterator loop if the rule has been changed
-	})
+	if s.rules.Len() == 0 {
+		newRules = append(newRules, lpRule)
+	} else {
+		s.rules.Ascend(func(hpRule *SolverRule) bool {
+			newRules, changed = s.solveVsSingle(lpRule, hpRule)
+			fmt.Println(" >> solveVsSingle Result", newRules, changed)
+			return !changed // Stop the iterator loop if the rule has been changed
+		})
+	}
 
 	return newRules, changed
 }
@@ -356,16 +360,17 @@ func (s *Solver) solveAndAppend(lpRule SolverRule) {
 
 	var incRelativeStartOffset time.Duration
 	//var incRelativeAmountOffset Amount
-	fmt.Println("------ Solving rule", lpRule.Name(), "from", lpRule.From, "to", lpRule.To)
+	fmt.Println("\n------\nSolving rule", lpRule.Name(), "from", lpRule.From, "to", lpRule.To)
 
 	// Shift the rule if needed using the current start offset
 	if lpRule.StartTimePolicy == ShiftablePolicy {
+		fmt.Println(" >> shift rule", lpRule.Name(), "at", s.currentRelativeStartOffset)
 		lpRule = lpRule.Shift(s.currentRelativeStartOffset)
-		//incRelativeStartOffset = lpRule.Duration()
+		incRelativeStartOffset = lpRule.Duration()
 	}
 
 	// Loop over all rules in the collection and solve the current rule against each of them
-	fmt.Println("### Solving rule", lpRule.Name())
+	//fmt.Println("### Solving rule", lpRule.Name())
 	changed := true
 	for changed {
 		var ret SolverRules
@@ -373,7 +378,8 @@ func (s *Solver) solveAndAppend(lpRule SolverRule) {
 		fmt.Println(" SolveVsAll Result", ret)
 		switch len(ret) {
 		case 0: // Rule deleted
-			lpRule = SolverRule{} //TOD break the loop
+			lpRule = SolverRule{}
+
 		case 1: // Rule Shifted or untouched
 			lpRule = ret[0]
 		case 2: // Rule splitted
@@ -391,13 +397,14 @@ func (s *Solver) solveAndAppend(lpRule SolverRule) {
 	}
 
 	// Insert the last rule part in the new rules collection
-	//newRules = append(newRules, lpRule)
-	s.rules.ReplaceOrInsert(&lpRule)
-	if lpRule.StartTimePolicy == ShiftablePolicy {
-		//s.currentRelativeStartOffset += lpRule.Duration()
-		s.currentRelativeAmountOffset += lpRule.EndAmount
+	if lpRule.Duration() > time.Duration(0) {
+		s.rules.ReplaceOrInsert(&lpRule)
+		if lpRule.StartTimePolicy == ShiftablePolicy {
+			//s.currentRelativeStartOffset += lpRule.Duration()
+			s.currentRelativeAmountOffset += lpRule.EndAmount
+		}
+		fmt.Println(" >> append final rule", lpRule)
 	}
-	fmt.Println(" >> append final rule", lpRule)
 
 	// Effectively insert all parts of the resolved rules in the rules collection
 	/*for _, rule := range newRules {
