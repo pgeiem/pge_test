@@ -323,7 +323,7 @@ func TestAppend(t *testing.T) {
 			},
 		},
 
-		// 8 - Overlapping multiple calendar flatrate with linear in the middle and multiple flatrate activation
+		// 10 - Overlapping multiple calendar flatrate with linear in the middle and multiple flatrate activation
 		"10-MultipleCalendarFlatrate": {
 			rules: SolverRules{
 				NewAbsoluteFlatRateRule("Morning", 2*time.Hour, 6*time.Hour, MustParseAmount("3.0")),
@@ -338,6 +338,28 @@ func TestAppend(t *testing.T) {
 				{RuleName: "Hourly", From: 11 * time.Hour, To: 15 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("4.0")},
 			},
 		},
+
+		// 12 - Overlapping multiple calendar flatrate with linear in the middle and multiple flatrate activation
+		// This one is not working because the daily flat rate amount should not be summed with others flatrates
+		// Overlaped flatrates are not supported
+		/*"12-MultipleCalendarFlatrate": {
+			rules: SolverRules{
+				NewAbsoluteFlatRateRule("Morning", 2*time.Hour, 6*time.Hour, MustParseAmount("3.0")),
+				NewAbsoluteFlatRateRule("Evening", 7*time.Hour, 11*time.Hour, MustParseAmount("3.0")),
+				NewAbsoluteFlatRateRule("Daily", 2*time.Hour, 14*time.Hour, MustParseAmount("7.0")),
+				NewRelativeLinearRule("Hourly", 10*time.Hour, MustParseAmount("1.0")),
+			},
+			expected: SolverRules{
+				{RuleName: "Hourly", From: 0 * time.Hour, To: 3 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
+				{RuleName: "Morning", From: 3 * time.Hour, To: 6 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
+				{RuleName: "Hourly", From: 6 * time.Hour, To: 9 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
+				{RuleName: "Evening", From: 9 * time.Hour, To: 11 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
+				{RuleName: "Hourly", From: 11 * time.Hour, To: 12 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("4.0")},
+				{RuleName: "Daily", From: 12 * time.Hour, To: 14 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
+				{RuleName: "Hourly", From: 14 * time.Hour, To: 17 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("4.0")},
+			},
+		},
+		*/
 	}
 
 	for name, testcase := range tests {
