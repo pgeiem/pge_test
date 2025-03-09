@@ -387,28 +387,18 @@ func TestAppend(t *testing.T) {
 					i++
 					return true
 				})
+				//Testing output
+				/*out := solver.GenerateOutput(true)
+				fmt.Println(out)
+				data, err := out.ToJson()
+				if err != nil {
+					t.Errorf("SolveAndAppend(%d) error converting to json %v", i, err)
+				} else {
+					fmt.Println(string(data))
+				}*/
 			}
 		})
 	}
-	/*
-		//Additional test to check that link to original rule is kept while running the solver
-		t.Run("OriginalRuleLinkCheck", func(t *testing.T) {
-			solver := NewSolver()
-			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
-			testcase := tests["0-NoConflictEmptyRules"]
-			solver.AppendSolverRules(testcase.rules...)
-
-			DummyRule.RuleName = "P" //Modify the original rule after the solver has been run
-			if solver.rules.Len() != 1 {
-				t.Errorf("SolveAndAppend expected %v rules, got %v", len(testcase.expected), solver.rules.Len())
-			}
-			// Check that the original rule change is reflected in the solver output
-			rule, _ := solver.rules.Min()
-			if rule.Name() != "P" {
-				t.Errorf("SolveAndAppend mismatch names, expected name P, got %s", rule.Name())
-			}
-		})
-	*/
 }
 
 func TestFindIntersectPositionFlatRate(t *testing.T) {

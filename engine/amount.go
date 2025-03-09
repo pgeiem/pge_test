@@ -80,6 +80,10 @@ func (a *Amount) UnmarshalText(text []byte) error {
 	return nil
 }
 
+func (a *Amount) MarshalText() ([]byte, error) {
+	return []byte(a.String()), nil
+}
+
 // String returns the string representation of the amount
 func (a Amount) String() string {
 	if a < 0 {

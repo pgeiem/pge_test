@@ -1,7 +1,9 @@
 package engine
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/btree"
@@ -27,6 +29,7 @@ const (
 //TOOD: merge RuleResolutionPolicy with StartTimePolicy as shiftable is usefull only with truncate ?
 
 // Define the solver rule
+// SolverRule represents a rule used in the solver engine.
 type SolverRule struct {
 	RuleName string
 	//TODO replace From/To by a RelativeTimeSpan
@@ -40,18 +43,18 @@ type SolverRule struct {
 	EndAmount Amount
 	// Trace buffer for debugging all rule changes
 	Trace []string
-	// Rule type reported to output used for tariff details
-	//Type string
-
+	// StartTimePolicy defines the policy for determining the start time of the rule.
 	StartTimePolicy StartTimePolicy
-
+	// RuleResolutionPolicy defines the policy for resolving rule conflicts.
 	RuleResolutionPolicy RuleResolutionPolicy
-
-	Meta interface{}
+	// Meta holds additional metadata related to the rule.
+	Meta MetaData
 }
 
 // Define a collection of solver rule
 type SolverRules []SolverRule
+
+type MetaData map[string]interface{}
 
 func NewRelativeLinearRule(name string, duration time.Duration, hourlyRate Amount) SolverRule {
 	return SolverRule{
@@ -146,14 +149,14 @@ func InterpolAmount(rule SolverRule, at time.Duration) Amount {
 func (rule SolverRule) Shift(from time.Duration) SolverRule {
 	rule.To = from + rule.Duration()
 	rule.From = from
-	rule.Trace = append(rule.Trace, "shift to", from.String())
+	rule.Trace = append(rule.Trace, fmt.Sprintf("shift to %s", from.String()))
 	return rule
 }
 
 func (rule SolverRule) TruncateAfter(after time.Duration) SolverRule {
 	ruleA := rule
 	ruleA.To = after
-	ruleA.Trace = append(rule.Trace, "truncate after", after.String())
+	ruleA.Trace = append(rule.Trace, fmt.Sprintf("truncate after %s", after.String()))
 	if rule.Duration() != time.Duration(0) {
 		ruleA.EndAmount = InterpolAmount(rule, ruleA.Duration())
 	}
@@ -163,7 +166,7 @@ func (rule SolverRule) TruncateAfter(after time.Duration) SolverRule {
 func (rule SolverRule) TruncateBefore(before time.Duration) SolverRule {
 	ruleA := rule
 	ruleA.From = before
-	ruleA.Trace = append(rule.Trace, "truncate before", before.String())
+	ruleA.Trace = append(rule.Trace, fmt.Sprintf("truncate before %s", before.String()))
 	ruleA.StartAmount = 0
 
 	if rule.Duration() != time.Duration(0) {
@@ -190,7 +193,7 @@ func (rule SolverRule) Split(splitStart, splitEnd time.Duration) SolverRules {
 	ruleB := rule
 	ruleB.From = splitEnd
 	ruleB.To = rule.To + splitEnd - splitStart
-	ruleB.Trace = append(rule.Trace, "truncate split between", splitStart.String(), "and", splitEnd.String())
+	ruleB.Trace = append(rule.Trace, fmt.Sprintf("truncate split between %s and %s", splitStart.String(), splitEnd.String()))
 
 	ruleB.StartAmount = 0
 	ruleB.EndAmount = rule.EndAmount - ruleA.EndAmount
@@ -324,6 +327,7 @@ func (s *Solver) SolveVsAll(lpRule SolverRule) (SolverRules, bool) {
 		if newRule.Duration() > time.Duration(0) {
 			// Add a new rule based on the activated flatrate
 			newRule.StartAmount, newRule.EndAmount = AmountZero, AmountZero
+			newRule.Trace = append(newRule.Trace, fmt.Sprintf("derivated from flatrate %s, crossed by %s", bestFlatRate.Name(), lpRule.Name()))
 			s.rules.ReplaceOrInsert(&newRule)
 		}
 	}
@@ -439,4 +443,62 @@ func (s *Solver) GetBestFlatRate(lpRule *SolverRule) *SolverRule {
 		fmt.Println(" >>>> GetBestFlatRate for", lpRule, "is nil")
 	}
 	return bestRule
+}
+
+type OutputSegment struct {
+	SegName  string   `json:"n,omitempty"`
+	Trace    []string `json:"dbg,omitempty"`
+	At       int      `json:"t"`
+	Amount   Amount   `json:"a"`
+	Islinear bool     `json:"l"`
+	Meta     MetaData `json:"m,omitempty"`
+}
+
+func (seg OutputSegment) String() string {
+	at := time.Duration(seg.At) * time.Second
+	return fmt.Sprintf(" - %s: %s (isLinear %t)", at, seg.Amount, seg.Islinear)
+}
+
+type OutputSegments []OutputSegment
+
+func (segs OutputSegments) String() string {
+	out := "OutputSegments:\n"
+	for i := range segs {
+		out += segs[i].String() + "\n"
+	}
+	return out
+}
+
+type Output struct {
+	Now   time.Time      `json:"now"`
+	Table OutputSegments `json:"table"`
+}
+
+func (segs Output) ToJson() ([]byte, error) {
+	return json.Marshal(segs)
+}
+
+func (s *Solver) GenerateOutput(detailed bool) Output {
+	var out Output
+	var previous OutputSegment
+
+	out.Now = s.now
+
+	s.rules.Ascend(func(rule *SolverRule) bool {
+		fmt.Println("Rule", rule)
+		seg := OutputSegment{
+			At:       int(math.Round(rule.To.Seconds())),
+			Amount:   rule.EndAmount + previous.Amount,
+			Islinear: !rule.IsFlatRate(),
+			Meta:     rule.Meta,
+		}
+		if detailed {
+			seg.SegName = rule.Name()
+			seg.Trace = rule.Trace
+		}
+		out.Table = append(out.Table, seg)
+		previous = seg
+		return true
+	})
+	return out
 }
