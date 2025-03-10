@@ -12,7 +12,7 @@ type TariffSequence struct {
 	ValidityPeriod RecurrentSegment
 	Quota          Quota
 	NonPaying      NonPayingInventory
-	RelativeRules  RelativeTariffRulesSequence
+	Rules          SolvableRules
 	Solver         Solver
 }
 
@@ -39,12 +39,14 @@ func (ts TariffSequence) String() string {
 func (ts TariffSequence) Solve(now time.Time, window time.Duration) {
 	ts.Solver.SetWindow(now, window)
 	//TODO append NonPaying rules
-	//TODO append FlatRate rules
 	/*for i := range ts.NonPaying {
+		ts.NonPaying[i].ToSolverRules(now, now.Add(window), ts.Solver.Append)
 		ts.Solver.Append(ts.NonPaying[i])
+	}*/
+	for i := range ts.Rules {
+		ts.Rules[i].ToSolverRules(now, now.Add(window), ts.Solver.Append)
 	}
-	ts.Solver.Append(ts.RelativeRules...)
-	*/
+
 	//FIXME PGE
 }
 
@@ -66,8 +68,8 @@ func (tsi TariffSequenceInventory) String() string {
 			sb.WriteString("\n")
 		}
 
-		sb.WriteString("    RelativeRules:\n")
-		for _, r := range s.RelativeRules {
+		sb.WriteString("    Rules:\n")
+		for _, r := range s.Rules {
 			sb.WriteString("     - ")
 			sb.WriteString(r.String())
 			sb.WriteString("\n")
@@ -114,8 +116,12 @@ func (tsi TariffSequenceInventory) ResolveSequenceApplicability(now time.Time, w
 */
 
 func (inventory *TariffSequenceInventory) Solve(now time.Time, window time.Duration) {
+	now = now.Truncate(time.Second)
 	for i := range *inventory {
 		(*inventory)[i].Solve(now, window)
+		out := (*inventory)[i].Solver.GenerateOutput(true)
+		json, _ := out.ToJson()
+		fmt.Println(string(json))
 	}
 	//TODO resolve sequence applicability
 }
@@ -124,11 +130,11 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 
 	// Temporarily unmarshal the sequences section in a temporary struct
 	temp := []struct {
-		Name           string                      `yaml:"name"`
-		ValidityPeriod RecurrentSegment            `yaml:",inline"`
-		Quota          string                      `yaml:"quota,"`
-		NonPayingRules NonPayingInventory          `yaml:"nonpaying"`
-		RelativeRules  RelativeTariffRulesSequence `yaml:"rules"`
+		Name           string             `yaml:"name"`
+		ValidityPeriod RecurrentSegment   `yaml:",inline"`
+		Quota          string             `yaml:"quota,"`
+		NonPayingRules NonPayingInventory `yaml:"nonpaying"`
+		Rules          SolvableRules      `yaml:"rules"`
 	}{}
 	err := unmarshal(&temp)
 	if err != nil {
@@ -143,7 +149,7 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 		seq.Name = n.Name
 		seq.ValidityPeriod = n.ValidityPeriod
 		seq.NonPaying = n.NonPayingRules
-		seq.RelativeRules = n.RelativeRules
+		seq.Rules = n.Rules
 
 		// Search the coresponding quota
 		if n.Quota != "" {

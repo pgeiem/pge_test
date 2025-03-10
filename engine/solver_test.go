@@ -344,7 +344,18 @@ func TestAppend(t *testing.T) {
 				{RuleName: "Z", RelativeTimeSpan: RelativeTimeSpan{From: 60 * time.Minute, To: 90 * time.Minute}},
 			},
 		},
-
+		// 8 - Overlapping rules, Truncate policy, Shiftable policy
+		"8-OverlapTruncateShiftablePolicy": {
+			rules: SolverRules{
+				NewAbsoluteLinearRule("A", RelativeTimeSpan{2 * time.Hour, 4 * time.Hour}, MustParseAmount("2.0")),
+				NewRelativeLinearRule("Hourly", 10*time.Hour, MustParseAmount("1.0")),
+			},
+			expected: SolverRules{
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 2 * time.Hour}, StartAmount: AmountZero, EndAmount: MustParseAmount("2.0")},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 2 * time.Hour, To: 4 * time.Hour}, StartAmount: AmountZero, EndAmount: MustParseAmount("4.0")},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 4 * time.Hour, To: 12 * time.Hour}, StartAmount: AmountZero, EndAmount: MustParseAmount("8.0")},
+			},
+		},
 		// 10 - Overlapping multiple calendar flatrate with linear in the middle and multiple flatrate activation
 		"10-MultipleCalendarFlatrate": {
 			rules: SolverRules{
@@ -388,7 +399,7 @@ func TestAppend(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			solver := NewSolver()
 			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
-			solver.Append(testcase.rules...)
+			solver.AppendMany(testcase.rules...)
 
 			if solver.rules.Len() != len(testcase.expected) {
 				t.Errorf("SolveAndAppend expected %v rules, got %v", len(testcase.expected), solver.rules.Len())

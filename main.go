@@ -54,19 +54,23 @@ sequences:
     start: pattern(*/* SAT 00:00)	
     end: pattern(*/* MON 00:00)
     quota: plip
-    nonpaying:
-      - name: "saturday"
-        start: pattern(*/* SUN 00:00)
-        end: pattern(*/* SUN 23:59:59)
     rules: 
+      - nonpaying:
+          name: "Sunday"
+          start: pattern(*/* SUN 00:00)
+          end: pattern(*/* SUN 23:59:59)
+      - nonpaying:
+          name: "night"
+          start: pattern(*/* 20:00)
+          end: pattern(*/* 8:00)
       - linear:
           name: "A"
           duration: 1h
           hourlyrate: 1.0
       - flatrate:
           name: "B"
-          duration: 1h
-          amount: 1.0 
+          duration: 24h
+          amount: 2.0 
 `
 
 	t, err := parser.ParseTariffDefinition([]byte(sampleyaml))
