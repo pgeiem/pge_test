@@ -79,13 +79,25 @@ func (tsi TariffSequenceInventory) String() string {
 	return sb.String()
 }
 
-/*
 type PrioritizedSequence struct {
 	RelativeTimeSpan
 	Sequence *TariffSequence
 }
 
 type PrioritizedSequences []PrioritizedSequence
+
+func (ps PrioritizedSequences) String() string {
+	var sb strings.Builder
+	sb.WriteString("PrioritizedSequences:\n")
+	for _, s := range ps {
+		sb.WriteString(" - ")
+		sb.WriteString(s.Sequence.Name)
+		sb.WriteString(" ")
+		sb.WriteString(s.RelativeTimeSpan.String())
+		sb.WriteString("\n")
+	}
+	return sb.String()
+}
 
 // Loop over all sequences from start until window end and define at each time the applicable sequence
 func (tsi TariffSequenceInventory) ResolveSequenceApplicability(now time.Time, window time.Duration) (PrioritizedSequences, error) {
@@ -96,13 +108,16 @@ func (tsi TariffSequenceInventory) ResolveSequenceApplicability(now time.Time, w
 		// Loop over all sequences by priority order
 		for _, s := range tsi {
 			// Check if the sequence is applicable at this instant
-			within, timespan, err := s.ValidityPeriod.IsWithinWithSegment(now)
+			within, timespan, err := s.ValidityPeriod.IsWithinWithSegment(t)
 			if err != nil {
 				return nil, err
 			}
 			// TODO check if sequence quota or condition is also met
 			if within {
 				relspan := timespan.ToRelativeTimeSpan(now)
+				if relspan.From < 0 {
+					relspan.From = 0
+				}
 				out = append(out, PrioritizedSequence{
 					RelativeTimeSpan: relspan,
 					Sequence:         &s,
@@ -113,17 +128,31 @@ func (tsi TariffSequenceInventory) ResolveSequenceApplicability(now time.Time, w
 	}
 	return out, nil
 }
-*/
+
+func (tsi TariffSequenceInventory) Merge(now time.Time, window time.Duration) (SolverRules, error) {
+	var out SolverRules
+	prio, err := tsi.ResolveSequenceApplicability(now, window)
+	fmt.Println(prio)
+	if err != nil {
+		return out, err
+	}
+	for _, s := range prio {
+		out = append(out, s.Sequence.Solver.ExtractRulesInRange(s.RelativeTimeSpan)...)
+	}
+	return out, nil
+}
 
 func (inventory *TariffSequenceInventory) Solve(now time.Time, window time.Duration) {
 	now = now.Truncate(time.Second)
 	for i := range *inventory {
 		(*inventory)[i].Solve(now, window)
-		out := (*inventory)[i].Solver.GenerateOutput(true)
-		json, _ := out.ToJson()
-		fmt.Println(string(json))
 	}
-	//TODO resolve sequence applicability
+
+	//TODO handle error
+	rules, _ := inventory.Merge(now, window)
+	out := rules.GenerateOutput(now, true)
+	json, _ := out.ToJson()
+	fmt.Println(string(json))
 }
 
 func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {

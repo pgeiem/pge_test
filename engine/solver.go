@@ -1,9 +1,7 @@
 package engine
 
 import (
-	"encoding/json"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/google/btree"
@@ -321,62 +319,32 @@ func (s *Solver) GetBestFlatRate(lpRule *SolverRule) *SolverRule {
 	return bestRule
 }
 
-type OutputSegment struct {
-	SegName  string   `json:"n,omitempty"`
-	Trace    []string `json:"dbg,omitempty"`
-	At       int      `json:"t"`
-	Amount   Amount   `json:"a"`
-	Islinear bool     `json:"l"`
-	Meta     MetaData `json:"m,omitempty"`
-}
-
-func (seg OutputSegment) String() string {
-	at := time.Duration(seg.At) * time.Second
-	return fmt.Sprintf(" - %s: %s (isLinear %t)", at, seg.Amount, seg.Islinear)
-}
-
-type OutputSegments []OutputSegment
-
-func (segs OutputSegments) String() string {
-	out := "OutputSegments:\n"
-	for i := range segs {
-		out += segs[i].String() + "\n"
-	}
-	return out
-}
-
-type Output struct {
-	Now   time.Time      `json:"now"`
-	Table OutputSegments `json:"table"`
-}
-
-func (segs Output) ToJson() ([]byte, error) {
-	return json.Marshal(segs)
-}
-
-func (s *Solver) GenerateOutput(detailed bool) Output {
-	var out Output
-	var previous SolverRule
-
-	out.Now = s.now
-
+func (s *Solver) ExtractRulesInRange(timespan RelativeTimeSpan) SolverRules {
+	var out SolverRules
 	s.rules.Ascend(func(rule *SolverRule) bool {
-		fmt.Println("Rule", rule)
-		if previous.To != rule.From {
-			return false
+		// rule is fully inside timespan, then rule is not touched
+		if rule.From >= timespan.From && rule.To <= timespan.To {
+			//fmt.Println(rule.Name(), "is fully inside", timespan)
+			out = append(out, *rule)
+			// rule is longer than timespan (timespan fully inside rule), then rule beginning and end are truncated
+		} else if rule.From <= timespan.From && rule.To >= timespan.To {
+			//fmt.Println(rule.Name(), "is longer than", timespan)
+			r := rule.TruncateAfter(timespan.To).TruncateBefore(timespan.From)
+			r.Trace = append(r.Trace, fmt.Sprintf("truncate from %s to %sfor sequence merging", timespan.From, timespan.To))
+			out = append(out, r)
+			// rule is partially at the end of timespan, then rule end is truncated
+		} else if rule.From < timespan.To && rule.To >= timespan.To {
+			///fmt.Println(rule.Name(), "is partially at the end of", timespan)
+			r := rule.TruncateAfter(timespan.To)
+			r.Trace = append(r.Trace, fmt.Sprintf("truncate after %s for sequence merging", timespan.To))
+			out = append(out, r)
+			// rule is partially at the end beginning of timespan, then rule beginning is truncated
+		} else if rule.From <= timespan.From && rule.To > timespan.From {
+			//fmt.Println(rule.Name(), "is partially at the beginning of", timespan)
+			r := rule.TruncateBefore(timespan.From)
+			r.Trace = append(r.Trace, fmt.Sprintf("truncate before %s for sequence merging", timespan.From))
+			out = append(out, r)
 		}
-		seg := OutputSegment{
-			At:       int(math.Round(rule.To.Seconds())),
-			Amount:   rule.EndAmount + previous.EndAmount,
-			Islinear: !rule.IsFlatRate(),
-			Meta:     rule.Meta,
-		}
-		if detailed {
-			seg.SegName = rule.Name()
-			seg.Trace = rule.Trace
-		}
-		out.Table = append(out.Table, seg)
-		previous = *rule
 		return true
 	})
 	return out

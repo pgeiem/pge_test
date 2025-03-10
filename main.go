@@ -50,9 +50,14 @@ sequences:
     start: pattern(*/* SAT 00:00)	
     end: pattern(*/* MON 00:00)
     quota: plop
+    rules:
+    - linear:
+        name: "A"
+        duration: 15h
+        hourlyrate: 3.0
   - name: "weekdays"
-    start: pattern(*/* SAT 00:00)	
-    end: pattern(*/* MON 00:00)
+    start: pattern(*/* MON 00:00)	
+    end: pattern(*/* SAT 00:00)
     quota: plip
     rules: 
       - nonpaying:

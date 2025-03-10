@@ -580,3 +580,106 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractRange(t *testing.T) {
+	tests := map[string]struct {
+		rules    SolverRules
+		timespan RelativeTimeSpan
+		expected SolverRules
+	}{
+		// 0 - No rules in range
+		"0-NoRulesInRange": {
+			rules: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+			},
+			timespan: RelativeTimeSpan{From: 30 * time.Minute, To: 40 * time.Minute},
+			expected: SolverRules{},
+		},
+		// 1 - One rule fully in range
+		"1-OneRuleFullyInRange": {
+			rules: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+			},
+			timespan: RelativeTimeSpan{From: 5 * time.Minute, To: 25 * time.Minute},
+			expected: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+			},
+		},
+		// 2 - One rule partially in range at the beginning
+		"2-OneRulePartiallyInRangeAtBeginning": {
+			rules: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+			},
+			timespan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute},
+			expected: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 20 * time.Minute}},
+			},
+		},
+		// 3 - One rule partially in range at the end
+		"3-OneRulePartiallyInRangeAtEnd": {
+			rules: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+			},
+			timespan: RelativeTimeSpan{From: 5 * time.Minute, To: 15 * time.Minute},
+			expected: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}},
+			},
+		},
+		// 4 - One rule longer than range
+		"4-OneRuleLongerThanRange": {
+			rules: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 30 * time.Minute}},
+			},
+			timespan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute},
+			expected: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
+			},
+		},
+		// 5 - Multiple rules in range
+		"5-MultipleRulesInRange": {
+			rules: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}},
+			},
+			timespan: RelativeTimeSpan{From: 5 * time.Minute, To: 30 * time.Minute},
+			expected: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 30 * time.Minute}},
+			},
+		},
+		// 6 - Multiple rules with one fully in range and one partially in range
+		"6-MultipleRulesWithOneFullyInRangeAndOnePartiallyInRange": {
+			rules: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}},
+			},
+			timespan: RelativeTimeSpan{From: 15 * time.Minute, To: 30 * time.Minute},
+			expected: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 20 * time.Minute}},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 30 * time.Minute}},
+			},
+		},
+	}
+
+	for name, testcase := range tests {
+		t.Run(name, func(t *testing.T) {
+			solver := NewSolver()
+			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
+			solver.AppendMany(testcase.rules...)
+
+			out := solver.ExtractRulesInRange(testcase.timespan)
+			if len(out) != len(testcase.expected) {
+				t.Errorf("ExtractRange expected %v rules, got %v", len(testcase.expected), len(out))
+			} else {
+				for i := range out {
+					if out[i].From != testcase.expected[i].From || out[i].To != testcase.expected[i].To {
+						t.Errorf("ExtractRange expected rule %v, got %v", testcase.expected, out)
+					}
+					if out[i].StartAmount != testcase.expected[i].StartAmount || out[i].EndAmount != testcase.expected[i].EndAmount {
+						t.Errorf("ExtractRange expected rule %v, got %v", testcase.expected, out)
+					}
+				}
+			}
+		})
+	}
+}
