@@ -22,6 +22,14 @@ func (r RelativeTimeSpan) String() string {
 	return fmt.Sprintf("[%s, %s]", r.From, r.To)
 }
 
+func (r RelativeTimeSpan) Duration() time.Duration {
+	return r.To - r.From
+}
+
+func (r RelativeTimeSpan) IsValid() bool {
+	return r.From <= r.To
+}
+
 type Segment struct {
 	Start time.Time `yaml:"start" validate:"required"`
 	End   time.Time `yaml:"end" validate:"required"`

@@ -14,167 +14,189 @@ func TestSolveVsSingle(t *testing.T) {
 	}{
 		// 0 - No conflict, Resolve policy
 		"0-NoConflictAfter-Resolve": {
-			lpRule:   SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: ResolvePolicy},
-			hpRule:   SolverRule{From: 20 * time.Minute, To: 30 * time.Minute},
-			expected: SolverRules{SolverRule{From: 10 * time.Minute, To: 20 * time.Minute}},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: ResolvePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}},
+			expected: SolverRules{
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+			},
 		},
 		// 1 - No conflict, Resolve policy
 		"1-NoConflictBefore-Resolve": {
-			lpRule:   SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: ResolvePolicy},
-			hpRule:   SolverRule{From: 5 * time.Minute, To: 10 * time.Minute},
-			expected: SolverRules{SolverRule{From: 10 * time.Minute, To: 20 * time.Minute}},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: ResolvePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 10 * time.Minute}},
+			expected: SolverRules{
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+			},
 		},
 		// 2 - HPRule overlapping end of rule, Resolve policy
 		"2-OverlapEnd-Resolve": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: ResolvePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: ResolvePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute},
-				SolverRule{From: 25 * time.Minute, To: 30 * time.Minute}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 30 * time.Minute}},
+			},
 		},
 		// 3 - HPRule overlapping end of rule, Resolve policy
 		"3-OverlapEndStep-Resolve": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: ResolvePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: ResolvePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute, StartAmount: 100, EndAmount: 100},
-				SolverRule{From: 25 * time.Minute, To: 30 * time.Minute, StartAmount: 0, EndAmount: 0}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}, StartAmount: 100, EndAmount: 100},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 30 * time.Minute}, StartAmount: 0, EndAmount: 0},
+			},
 		},
 		// 4 - HPRule overlapping end of rule, Resolve policy
 		"4-OverlapLinear-Resolve": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: ResolvePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: ResolvePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute, StartAmount: 100, EndAmount: 150},
-				SolverRule{From: 25 * time.Minute, To: 30 * time.Minute, StartAmount: 0, EndAmount: 50}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}, StartAmount: 100, EndAmount: 150},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 30 * time.Minute}, StartAmount: 0, EndAmount: 50},
+			},
 		},
 		// 5 - HPRule overlapping beginning of rule, Resolve policy
 		"5-OverlapBegining-Resolve": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: ResolvePolicy},
-			hpRule: SolverRule{From: 5 * time.Minute, To: 15 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: ResolvePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 15 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 15 * time.Minute, To: 25 * time.Minute}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
+			},
 		},
 		// 6 - HPRule overlapping beginning of rule, Resolve policy
 		"6-OverlapBeginingStep-Resolve": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: ResolvePolicy},
-			hpRule: SolverRule{From: 5 * time.Minute, To: 15 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: ResolvePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 15 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 15 * time.Minute, To: 25 * time.Minute, StartAmount: 100, EndAmount: 100}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, StartAmount: 100, EndAmount: 100}},
 		},
+
 		// 7 - HPRule overlapping beginning of rule, Resolve policy
 		"7-OverlapBeginingLinear-Resolve": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: ResolvePolicy},
-			hpRule: SolverRule{From: 5 * time.Minute, To: 15 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: ResolvePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 15 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 15 * time.Minute, To: 25 * time.Minute, StartAmount: 100, EndAmount: 200}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, StartAmount: 100, EndAmount: 200}},
 		},
+
 		// 8 - HPRule overlapping middle of rule, Resolve policy
 		"8-OverlapMiddle-Resolve": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 30 * time.Minute, RuleResolutionPolicy: ResolvePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 30 * time.Minute}, RuleResolutionPolicy: ResolvePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute},
-				SolverRule{From: 25 * time.Minute, To: 40 * time.Minute}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 40 * time.Minute}},
+			},
 		},
 		// 9 - HPRule overlapping middle of rule, Resolve policy
 		"9-OverlapMiddleStep-Resolve": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 30 * time.Minute, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: ResolvePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 30 * time.Minute}, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: ResolvePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute, StartAmount: 100, EndAmount: 100},
-				SolverRule{From: 25 * time.Minute, To: 40 * time.Minute, StartAmount: 0, EndAmount: 0}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}, StartAmount: 100, EndAmount: 100},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 40 * time.Minute}, StartAmount: 0, EndAmount: 0}},
 		},
 		// 10 - HPRule overlapping middle of rule, Resolve policy
 		"10-OverlapMiddleLinear-Resolve": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 30 * time.Minute, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: ResolvePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 30 * time.Minute}, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: ResolvePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute, StartAmount: 100, EndAmount: 125},
-				SolverRule{From: 25 * time.Minute, To: 40 * time.Minute, StartAmount: 0, EndAmount: 75}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}, StartAmount: 100, EndAmount: 125},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 40 * time.Minute}, StartAmount: 0, EndAmount: 75},
+			},
 		},
 		// 11 - No conflict Truncate policy
 		"11-NoConflictAfter-Truncate": {
-			lpRule:   SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: TruncatePolicy},
-			hpRule:   SolverRule{From: 20 * time.Minute, To: 30 * time.Minute},
-			expected: SolverRules{SolverRule{From: 10 * time.Minute, To: 20 * time.Minute}},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: TruncatePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}},
+			expected: SolverRules{
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+			},
 		},
 		// 12 - No conflict Truncate policy
 		"12-NoConflictBefore-Truncate": {
-			lpRule:   SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: TruncatePolicy},
-			hpRule:   SolverRule{From: 5 * time.Minute, To: 10 * time.Minute},
-			expected: SolverRules{SolverRule{From: 10 * time.Minute, To: 20 * time.Minute}},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: TruncatePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 10 * time.Minute}},
+			expected: SolverRules{
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+			},
 		},
 		// 13 - HPRule overlapping end of rule, Truncate policy
 		"13-OverlapEnd-Truncate": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: TruncatePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: TruncatePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}},
+			},
 		},
 		// 14 - HPRule overlapping end of rule, Truncate policy
 		"14-OverlapEndStep-Truncate": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: TruncatePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: TruncatePolicy}, hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute, StartAmount: 100, EndAmount: 100}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}, StartAmount: 100, EndAmount: 100},
+			},
 		},
 		// 15 - HPRule overlapping end of rule, Truncate policy
 		"15-OverlapLinear-Truncate": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: TruncatePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: TruncatePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute, StartAmount: 100, EndAmount: 150}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}, StartAmount: 100, EndAmount: 150},
+			},
 		},
 		// 16 - HPRule overlapping beginning of rule, Truncate policy
 		"16-OverlapBegining-Truncate": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: TruncatePolicy},
-			hpRule: SolverRule{From: 5 * time.Minute, To: 15 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: TruncatePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 15 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 15 * time.Minute, To: 20 * time.Minute}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 20 * time.Minute}},
+			},
 		},
 		// 17 - HPRule overlapping beginning of rule, Truncate policy
 		"17-OverlapBeginingStep-Truncate": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: TruncatePolicy},
-			hpRule: SolverRule{From: 5 * time.Minute, To: 15 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: TruncatePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 15 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 15 * time.Minute, To: 20 * time.Minute, StartAmount: 0, EndAmount: 0}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 20 * time.Minute}, StartAmount: 0, EndAmount: 0},
+			},
 		},
 		// 18 - HPRule overlapping beginning of rule, Truncate policy
 		"18-OverlapBeginingLinear-Truncate": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 20 * time.Minute, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: TruncatePolicy},
-			hpRule: SolverRule{From: 5 * time.Minute, To: 15 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: TruncatePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 15 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 15 * time.Minute, To: 20 * time.Minute, StartAmount: 0, EndAmount: 50}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 20 * time.Minute}, StartAmount: 0, EndAmount: 50},
+			},
 		},
 		// 19 - HPRule overlapping middle of rule, Truncate policy
 		"19-OverlapMiddle-Truncate": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 30 * time.Minute, RuleResolutionPolicy: TruncatePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 30 * time.Minute}, RuleResolutionPolicy: TruncatePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute},
-				SolverRule{From: 25 * time.Minute, To: 30 * time.Minute}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 30 * time.Minute}},
+			},
 		},
 		// 20 - HPRule overlapping middle of rule, Truncate policy
 		"20-OverlapMiddleStep-Truncate": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 30 * time.Minute, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: TruncatePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 30 * time.Minute}, StartAmount: 100, EndAmount: 100, RuleResolutionPolicy: TruncatePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute, StartAmount: 100, EndAmount: 100},
-				SolverRule{From: 25 * time.Minute, To: 30 * time.Minute, StartAmount: 0, EndAmount: 0}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}, StartAmount: 100, EndAmount: 100},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 30 * time.Minute}, StartAmount: 0, EndAmount: 0}},
 		},
 		// 21 - HPRule overlapping middle of rule, Truncate policy
 		"21-OverlapMiddleLinear-Truncate": {
-			lpRule: SolverRule{From: 10 * time.Minute, To: 30 * time.Minute, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: TruncatePolicy},
-			hpRule: SolverRule{From: 15 * time.Minute, To: 25 * time.Minute},
+			lpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 30 * time.Minute}, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: TruncatePolicy},
+			hpRule: SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}},
 			expected: SolverRules{
-				SolverRule{From: 10 * time.Minute, To: 15 * time.Minute, StartAmount: 100, EndAmount: 125},
-				SolverRule{From: 25 * time.Minute, To: 30 * time.Minute, StartAmount: 0, EndAmount: 25}},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 15 * time.Minute}, StartAmount: 100, EndAmount: 125},
+				SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 30 * time.Minute}, StartAmount: 0, EndAmount: 25}},
 		},
 		// 22 - HPRule fully overlap rule, Truncate policy
 		"22-FullOverlap-Truncate": {
-			lpRule:   SolverRule{From: 10 * time.Minute, To: 30 * time.Minute, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: TruncatePolicy},
-			hpRule:   SolverRule{From: 5 * time.Minute, To: 35 * time.Minute},
+			lpRule:   SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 30 * time.Minute}, StartAmount: 100, EndAmount: 200, RuleResolutionPolicy: TruncatePolicy},
+			hpRule:   SolverRule{RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 35 * time.Minute}},
 			expected: SolverRules{},
 		},
 	}
@@ -211,131 +233,131 @@ func TestAppend(t *testing.T) {
 		// 0 - No conflict, empty rules§
 		"0-NoConflictEmptyRules": {
 			rules: SolverRules{
-				SolverRule{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
+				SolverRule{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
 			},
 			expected: SolverRules{
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
 			},
 		},
 		// 1 - No conflict, multiple rules
 		"1-NoConflictMultipleRules": {
 			rules: SolverRules{
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "B", From: 20 * time.Minute, To: 30 * time.Minute, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "C", From: 30 * time.Minute, To: 40 * time.Minute, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 40 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
 			},
 			expected: SolverRules{
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute},
-				{RuleName: "B", From: 20 * time.Minute, To: 30 * time.Minute},
-				{RuleName: "C", From: 30 * time.Minute, To: 40 * time.Minute},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 40 * time.Minute}},
 			},
 		},
 		// 2 - Overlapping rules, Resolve policy
 		"2-OverlapResolvePolicy": {
 			rules: SolverRules{
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "B", From: 15 * time.Minute, To: 25 * time.Minute, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "C", From: 25 * time.Minute, To: 35 * time.Minute, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
 			},
 			expected: SolverRules{
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute},
-				{RuleName: "B", From: 20 * time.Minute, To: 30 * time.Minute},
-				{RuleName: "C", From: 30 * time.Minute, To: 40 * time.Minute},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 40 * time.Minute}},
 			},
 		},
 		// 3 - Overlapping rules, Truncate policy
 		"3-OverlapTruncatePolicy": {
 			rules: SolverRules{
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "B", From: 15 * time.Minute, To: 25 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "C", From: 25 * time.Minute, To: 35 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
 			},
 			expected: SolverRules{
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute},
-				{RuleName: "B", From: 20 * time.Minute, To: 25 * time.Minute},
-				{RuleName: "C", From: 25 * time.Minute, To: 35 * time.Minute},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 25 * time.Minute}},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}},
 			},
 		},
 		// 4 - Overlapping rules, Delete policy
 		"4-OverlapDeletePolicy": {
 			rules: SolverRules{
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "B", From: 15 * time.Minute, To: 25 * time.Minute, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "C", From: 25 * time.Minute, To: 35 * time.Minute, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
 			},
 			expected: SolverRules{
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute},
-				{RuleName: "C", From: 25 * time.Minute, To: 35 * time.Minute},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}},
 			},
 		},
 		// 5 - Overlapping rules, mixed policies
 		"5-OverlapMixedPolicies": {
 			rules: SolverRules{
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "B", From: 15 * time.Minute, To: 25 * time.Minute, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "C", From: 25 * time.Minute, To: 35 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
 			},
 			expected: SolverRules{
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute},
-				{RuleName: "B", From: 20 * time.Minute, To: 30 * time.Minute},
-				{RuleName: "C", From: 30 * time.Minute, To: 35 * time.Minute},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 35 * time.Minute}},
 			},
 		},
 		// 6 - Overlapping rules, Truncate policy, Shiftable policy
 		"6-OverlapTruncateShiftablePolicy": {
 			rules: SolverRules{
-				NewAbsoluteNonPaying("A", 10*time.Minute, 20*time.Minute),
-				NewAbsoluteNonPaying("B", 30*time.Minute, 40*time.Minute),
-				{RuleName: "C", From: 0 * time.Minute, To: 10 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				{RuleName: "D", From: 0 * time.Minute, To: 15 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				NewAbsoluteNonPaying("Z", 60*time.Minute, 90*time.Minute),
-				{RuleName: "E", From: 5 * time.Minute, To: 15 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				{RuleName: "F", From: 0 * time.Minute, To: 20 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
+				NewAbsoluteNonPaying("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}),
+				NewAbsoluteNonPaying("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}),
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 10 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
+				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 15 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
+				NewAbsoluteNonPaying("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}),
+				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 15 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
+				{RuleName: "F", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 			},
 			expected: SolverRules{
-				{RuleName: "C", From: 0 * time.Minute, To: 10 * time.Minute},
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute},
-				{RuleName: "D", From: 20 * time.Minute, To: 25 * time.Minute},
-				{RuleName: "E", From: 25 * time.Minute, To: 30 * time.Minute},
-				{RuleName: "B", From: 30 * time.Minute, To: 40 * time.Minute},
-				{RuleName: "F", From: 40 * time.Minute, To: 55 * time.Minute},
-				{RuleName: "Z", From: 60 * time.Minute, To: 90 * time.Minute},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 10 * time.Minute}},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 25 * time.Minute}},
+				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 30 * time.Minute}},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 40 * time.Minute}},
+				{RuleName: "F", RelativeTimeSpan: RelativeTimeSpan{From: 40 * time.Minute, To: 55 * time.Minute}},
+				{RuleName: "Z", RelativeTimeSpan: RelativeTimeSpan{From: 60 * time.Minute, To: 90 * time.Minute}},
 			},
 		},
 		// 7 - Overlapping rules, Truncate policy, Shiftable policy
 		"7-OverlapTruncateShiftablePolicy": {
 			rules: SolverRules{
-				NewAbsoluteNonPaying("A", 10*time.Minute, 20*time.Minute),
-				NewAbsoluteNonPaying("B", 30*time.Minute, 40*time.Minute),
-				{RuleName: "C", From: 15 * time.Minute, To: 25 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				{RuleName: "D", From: 0 * time.Minute, To: 35 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				NewAbsoluteNonPaying("Z", 60*time.Minute, 90*time.Minute),
-				{RuleName: "E", From: 5 * time.Minute, To: 25 * time.Minute, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
+				NewAbsoluteNonPaying("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}),
+				NewAbsoluteNonPaying("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}),
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
+				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
+				NewAbsoluteNonPaying("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}),
+				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 			},
 			expected: SolverRules{
-				{RuleName: "C", From: 0 * time.Minute, To: 10 * time.Minute},
-				{RuleName: "A", From: 10 * time.Minute, To: 20 * time.Minute},
-				{RuleName: "D", From: 20 * time.Minute, To: 30 * time.Minute},
-				{RuleName: "B", From: 30 * time.Minute, To: 40 * time.Minute},
-				{RuleName: "D", From: 40 * time.Minute, To: 45 * time.Minute},
-				{RuleName: "E", From: 45 * time.Minute, To: 60 * time.Minute},
-				{RuleName: "Z", From: 60 * time.Minute, To: 90 * time.Minute},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 10 * time.Minute}},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
+				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 40 * time.Minute}},
+				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 40 * time.Minute, To: 45 * time.Minute}},
+				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 45 * time.Minute, To: 60 * time.Minute}},
+				{RuleName: "Z", RelativeTimeSpan: RelativeTimeSpan{From: 60 * time.Minute, To: 90 * time.Minute}},
 			},
 		},
 
 		// 10 - Overlapping multiple calendar flatrate with linear in the middle and multiple flatrate activation
 		"10-MultipleCalendarFlatrate": {
 			rules: SolverRules{
-				NewAbsoluteFlatRateRule("Morning", 2*time.Hour, 6*time.Hour, MustParseAmount("3.0")),
-				NewAbsoluteFlatRateRule("Evening", 7*time.Hour, 11*time.Hour, MustParseAmount("3.0")),
+				NewAbsoluteFlatRateRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, MustParseAmount("3.0")),
+				NewAbsoluteFlatRateRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, MustParseAmount("3.0")),
 				NewRelativeLinearRule("Hourly", 10*time.Hour, MustParseAmount("1.0")),
 			},
 			expected: SolverRules{
-				{RuleName: "Hourly", From: 0 * time.Hour, To: 3 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
-				{RuleName: "Morning", From: 3 * time.Hour, To: 6 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
-				{RuleName: "Hourly", From: 6 * time.Hour, To: 9 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
-				{RuleName: "Evening", From: 9 * time.Hour, To: 11 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
-				{RuleName: "Hourly", From: 11 * time.Hour, To: 15 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("4.0")},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 3 * time.Hour}, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
+				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 3 * time.Hour, To: 6 * time.Hour}, StartAmount: AmountZero, EndAmount: AmountZero},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 9 * time.Hour}, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
+				{RuleName: "Evening", RelativeTimeSpan: RelativeTimeSpan{From: 9 * time.Hour, To: 11 * time.Hour}, StartAmount: AmountZero, EndAmount: AmountZero},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 11 * time.Hour, To: 15 * time.Hour}, StartAmount: AmountZero, EndAmount: MustParseAmount("4.0")},
 			},
 		},
 
@@ -350,13 +372,13 @@ func TestAppend(t *testing.T) {
 				NewRelativeLinearRule("Hourly", 10*time.Hour, MustParseAmount("1.0")),
 			},
 			expected: SolverRules{
-				{RuleName: "Hourly", From: 0 * time.Hour, To: 3 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
-				{RuleName: "Morning", From: 3 * time.Hour, To: 6 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
-				{RuleName: "Hourly", From: 6 * time.Hour, To: 9 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
-				{RuleName: "Evening", From: 9 * time.Hour, To: 11 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
-				{RuleName: "Hourly", From: 11 * time.Hour, To: 12 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("4.0")},
-				{RuleName: "Daily", From: 12 * time.Hour, To: 14 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
-				{RuleName: "Hourly", From: 14 * time.Hour, To: 17 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("4.0")},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 3 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
+				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 3 * time.Hour, To: 6 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 9 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
+				{RuleName: "Evening", RelativeTimeSpan: RelativeTimeSpan{From: 9 * time.Hour, To: 11 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 11 * time.Hour, To: 12 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("4.0")},
+				{RuleName: "Daily", RelativeTimeSpan: RelativeTimeSpan{From: 12 * time.Hour, To: 14 * time.Hour, StartAmount: AmountZero, EndAmount: AmountZero},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 14 * time.Hour, To: 17 * time.Hour, StartAmount: AmountZero, EndAmount: MustParseAmount("4.0")},
 			},
 		},
 		*/
@@ -413,7 +435,7 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 	}{
 		// 0 - No intersection below
 		"0-NoIntersectionBelow": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("4.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0")),
 			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
 			realtiveStartOffset:   8 * time.Hour,
 			relativeAmountOffset:  0,
@@ -423,7 +445,7 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 1 - No intersection below
 		"1-NoIntersectionAbove": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("4.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0")),
 			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
 			realtiveStartOffset:   8 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("4.0"),
@@ -433,7 +455,7 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 2 - No intersection before
 		"2-NoIntersectionBefore": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("4.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0")),
 			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
 			realtiveStartOffset:   2 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("2.0"),
@@ -443,7 +465,7 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 3 - No intersection after
 		"3-NoIntersectionAfter": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("4.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0")),
 			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
 			realtiveStartOffset:   12 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("4.0"),
@@ -453,7 +475,7 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 4 - Intersection in the middle
 		"4-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("4.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0")),
 			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
 			realtiveStartOffset:   8 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("2.0"),
@@ -463,7 +485,7 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 5 - Intersection in the middle
 		"5-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("2.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0")),
 			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
 			realtiveStartOffset:   8 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("2.0"),
@@ -473,7 +495,7 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 6 - Intersection in the middle
 		"6-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("2.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0")),
 			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
 			realtiveStartOffset:   6 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("2.0"),
@@ -483,7 +505,7 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 7 - Intersection in the beginning
 		"7-IntersectionInBeginning": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("2.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0")),
 			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
 			realtiveStartOffset:   9 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("3.0"),
@@ -493,7 +515,7 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 8 - Intersection in the beginning
 		"8-IntersectionInBeginning": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("2.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0")),
 			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
 			realtiveStartOffset:   4 * time.Hour,
 			relativeAmountOffset:  0,
@@ -503,7 +525,7 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 9 - Intersection in the end must be considered as not intersection
 		"9-IntersectionInEnd": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", 8*time.Hour, 12*time.Hour, MustParseAmount("2.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0")),
 			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
 			realtiveStartOffset:   12 * time.Hour,
 			relativeAmountOffset:  0,
@@ -518,8 +540,8 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		// >> FindIntersectPositionFlatRate Hourly vs Evening => 10h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s | 7.000 3.000 10.000 6h0m0s
 		// >> FindIntersectPositionFlatRate Hourly vs Evening => 9h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s | 6.000 3.000 10.000 6h0m0s
 		"10-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("Evening", 7*time.Hour, 11*time.Hour, MustParseAmount("3.0")),
-			relativeRule:          SolverRule{RuleName: "Hourly", From: 6 * time.Hour, To: 13 * time.Hour, StartAmount: 0, EndAmount: MustParseAmount("7.0"), StartTimePolicy: ShiftablePolicy, RuleResolutionPolicy: ResolvePolicy},
+			flatRateRule:          NewAbsoluteFlatRateRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, MustParseAmount("3.0")),
+			relativeRule:          SolverRule{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 13 * time.Hour}, StartAmount: 0, EndAmount: MustParseAmount("7.0"), StartTimePolicy: ShiftablePolicy, RuleResolutionPolicy: ResolvePolicy},
 			realtiveStartOffset:   0, //3 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("3.0"),
 			activatedFlatRatesSum: MustParseAmount("3.0"),

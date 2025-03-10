@@ -32,11 +32,8 @@ const (
 // SolverRule represents a rule used in the solver engine.
 type SolverRule struct {
 	RuleName string
-	//TODO replace From/To by a RelativeTimeSpan
 	// Starting/End point in time
-	From time.Duration
-	// End point in time
-	To time.Duration
+	RelativeTimeSpan
 	// Amount in cents at the beginning of the rule segment (non 0 values are step)
 	StartAmount Amount
 	// Amount in cents at the end of the rule segment
@@ -59,8 +56,7 @@ type MetaData map[string]interface{}
 func NewRelativeLinearRule(name string, duration time.Duration, hourlyRate Amount) SolverRule {
 	return SolverRule{
 		RuleName:             name,
-		From:                 time.Duration(0),
-		To:                   duration,
+		RelativeTimeSpan:     RelativeTimeSpan{From: time.Duration(0), To: duration},
 		StartAmount:          0,
 		EndAmount:            Amount(float64(hourlyRate) * duration.Hours()),
 		StartTimePolicy:      ShiftablePolicy,
@@ -71,8 +67,7 @@ func NewRelativeLinearRule(name string, duration time.Duration, hourlyRate Amoun
 func NewRelativeFlatRateRule(name string, duration time.Duration, amount Amount) SolverRule {
 	return SolverRule{
 		RuleName:             name,
-		From:                 time.Duration(0),
-		To:                   duration,
+		RelativeTimeSpan:     RelativeTimeSpan{From: time.Duration(0), To: duration},
 		StartAmount:          amount,
 		EndAmount:            amount,
 		StartTimePolicy:      ShiftablePolicy,
@@ -80,14 +75,27 @@ func NewRelativeFlatRateRule(name string, duration time.Duration, amount Amount)
 	}
 }
 
-func NewAbsoluteFlatRateRule(name string, from, to time.Duration, amount Amount) SolverRule {
-	if from > to {
-		panic(fmt.Errorf("invalid rule duration %v to %v", from, to))
+func NewAbsoluteLinearRule(name string, timespan RelativeTimeSpan, hourlyRate Amount) SolverRule {
+	if !timespan.IsValid() {
+		panic(fmt.Errorf("invalid rule timespan %v", timespan))
 	}
 	return SolverRule{
 		RuleName:             name,
-		From:                 from,
-		To:                   to,
+		RelativeTimeSpan:     timespan,
+		StartAmount:          0,
+		EndAmount:            Amount(float64(hourlyRate) * timespan.Duration().Hours()),
+		StartTimePolicy:      FixedPolicy,
+		RuleResolutionPolicy: ResolvePolicy,
+	}
+}
+
+func NewAbsoluteFlatRateRule(name string, timespan RelativeTimeSpan, amount Amount) SolverRule {
+	if !timespan.IsValid() {
+		panic(fmt.Errorf("invalid rule timespan %v", timespan))
+	}
+	return SolverRule{
+		RuleName:             name,
+		RelativeTimeSpan:     timespan,
 		StartAmount:          amount,
 		EndAmount:            amount,
 		StartTimePolicy:      FixedPolicy,
@@ -95,14 +103,13 @@ func NewAbsoluteFlatRateRule(name string, from, to time.Duration, amount Amount)
 	}
 }
 
-func NewAbsoluteNonPaying(name string, from, to time.Duration) SolverRule {
-	if from > to {
-		panic(fmt.Errorf("invalid rule duration %v to %v", from, to))
+func NewAbsoluteNonPaying(name string, timespan RelativeTimeSpan) SolverRule {
+	if !timespan.IsValid() {
+		panic(fmt.Errorf("invalid rule timespan %v", timespan))
 	}
 	return SolverRule{
 		RuleName:             name,
-		From:                 from,
-		To:                   to,
+		RelativeTimeSpan:     timespan,
 		StartAmount:          0,
 		EndAmount:            0,
 		StartTimePolicy:      FixedPolicy,
