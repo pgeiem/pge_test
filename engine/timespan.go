@@ -1,175 +1,165 @@
-// Copyright 2015 Rick Beton. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-//Copied from https://github.com/rickb777/date/blob/v2/timespan/timespan.go
-
 package engine
 
 import (
 	"fmt"
-	"strings"
 	"time"
 )
 
-// TimestampFormat is a simple format for date & time, "2006-01-02 15:04:05".
-const TimestampFormat = "2006-01-02 15:04:05"
-
-//const ISOFormat = "2006-01-02T15:04:05"
-
-// TimeSpan holds a span of time between two instants with a 1 nanosecond resolution.
-// It is implemented using a time.Duration, therefore is limited to a maximum span of 292 years.
-//
-// It supports RFC5545 timespan representations.
-type TimeSpan struct {
-	mark     time.Time
-	duration time.Duration
+func TimeAfterOrEqual(t1, t2 time.Time) bool {
+	return t1.Equal(t2) || t1.After(t2)
 }
 
-// ZeroTimeSpan creates a new zero-duration time span at a specified time.
-func ZeroTimeSpan(start time.Time) TimeSpan {
-	return TimeSpan{start, 0}
+func TimeBeforeOrEqual(t1, t2 time.Time) bool {
+	return t1.Equal(t2) || t1.Before(t2)
 }
 
-// TimeSpanOf creates a new time span at a specified time and duration. The duration can
-// be negative, e.g. for an alarm event before the mark time.
-func TimeSpanOf(start time.Time, d time.Duration) TimeSpan {
-	return TimeSpan{start, d}
+type RelativeTimeSpan struct {
+	From time.Duration
+	To   time.Duration
 }
 
-// BetweenTimes creates a new time span from two times. The start and end can be in either
-// order; the result will be normalised. The inputs are half-open: the start is included and
-// the end is excluded.
-func BetweenTimes(t1, t2 time.Time) TimeSpan {
-	if t2.Before(t1) {
-		return TimeSpan{t2, t1.Sub(t2)}
-	}
-	return TimeSpan{t1, t2.Sub(t1)}
+func (r RelativeTimeSpan) String() string {
+	return fmt.Sprintf("[%s, %s]", r.From, r.To)
 }
 
-// Start gets the start time of the time span.
-func (ts TimeSpan) Start() time.Time {
-	if ts.duration < 0 {
-		return ts.mark.Add(ts.duration)
-	}
-	return ts.mark
+func (r RelativeTimeSpan) Duration() time.Duration {
+	return r.To - r.From
 }
 
-// End gets the end time of the time span. Strictly, this is one nanosecond after the
-// range of time included in the time span; this implements the half-open model.
-func (ts TimeSpan) End() time.Time {
-	if ts.duration < 0 {
-		return ts.mark
-	}
-	return ts.mark.Add(ts.duration)
+func (r RelativeTimeSpan) IsValid() bool {
+	return r.From <= r.To
 }
 
-// Mark gets the time marked by this timespan. Typically this is the same as Start, but
-// it's the same as End for time spans with negative duration.
-func (ts TimeSpan) Mark() time.Time {
-	return ts.mark
+type AbsTimeSpan struct {
+	Start time.Time `yaml:"start" validate:"required"`
+	End   time.Time `yaml:"end" validate:"required"`
 }
 
-// Duration gets the duration of the time span.
-func (ts TimeSpan) Duration() time.Duration {
-	return ts.duration
+func (s *AbsTimeSpan) Duration() time.Duration {
+	return s.End.Sub(s.Start)
 }
 
-// IsEmpty returns true if this is an empty time span (zero duration).
-func (ts TimeSpan) IsEmpty() bool {
-	return ts.duration == 0
+func (s *AbsTimeSpan) IsWithin(t time.Time) bool {
+	return TimeAfterOrEqual(t, s.Start) && t.Before(s.End)
 }
 
-// Normalise ensures that the mark time is at the start time and the duration is positive.
-// The normalised time span is returned.
-func (ts TimeSpan) Normalise() TimeSpan {
-	if ts.duration < 0 {
-		return TimeSpan{ts.mark.Add(ts.duration), -ts.duration}
-	}
-	return ts
+func (s *AbsTimeSpan) String() string {
+	return s.Start.String() + " -> " + s.End.String()
 }
 
-// ShiftBy moves the time span by moving both the start and end times similarly.
-// A negative parameter is allowed.
-func (ts TimeSpan) ShiftBy(d time.Duration) TimeSpan {
-	return TimeSpan{ts.mark.Add(d), ts.duration}
-}
-
-// ExtendBy lengthens the time span by a specified amount. The parameter may be negative,
-// in which case it is possible that the end of the time span will appear to be before the
-// start. However, the result is normalised so that the resulting start is the lesser value.
-func (ts TimeSpan) ExtendBy(d time.Duration) TimeSpan {
-	return TimeSpan{ts.mark, ts.duration + d}.Normalise()
-}
-
-// ExtendWithoutWrapping lengthens the time span by a specified amount. The parameter may be
-// negative, but if its magnitude is large than the time span's duration, it will be truncated
-// so that the result has zero duration in that case. The start time is never altered.
-func (ts TimeSpan) ExtendWithoutWrapping(d time.Duration) TimeSpan {
-	tsn := ts.Normalise()
-	if d < 0 && -d > tsn.duration {
-		return TimeSpan{tsn.mark, 0}
-	}
-	return TimeSpan{tsn.mark, tsn.duration + d}
-}
-
-// String produces a human-readable description of a time span.
-func (ts TimeSpan) String() string {
-	return fmt.Sprintf("%s from %s to %s", ts.duration, ts.mark.Format(TimestampFormat), ts.End().Format(TimestampFormat))
-}
-
-// In returns a TimeSpan adjusted from its current location to a new location. Because
-// location is considered to be a presentational attribute, the actual time itself is not
-// altered by this function. This matches the behaviour of time.Time.In(loc).
-func (ts TimeSpan) In(loc *time.Location) TimeSpan {
-	t := ts.mark.In(loc)
-	return TimeSpan{t, ts.duration}
-}
-
-// Contains tests whether a given moment of time is enclosed within the time span. The
-// start time is inclusive; the end time is exclusive.
-// If t has a different locality to the time-span, it is adjusted accordingly.
-func (ts TimeSpan) Contains(t time.Time) bool {
-	tl := t.In(ts.mark.Location())
-	return ts.mark.Equal(tl) || ts.mark.Before(tl) && ts.End().After(tl)
-}
-
-// Merge combines two time spans by calculating a time span that just encompasses them both.
-// As a special case, if one span is entirely contained within the other span, the larger of
-// the two is returned. Otherwise, the result is the start of the earlier one to the end of the
-// later one, even if the two spans don't overlap.
-func (ts TimeSpan) Merge(other TimeSpan) TimeSpan {
-	if ts.mark.After(other.mark) {
-		// swap the ranges to simplify the logic
-		return other.Merge(ts)
-
-	} else if ts.End().After(other.End()) {
-		// other is a proper subrange of ts
-		return ts
-
-	} else {
-		return BetweenTimes(ts.mark, other.End())
+func (s *AbsTimeSpan) ToRelativeTimeSpan(now time.Time) RelativeTimeSpan {
+	return RelativeTimeSpan{
+		From: s.Start.Sub(now),
+		To:   s.End.Sub(now),
 	}
 }
 
-// RFC5545DateTimeLayout is the format string used by iCalendar (RFC5545). Note
-// that "Z" is to be appended when the time is UTC.
-//
-// No dashes are used; this follows ISO-8601 Basic Format practice.
-const RFC5545DateTimeLayout = "20060102T150405"
-
-// RFC5545DateTimeZulu is the UTC format string used by iCalendar (RFC5545). Note
-// that this cannot be used for parsing with time.Parse.
-//
-// No dashes are used; this follows ISO-8601 Basic Format practice.
-const RFC5545DateTimeZulu = RFC5545DateTimeLayout + "Z"
-
-func layoutHasTimezone(layout string) bool {
-	return strings.IndexByte(layout, 'Z') >= 0 || strings.Contains(layout, "-07")
+type RecurrentTimeSpan struct {
+	Start RecurrentDate `yaml:"start" validate:"required"`
+	End   RecurrentDate `yaml:"end" validate:"required"`
 }
 
-// Equal reports whether ts and us represent the same time start and duration.
-// Two times can be equal even if they are in different locations.
-// For example, 6:00 +0200 CEST and 4:00 UTC are Equal.
-func (ts TimeSpan) Equal(us TimeSpan) bool {
-	return ts.Duration() == us.Duration() && ts.Start().Equal(us.Start())
+// Create a recurrent timespan from two recurrent dates pattern
+func NewRecurrentTimeSpanFromPatterns(start, end string) (RecurrentTimeSpan, error) {
+	startrule, err := ParseRecurrentDate(start)
+	if err != nil {
+		return RecurrentTimeSpan{}, err
+	}
+	endrule, err := ParseRecurrentDate(end)
+	if err != nil {
+		return RecurrentTimeSpan{}, err
+	}
+	return RecurrentTimeSpan{
+		Start: startrule,
+		End:   endrule,
+	}, nil
+}
+
+func (rs *RecurrentTimeSpan) Next(now time.Time) (AbsTimeSpan, error) {
+	var err error
+	s := AbsTimeSpan{}
+	s.Start, err = rs.Start.Next(now)
+	if err != nil {
+		return s, err
+	}
+	s.End, err = rs.End.Next(s.Start)
+	if err != nil {
+		return s, err
+	}
+	return s, nil
+}
+
+func (rs *RecurrentTimeSpan) Prev(now time.Time) (AbsTimeSpan, error) {
+	var err error
+	s := AbsTimeSpan{}
+	s.Start, err = rs.Start.Prev(now)
+	if err != nil {
+		return s, err
+	}
+	s.End, err = rs.End.Next(s.Start)
+	if err != nil {
+		return s, err
+	}
+
+	return s, nil
+}
+
+func (rs *RecurrentTimeSpan) Between(from, to time.Time) []AbsTimeSpan {
+	var segments []AbsTimeSpan
+	now := from
+	for now.Before(to) {
+		segment, err := rs.Next(now)
+		if err != nil {
+			break
+		}
+		if segment.Start.After(to) {
+			break
+		}
+		segments = append(segments, segment)
+		now = segment.Start
+	}
+	return segments
+}
+
+func (rs *RecurrentTimeSpan) BetweenIterator(from, to time.Time, iterator func(AbsTimeSpan) bool) {
+	now := from
+	for now.Before(to) {
+		segment, err := rs.Next(now)
+		if err != nil {
+			break
+		}
+		if segment.Start.After(to) {
+			break
+		}
+		if !iterator(segment) {
+			break
+		}
+		now = segment.Start
+	}
+}
+
+func (rs *RecurrentTimeSpan) IsWithin(t time.Time) (bool, AbsTimeSpan, error) {
+
+	s, err := rs.Prev(t)
+	if err != nil {
+		return false, AbsTimeSpan{}, err
+	}
+	if s.IsWithin(t) {
+		return true, s, nil
+	}
+
+	// Handle case where t is the start of the segment
+	s, err = rs.Next(s.Start)
+	if err != nil {
+		return false, AbsTimeSpan{}, err
+	}
+	if s.IsWithin(t) {
+		return true, s, nil
+	}
+	return false, AbsTimeSpan{}, err
+}
+
+// Stringer for RecurrentSegment display start and end
+func (rs RecurrentTimeSpan) String() string {
+	return rs.Start.String() + " -> " + rs.End.String()
 }

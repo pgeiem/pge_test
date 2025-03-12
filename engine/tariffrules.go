@@ -44,15 +44,15 @@ func (r RelativeFlatRateRule) String() string {
 }
 
 type AbsoluteLinearRule struct {
-	RuleName         string `yaml:"name"`
-	RecurrentSegment `yaml:",inline"`
-	HourlyRate       Amount   `yaml:"hourlyrate"`
-	MetaData         MetaData `yaml:"meta"`
+	RuleName          string `yaml:"name"`
+	RecurrentTimeSpan `yaml:",inline"`
+	HourlyRate        Amount   `yaml:"hourlyrate"`
+	MetaData          MetaData `yaml:"meta"`
 }
 
 // Unrolling the recurrent segment into a list of solver rules
 func (r AbsoluteLinearRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
-	r.RecurrentSegment.BetweenIterator(from, to, func(timespan Segment) bool {
+	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
 		iterator(NewAbsoluteLinearRule(r.RuleName, ts, r.HourlyRate))
 		return true
@@ -64,14 +64,14 @@ func (r AbsoluteLinearRule) String() string {
 }
 
 type AbsoluteFlatRateRule struct {
-	RuleName         string `yaml:"name"`
-	RecurrentSegment `yaml:",inline"`
-	Amount           Amount   `yaml:"amount"`
-	MetaData         MetaData `yaml:"meta"`
+	RuleName          string `yaml:"name"`
+	RecurrentTimeSpan `yaml:",inline"`
+	Amount            Amount   `yaml:"amount"`
+	MetaData          MetaData `yaml:"meta"`
 }
 
 func (r AbsoluteFlatRateRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
-	r.RecurrentSegment.BetweenIterator(from, to, func(timespan Segment) bool {
+	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
 		iterator(NewAbsoluteFlatRateRule(r.RuleName, ts, r.Amount))
 		return true
@@ -83,13 +83,13 @@ func (r AbsoluteFlatRateRule) String() string {
 }
 
 type AbsoluteNonPayingRule struct {
-	RuleName         string `yaml:"name"`
-	RecurrentSegment `yaml:",inline"`
-	MetaData         MetaData `yaml:"meta"`
+	RuleName          string `yaml:"name"`
+	RecurrentTimeSpan `yaml:",inline"`
+	MetaData          MetaData `yaml:"meta"`
 }
 
 func (r AbsoluteNonPayingRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
-	r.RecurrentSegment.BetweenIterator(from, to, func(timespan Segment) bool {
+	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
 		iterator(NewAbsoluteNonPaying(r.RuleName, ts))
 		return true

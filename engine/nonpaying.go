@@ -7,13 +7,13 @@ import (
 
 // Non paying rules
 type NonPayingRule struct {
-	RuleName         string `yaml:"name"`
-	RecurrentSegment `yaml:",inline"`
+	RuleName          string `yaml:"name"`
+	RecurrentTimeSpan `yaml:",inline"`
 }
 
 // Stringer for NonPayingRule display rule name and segment
 func (npr NonPayingRule) String() string {
-	return npr.RuleName + ": " + npr.RecurrentSegment.String()
+	return npr.RuleName + ": " + npr.RecurrentTimeSpan.String()
 }
 
 func (npr NonPayingRule) Name() string {
@@ -21,7 +21,7 @@ func (npr NonPayingRule) Name() string {
 }
 
 func (npr NonPayingRule) RelativeToWindow(from, to time.Time, iterator func(RelativeTimeSpan) bool) {
-	npr.RecurrentSegment.BetweenIterator(from, to, func(s Segment) bool {
+	npr.RecurrentTimeSpan.BetweenIterator(from, to, func(s AbsTimeSpan) bool {
 		return iterator(s.ToRelativeTimeSpan(from))
 	})
 }

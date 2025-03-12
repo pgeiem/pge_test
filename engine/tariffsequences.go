@@ -9,7 +9,7 @@ import (
 
 type TariffSequence struct {
 	Name           string
-	ValidityPeriod RecurrentSegment
+	ValidityPeriod RecurrentTimeSpan
 	Quota          Quota
 	NonPaying      NonPayingInventory
 	Rules          SolvableRules
@@ -108,7 +108,7 @@ func (tsi TariffSequenceInventory) ResolveSequenceApplicability(now time.Time, w
 		// Loop over all sequences by priority order
 		for _, s := range tsi {
 			// Check if the sequence is applicable at this instant
-			within, timespan, err := s.ValidityPeriod.IsWithinWithSegment(t)
+			within, timespan, err := s.ValidityPeriod.IsWithin(t)
 			if err != nil {
 				return nil, err
 			}
@@ -160,7 +160,7 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 	// Temporarily unmarshal the sequences section in a temporary struct
 	temp := []struct {
 		Name           string             `yaml:"name"`
-		ValidityPeriod RecurrentSegment   `yaml:",inline"`
+		ValidityPeriod RecurrentTimeSpan  `yaml:",inline"`
 		Quota          string             `yaml:"quota,"`
 		NonPayingRules NonPayingInventory `yaml:"nonpaying"`
 		Rules          SolvableRules      `yaml:"rules"`
