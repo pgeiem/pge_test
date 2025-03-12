@@ -15,6 +15,22 @@ const (
 	BannedDuration    DurationType = "banned"
 )
 
+func (dt DurationType) MarshalText() ([]byte, error) {
+	if dt == "" {
+		return []byte{}, nil
+	}
+	conv := map[DurationType]string{
+		FreeDuration:      "f",
+		NonPayingDuration: "np",
+		PayingDuration:    "p",
+		BannedDuration:    "b",
+	}
+	if val, ok := conv[dt]; ok {
+		return []byte(val), nil
+	}
+	return nil, fmt.Errorf("unknown duration type %s", dt)
+}
+
 // StartTimePolicy defines the policy used to move or not the beginning of the rule
 type StartTimePolicy string // Todo replace by int32
 
@@ -52,12 +68,21 @@ type SolverRule struct {
 	RuleResolutionPolicy RuleResolutionPolicy
 	// Meta holds additional metadata related to the rule.
 	Meta MetaData
+	// DurationType defines the type of duration for each rules, this is required to build duration details in the output
+	DurationType DurationType
 }
 
 // Define a collection of solver rule
 type SolverRules []SolverRule
 
 type MetaData map[string]interface{}
+
+func DurationTypeFromAmount(amount Amount) DurationType {
+	if amount == 0 {
+		return FreeDuration
+	}
+	return PayingDuration
+}
 
 func NewRelativeLinearRule(name string, duration time.Duration, hourlyRate Amount, meta MetaData) SolverRule {
 	return SolverRule{
@@ -68,6 +93,7 @@ func NewRelativeLinearRule(name string, duration time.Duration, hourlyRate Amoun
 		EndAmount:            Amount(float64(hourlyRate) * duration.Hours()),
 		StartTimePolicy:      ShiftablePolicy,
 		RuleResolutionPolicy: ResolvePolicy,
+		DurationType:         DurationTypeFromAmount(hourlyRate),
 	}
 }
 
@@ -80,6 +106,7 @@ func NewRelativeFlatRateRule(name string, duration time.Duration, amount Amount,
 		EndAmount:            amount,
 		StartTimePolicy:      ShiftablePolicy,
 		RuleResolutionPolicy: ResolvePolicy,
+		DurationType:         DurationTypeFromAmount(amount),
 	}
 }
 
@@ -95,6 +122,7 @@ func NewAbsoluteLinearRule(name string, timespan RelativeTimeSpan, hourlyRate Am
 		EndAmount:            Amount(float64(hourlyRate) * timespan.Duration().Hours()),
 		StartTimePolicy:      FixedPolicy,
 		RuleResolutionPolicy: ResolvePolicy,
+		DurationType:         DurationTypeFromAmount(hourlyRate),
 	}
 }
 
@@ -110,6 +138,7 @@ func NewAbsoluteFlatRateRule(name string, timespan RelativeTimeSpan, amount Amou
 		EndAmount:            amount,
 		StartTimePolicy:      FixedPolicy,
 		RuleResolutionPolicy: TruncatePolicy,
+		DurationType:         DurationTypeFromAmount(amount),
 	}
 }
 
@@ -125,6 +154,7 @@ func NewAbsoluteNonPaying(name string, timespan RelativeTimeSpan, meta MetaData)
 		EndAmount:            0,
 		StartTimePolicy:      FixedPolicy,
 		RuleResolutionPolicy: TruncatePolicy,
+		DurationType:         NonPayingDuration,
 	}
 }
 
@@ -137,7 +167,7 @@ func (rule SolverRule) IsFlatRate() bool {
 }
 
 func (rule SolverRule) IsAbsoluteFlatRate() bool {
-	return rule.IsFlatRate() && //is FLatRate
+	return rule.IsFlatRate() && //is FlatRate
 		rule.StartTimePolicy == FixedPolicy && // is Absolute
 		rule.EndAmount != 0 // is not non-paying
 }

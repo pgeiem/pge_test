@@ -8,16 +8,17 @@ import (
 )
 
 type OutputSegment struct {
-	SegName  string   `json:"n,omitempty"`
-	Trace    []string `json:"dbg,omitempty"`
-	At       int      `json:"t"`
-	Amount   Amount   `json:"a"`
-	Islinear bool     `json:"l"`
-	Meta     MetaData `json:"m,omitempty"`
+	SegName      string       `json:"n,omitempty"`
+	Trace        []string     `json:"dbg,omitempty"`
+	Time         int          `json:"t"`
+	Amount       Amount       `json:"a"`
+	Islinear     bool         `json:"l"`
+	DurationType DurationType `json:"dt,omitempty"`
+	Meta         MetaData     `json:"m,omitempty"`
 }
 
 func (seg OutputSegment) String() string {
-	at := time.Duration(seg.At) * time.Second
+	at := time.Duration(seg.Time) * time.Second
 	return fmt.Sprintf(" - %s: %s (isLinear %t)", at, seg.Amount, seg.Islinear)
 }
 
@@ -53,10 +54,11 @@ func (s *SolverRules) GenerateOutput(now time.Time, detailed bool) Output {
 			break
 		}
 		seg := OutputSegment{
-			At:       int(math.Round(rule.To.Seconds())),
-			Amount:   rule.EndAmount + previous.EndAmount,
-			Islinear: !rule.IsFlatRate(),
-			Meta:     rule.Meta,
+			Time:         int(math.Round(rule.To.Seconds())),
+			Amount:       rule.EndAmount + previous.EndAmount,
+			Islinear:     !rule.IsFlatRate(),
+			DurationType: rule.DurationType,
+			Meta:         rule.Meta,
 		}
 		if detailed {
 			seg.SegName = rule.Name()
