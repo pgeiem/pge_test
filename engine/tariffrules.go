@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+type BaseRule struct {
+	RuleName string `yaml:"name"`
+	Meta     MetaData
+}
+
 type SolvableRule interface {
 	ToSolverRules(from, to time.Time, iterator func(SolverRule))
 	String() string
@@ -14,14 +19,13 @@ type SolvableRule interface {
 type SolvableRules []SolvableRule
 
 type RelativeLinearRule struct {
-	RuleName   string        `yaml:"name"`
+	BaseRule   `yaml:",inline"`
 	Duration   time.Duration `yaml:"duration"`
 	HourlyRate Amount        `yaml:"hourlyrate"`
-	MetaData   MetaData      `yaml:"meta"`
 }
 
 func (r RelativeLinearRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
-	iterator(NewRelativeLinearRule(r.RuleName, r.Duration, r.HourlyRate))
+	iterator(NewRelativeLinearRule(r.RuleName, r.Duration, r.HourlyRate, r.Meta))
 }
 
 func (r RelativeLinearRule) String() string {
@@ -29,14 +33,13 @@ func (r RelativeLinearRule) String() string {
 }
 
 type RelativeFlatRateRule struct {
-	RuleName string        `yaml:"name"`
+	BaseRule `yaml:",inline"`
 	Duration time.Duration `yaml:"duration"`
 	Amount   Amount        `yaml:"amount"`
-	MetaData MetaData      `yaml:"meta"`
 }
 
 func (r RelativeFlatRateRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
-	iterator(NewRelativeFlatRateRule(r.RuleName, r.Duration, r.Amount))
+	iterator(NewRelativeFlatRateRule(r.RuleName, r.Duration, r.Amount, r.Meta))
 }
 
 func (r RelativeFlatRateRule) String() string {
@@ -44,17 +47,16 @@ func (r RelativeFlatRateRule) String() string {
 }
 
 type AbsoluteLinearRule struct {
-	RuleName          string `yaml:"name"`
+	BaseRule          `yaml:",inline"`
 	RecurrentTimeSpan `yaml:",inline"`
-	HourlyRate        Amount   `yaml:"hourlyrate"`
-	MetaData          MetaData `yaml:"meta"`
+	HourlyRate        Amount `yaml:"hourlyrate"`
 }
 
 // Unrolling the recurrent segment into a list of solver rules
 func (r AbsoluteLinearRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
 	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
-		iterator(NewAbsoluteLinearRule(r.RuleName, ts, r.HourlyRate))
+		iterator(NewAbsoluteLinearRule(r.RuleName, ts, r.HourlyRate, r.Meta))
 		return true
 	})
 }
@@ -64,16 +66,15 @@ func (r AbsoluteLinearRule) String() string {
 }
 
 type AbsoluteFlatRateRule struct {
-	RuleName          string `yaml:"name"`
+	BaseRule          `yaml:",inline"`
 	RecurrentTimeSpan `yaml:",inline"`
-	Amount            Amount   `yaml:"amount"`
-	MetaData          MetaData `yaml:"meta"`
+	Amount            Amount `yaml:"amount"`
 }
 
 func (r AbsoluteFlatRateRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
 	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
-		iterator(NewAbsoluteFlatRateRule(r.RuleName, ts, r.Amount))
+		iterator(NewAbsoluteFlatRateRule(r.RuleName, ts, r.Amount, r.Meta))
 		return true
 	})
 }
@@ -83,15 +84,14 @@ func (r AbsoluteFlatRateRule) String() string {
 }
 
 type AbsoluteNonPayingRule struct {
-	RuleName          string `yaml:"name"`
+	BaseRule          `yaml:",inline"`
 	RecurrentTimeSpan `yaml:",inline"`
-	MetaData          MetaData `yaml:"meta"`
 }
 
 func (r AbsoluteNonPayingRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
 	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
-		iterator(NewAbsoluteNonPaying(r.RuleName, ts))
+		iterator(NewAbsoluteNonPaying(r.RuleName, ts, r.Meta))
 		return true
 	})
 }

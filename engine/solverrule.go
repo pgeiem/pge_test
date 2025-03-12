@@ -59,9 +59,10 @@ type SolverRules []SolverRule
 
 type MetaData map[string]interface{}
 
-func NewRelativeLinearRule(name string, duration time.Duration, hourlyRate Amount) SolverRule {
+func NewRelativeLinearRule(name string, duration time.Duration, hourlyRate Amount, meta MetaData) SolverRule {
 	return SolverRule{
 		RuleName:             name,
+		Meta:                 meta,
 		RelativeTimeSpan:     RelativeTimeSpan{From: time.Duration(0), To: duration},
 		StartAmount:          0,
 		EndAmount:            Amount(float64(hourlyRate) * duration.Hours()),
@@ -70,9 +71,10 @@ func NewRelativeLinearRule(name string, duration time.Duration, hourlyRate Amoun
 	}
 }
 
-func NewRelativeFlatRateRule(name string, duration time.Duration, amount Amount) SolverRule {
+func NewRelativeFlatRateRule(name string, duration time.Duration, amount Amount, meta MetaData) SolverRule {
 	return SolverRule{
 		RuleName:             name,
+		Meta:                 meta,
 		RelativeTimeSpan:     RelativeTimeSpan{From: time.Duration(0), To: duration},
 		StartAmount:          amount,
 		EndAmount:            amount,
@@ -81,12 +83,13 @@ func NewRelativeFlatRateRule(name string, duration time.Duration, amount Amount)
 	}
 }
 
-func NewAbsoluteLinearRule(name string, timespan RelativeTimeSpan, hourlyRate Amount) SolverRule {
+func NewAbsoluteLinearRule(name string, timespan RelativeTimeSpan, hourlyRate Amount, meta MetaData) SolverRule {
 	if !timespan.IsValid() {
 		panic(fmt.Errorf("invalid rule timespan %v", timespan))
 	}
 	return SolverRule{
 		RuleName:             name,
+		Meta:                 meta,
 		RelativeTimeSpan:     timespan,
 		StartAmount:          0,
 		EndAmount:            Amount(float64(hourlyRate) * timespan.Duration().Hours()),
@@ -95,12 +98,13 @@ func NewAbsoluteLinearRule(name string, timespan RelativeTimeSpan, hourlyRate Am
 	}
 }
 
-func NewAbsoluteFlatRateRule(name string, timespan RelativeTimeSpan, amount Amount) SolverRule {
+func NewAbsoluteFlatRateRule(name string, timespan RelativeTimeSpan, amount Amount, meta MetaData) SolverRule {
 	if !timespan.IsValid() {
 		panic(fmt.Errorf("invalid rule timespan %v", timespan))
 	}
 	return SolverRule{
 		RuleName:             name,
+		Meta:                 meta,
 		RelativeTimeSpan:     timespan,
 		StartAmount:          amount,
 		EndAmount:            amount,
@@ -109,12 +113,13 @@ func NewAbsoluteFlatRateRule(name string, timespan RelativeTimeSpan, amount Amou
 	}
 }
 
-func NewAbsoluteNonPaying(name string, timespan RelativeTimeSpan) SolverRule {
+func NewAbsoluteNonPaying(name string, timespan RelativeTimeSpan, meta MetaData) SolverRule {
 	if !timespan.IsValid() {
 		panic(fmt.Errorf("invalid rule timespan %v", timespan))
 	}
 	return SolverRule{
 		RuleName:             name,
+		Meta:                 meta,
 		RelativeTimeSpan:     timespan,
 		StartAmount:          0,
 		EndAmount:            0,

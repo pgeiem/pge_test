@@ -72,10 +72,14 @@ sequences:
           name: "A"
           duration: 1h
           hourlyrate: 1.0
+          meta: 
+            color: red
       - flatrate:
           name: "B"
           duration: 24h
           amount: 2.0 
+          meta: 
+            color: blue
 `
 
 	t, err := parser.ParseTariffDefinition([]byte(sampleyaml))

@@ -306,11 +306,11 @@ func TestAppend(t *testing.T) {
 		// 6 - Overlapping rules, Truncate policy, Shiftable policy
 		"6-OverlapTruncateShiftablePolicy": {
 			rules: SolverRules{
-				NewAbsoluteNonPaying("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}),
-				NewAbsoluteNonPaying("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}),
+				NewAbsoluteNonPaying("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}, MetaData{}),
+				NewAbsoluteNonPaying("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}, MetaData{}),
 				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 10 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 15 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				NewAbsoluteNonPaying("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}),
+				NewAbsoluteNonPaying("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}, MetaData{}),
 				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 15 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 				{RuleName: "F", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 			},
@@ -327,11 +327,11 @@ func TestAppend(t *testing.T) {
 		// 7 - Overlapping rules, Truncate policy, Shiftable policy
 		"7-OverlapTruncateShiftablePolicy": {
 			rules: SolverRules{
-				NewAbsoluteNonPaying("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}),
-				NewAbsoluteNonPaying("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}),
+				NewAbsoluteNonPaying("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}, MetaData{}),
+				NewAbsoluteNonPaying("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}, MetaData{}),
 				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				NewAbsoluteNonPaying("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}),
+				NewAbsoluteNonPaying("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}, MetaData{}),
 				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 			},
 			expected: SolverRules{
@@ -347,8 +347,8 @@ func TestAppend(t *testing.T) {
 		// 8 - Overlapping rules, Truncate policy, Shiftable policy
 		"8-OverlapTruncateShiftablePolicy": {
 			rules: SolverRules{
-				NewAbsoluteLinearRule("A", RelativeTimeSpan{2 * time.Hour, 4 * time.Hour}, MustParseAmount("2.0")),
-				NewRelativeLinearRule("Hourly", 10*time.Hour, MustParseAmount("1.0")),
+				NewAbsoluteLinearRule("A", RelativeTimeSpan{2 * time.Hour, 4 * time.Hour}, MustParseAmount("2.0"), MetaData{}),
+				NewRelativeLinearRule("Hourly", 10*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			},
 			expected: SolverRules{
 				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 2 * time.Hour}, StartAmount: AmountZero, EndAmount: MustParseAmount("2.0")},
@@ -359,9 +359,9 @@ func TestAppend(t *testing.T) {
 		// 10 - Overlapping multiple calendar flatrate with linear in the middle and multiple flatrate activation
 		"10-MultipleCalendarFlatrate": {
 			rules: SolverRules{
-				NewAbsoluteFlatRateRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, MustParseAmount("3.0")),
-				NewAbsoluteFlatRateRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, MustParseAmount("3.0")),
-				NewRelativeLinearRule("Hourly", 10*time.Hour, MustParseAmount("1.0")),
+				NewAbsoluteFlatRateRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, MustParseAmount("3.0"), MetaData{}),
+				NewAbsoluteFlatRateRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, MustParseAmount("3.0"), MetaData{}),
+				NewRelativeLinearRule("Hourly", 10*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			},
 			expected: SolverRules{
 				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 3 * time.Hour}, StartAmount: AmountZero, EndAmount: MustParseAmount("3.0")},
@@ -446,8 +446,8 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 	}{
 		// 0 - No intersection below
 		"0-NoIntersectionBelow": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0")),
-			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0"), MetaData{}),
+			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			realtiveStartOffset:   8 * time.Hour,
 			relativeAmountOffset:  0,
 			activatedFlatRatesSum: 0,
@@ -456,8 +456,8 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 1 - No intersection below
 		"1-NoIntersectionAbove": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0")),
-			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0"), MetaData{}),
+			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			realtiveStartOffset:   8 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("4.0"),
 			activatedFlatRatesSum: 0,
@@ -466,8 +466,8 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 2 - No intersection before
 		"2-NoIntersectionBefore": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0")),
-			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0"), MetaData{}),
+			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			realtiveStartOffset:   2 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("2.0"),
 			activatedFlatRatesSum: 0,
@@ -476,8 +476,8 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 3 - No intersection after
 		"3-NoIntersectionAfter": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0")),
-			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0"), MetaData{}),
+			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			realtiveStartOffset:   12 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("4.0"),
 			activatedFlatRatesSum: 0,
@@ -486,8 +486,8 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 4 - Intersection in the middle
 		"4-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0")),
-			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("4.0"), MetaData{}),
+			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			realtiveStartOffset:   8 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("2.0"),
 			activatedFlatRatesSum: 0,
@@ -496,8 +496,8 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 5 - Intersection in the middle
 		"5-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0")),
-			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0"), MetaData{}),
+			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			realtiveStartOffset:   8 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("2.0"),
 			activatedFlatRatesSum: MustParseAmount("2.0"),
@@ -506,8 +506,8 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 6 - Intersection in the middle
 		"6-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0")),
-			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0"), MetaData{}),
+			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			realtiveStartOffset:   6 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("2.0"),
 			activatedFlatRatesSum: MustParseAmount("2.0"),
@@ -516,8 +516,8 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 7 - Intersection in the beginning
 		"7-IntersectionInBeginning": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0")),
-			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0"), MetaData{}),
+			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			realtiveStartOffset:   9 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("3.0"),
 			activatedFlatRatesSum: MustParseAmount("2.0"),
@@ -526,8 +526,8 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 8 - Intersection in the beginning
 		"8-IntersectionInBeginning": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0")),
-			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0"), MetaData{}),
+			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			realtiveStartOffset:   4 * time.Hour,
 			relativeAmountOffset:  0,
 			activatedFlatRatesSum: MustParseAmount("2.0"),
@@ -536,8 +536,8 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		},
 		// 9 - Intersection in the end must be considered as not intersection
 		"9-IntersectionInEnd": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0")),
-			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, MustParseAmount("2.0"), MetaData{}),
+			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, MustParseAmount("1.0"), MetaData{}),
 			realtiveStartOffset:   12 * time.Hour,
 			relativeAmountOffset:  0,
 			activatedFlatRatesSum: MustParseAmount("4.0"),
@@ -551,7 +551,7 @@ func TestFindIntersectPositionFlatRate(t *testing.T) {
 		// >> FindIntersectPositionFlatRate Hourly vs Evening => 10h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s | 7.000 3.000 10.000 6h0m0s
 		// >> FindIntersectPositionFlatRate Hourly vs Evening => 9h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s | 6.000 3.000 10.000 6h0m0s
 		"10-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, MustParseAmount("3.0")),
+			flatRateRule:          NewAbsoluteFlatRateRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, MustParseAmount("3.0"), MetaData{}),
 			relativeRule:          SolverRule{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 13 * time.Hour}, StartAmount: 0, EndAmount: MustParseAmount("7.0"), StartTimePolicy: ShiftablePolicy, RuleResolutionPolicy: ResolvePolicy},
 			realtiveStartOffset:   0, //3 * time.Hour,
 			relativeAmountOffset:  MustParseAmount("3.0"),
