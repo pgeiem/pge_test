@@ -79,69 +79,71 @@ func (tsi TariffSequenceInventory) String() string {
 	return sb.String()
 }
 
-type PrioritizedSequence struct {
-	RelativeTimeSpan
-	Sequence *TariffSequence
-}
-
-type PrioritizedSequences []PrioritizedSequence
-
-func (ps PrioritizedSequences) String() string {
-	var sb strings.Builder
-	sb.WriteString("PrioritizedSequences:\n")
-	for _, s := range ps {
-		sb.WriteString(" - ")
-		sb.WriteString(s.Sequence.Name)
-		sb.WriteString(" ")
-		sb.WriteString(s.RelativeTimeSpan.String())
-		sb.WriteString("\n")
-	}
-	return sb.String()
-}
-
+/*
 // Loop over all sequences from start until window end and define at each time the applicable sequence
-func (tsi TariffSequenceInventory) ResolveSequenceApplicability(now time.Time, window time.Duration) (PrioritizedSequences, error) {
-	var out PrioritizedSequences
-	t := now
-	for t.Before(now.Add(window)) {
 
-		// Loop over all sequences by priority order
-		for _, s := range tsi {
-			// Check if the sequence is applicable at this instant
-			within, timespan, err := s.ValidityPeriod.IsWithin(t)
-			if err != nil {
-				return nil, err
-			}
-			// TODO check if sequence quota or condition is also met
-			if within {
-				relspan := timespan.ToRelativeTimeSpan(now)
-				if relspan.From < 0 {
-					relspan.From = 0
+	func (tsi TariffSequenceInventory) ResolveSequenceApplicability(now time.Time, window time.Duration) (PrioritizedSequences, error) {
+		var out PrioritizedSequences
+		var t time.Duration
+		for t < window {
+
+			// Loop over all sequences by priority order
+			for _, s := range tsi {
+				var relspan RelativeTimeSpan
+				valid := false
+				fmt.Println("Sequence", s.Name)
+				// Check if the sequence has a validity period
+				if s.ValidityPeriod.IsValid() {
+					// Check if the sequence is applicable at this instant
+					within, timespan, err := s.ValidityPeriod.IsWithin(now.Add(t))
+					fmt.Println("Within", within, timespan, err)
+					if err != nil {
+						return nil, err
+					}
+					if within {
+						relspan = timespan.ToRelativeTimeSpan(now)
+						if relspan.From < 0 {
+							relspan.From = 0
+						}
+					}
+					valid = within
+				} else {
+					// If the sequence has no validity period, it is always applicable (default sequence)
+					relspan = RelativeTimeSpan{
+						From: 0,
+						To:   window,
+					}
+					valid = true
 				}
-				out = append(out, PrioritizedSequence{
-					RelativeTimeSpan: relspan,
-					Sequence:         &s,
-				})
-				t = timespan.End
+				// TODO check if sequence quota or condition is also met
+
+				if valid {
+					out = append(out, PrioritizedSequence{
+						RelativeTimeSpan: relspan,
+						Sequence:         &s,
+					})
+					t = relspan.To
+				}
 			}
 		}
+		return out, nil
 	}
-	return out, nil
-}
 
-func (tsi TariffSequenceInventory) Merge(now time.Time, window time.Duration) (SolverRules, error) {
-	var out SolverRules
-	prio, err := tsi.ResolveSequenceApplicability(now, window)
-	fmt.Println(prio)
-	if err != nil {
-		return out, err
+	func (tsi TariffSequenceInventory) Merge(now time.Time, window time.Duration) (SolverRules, error) {
+		var out SolverRules
+		prio, err := tsi.ResolveSequenceApplicability(now, window)
+		fmt.Println(prio)
+		if err != nil {
+			return out, err
+		}
+		for _, s := range prio {
+			out = append(out, s.Sequence.Solver.ExtractRulesInRange(s.RelativeTimeSpan)...)
+		}
+		return out, nil
 	}
-	for _, s := range prio {
-		out = append(out, s.Sequence.Solver.ExtractRulesInRange(s.RelativeTimeSpan)...)
-	}
-	return out, nil
-}
+*/
 
+/*
 func (inventory *TariffSequenceInventory) Solve(now time.Time, window time.Duration) {
 	now = now.Truncate(time.Second)
 	for i := range *inventory {
@@ -153,7 +155,7 @@ func (inventory *TariffSequenceInventory) Solve(now time.Time, window time.Durat
 	out := rules.GenerateOutput(now, true)
 	json, _ := out.ToJson()
 	fmt.Println(string(json))
-}
+}*/
 
 func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
 
