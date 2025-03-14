@@ -79,83 +79,52 @@ func (tsi TariffSequenceInventory) String() string {
 	return sb.String()
 }
 
-/*
-// Loop over all sequences from start until window end and define at each time the applicable sequence
+// Merge all sequences into a single list of rules
+func (inventory TariffSequenceInventory) merge(now time.Time, window time.Duration) (SolverRules, error) { //TODO remove error
+	var out SolverRules
 
-	func (tsi TariffSequenceInventory) ResolveSequenceApplicability(now time.Time, window time.Duration) (PrioritizedSequences, error) {
-		var out PrioritizedSequences
-		var t time.Duration
-		for t < window {
-
-			// Loop over all sequences by priority order
-			for _, s := range tsi {
-				var relspan RelativeTimeSpan
-				valid := false
-				fmt.Println("Sequence", s.Name)
-				// Check if the sequence has a validity period
-				if s.ValidityPeriod.IsValid() {
-					// Check if the sequence is applicable at this instant
-					within, timespan, err := s.ValidityPeriod.IsWithin(now.Add(t))
-					fmt.Println("Within", within, timespan, err)
-					if err != nil {
-						return nil, err
-					}
-					if within {
-						relspan = timespan.ToRelativeTimeSpan(now)
-						if relspan.From < 0 {
-							relspan.From = 0
-						}
-					}
-					valid = within
-				} else {
-					// If the sequence has no validity period, it is always applicable (default sequence)
-					relspan = RelativeTimeSpan{
-						From: 0,
-						To:   window,
-					}
-					valid = true
-				}
-				// TODO check if sequence quota or condition is also met
-
-				if valid {
-					out = append(out, PrioritizedSequence{
-						RelativeTimeSpan: relspan,
-						Sequence:         &s,
-					})
-					t = relspan.To
-				}
-			}
-		}
+	if len(inventory) == 0 {
 		return out, nil
 	}
 
-	func (tsi TariffSequenceInventory) Merge(now time.Time, window time.Duration) (SolverRules, error) {
-		var out SolverRules
-		prio, err := tsi.ResolveSequenceApplicability(now, window)
-		fmt.Println(prio)
-		if err != nil {
-			return out, err
-		}
-		for _, s := range prio {
-			out = append(out, s.Sequence.Solver.ExtractRulesInRange(s.RelativeTimeSpan)...)
-		}
-		return out, nil
+	// If there is only one sequence, return its rules directly skipping merging
+	if len(inventory) == 1 {
+		fmt.Println("Single sequence, skipping merging")
+		return inventory[0].Solver.ExtractRulesInRange(RelativeTimeSpan{0, window}), nil
 	}
-*/
 
-/*
-func (inventory *TariffSequenceInventory) Solve(now time.Time, window time.Duration) {
-	now = now.Truncate(time.Second)
-	for i := range *inventory {
-		(*inventory)[i].Solve(now, window)
+	// Create a scheduler and solve all sequences excepted the last one
+	scheduler := NewScheduler()
+	scheduler.SetWindow(now, window)
+	for i := range (inventory)[:len(inventory)-1] {
+		scheduler.AddSequence(&inventory[i])
+	}
+	// Add latest sequences. Lowest priority sequence must always match the window as it is the default one
+	scheduler.Append(SchedulerEntry{
+		RelativeTimeSpan: RelativeTimeSpan{0, window},
+		Sequence:         &inventory[len(inventory)-1],
+	})
+	fmt.Println("Scheduler:", scheduler.String())
+
+	// Merge all sequences
+	scheduler.entries.Ascend(func(entry SchedulerEntry) bool {
+		out = append(out, entry.Sequence.Solver.ExtractRulesInRange(entry.RelativeTimeSpan)...)
+		return true
+	})
+	return out, nil
+}
+
+func (inventory TariffSequenceInventory) Solve(now time.Time, window time.Duration) {
+	for i := range inventory {
+		inventory[i].Solve(now, window)
 	}
 
 	//TODO handle error
-	rules, _ := inventory.Merge(now, window)
+	rules, _ := inventory.merge(now, window)
 	out := rules.GenerateOutput(now, true)
 	json, _ := out.ToJson()
 	fmt.Println(string(json))
-}*/
+}
 
 func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
 

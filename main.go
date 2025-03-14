@@ -56,8 +56,6 @@ sequences:
         duration: 15h
         hourlyrate: 3.0
   - name: "weekdays"
-    start: pattern(*/* MON 00:00)	
-    end: pattern(*/* SAT 00:00)
     quota: plip
     rules: 
       - nonpaying:
@@ -68,6 +66,15 @@ sequences:
           name: "night"
           start: pattern(*/* 20:00)
           end: pattern(*/* 8:00)
+      - absflatrate:
+          name: "Forfait du samedi"
+          start: pattern(*/* SAT 08:00)
+          end: pattern(*/* SAT 16:00)
+      - abslinear:
+          name: "Prix spécial du lundi"
+          start: pattern(*/* MON 08:00)
+          end: pattern(*/* MON 16:00)
+          hourlyrate: 1.5
       - linear:
           name: "A"
           duration: 1h

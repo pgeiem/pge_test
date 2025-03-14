@@ -1,6 +1,8 @@
 package engine
 
-import "time"
+import (
+	"time"
+)
 
 type TariffDefinition struct {
 	Quotas    QuotaInventory
@@ -22,7 +24,11 @@ func DefaultConfig() TariffConfig {
 
 func (td TariffDefinition) Compute(now time.Time, history []AssignedRight) {
 
+	now = now.Truncate(time.Second)
+
 	// Update the quotas depending on the history
 	td.Quotas.Update(now, history)
+
+	td.Sequences.Solve(now, td.Config.Window)
 
 }

@@ -102,20 +102,17 @@ func TestSchedulerAppend(t *testing.T) {
 				scheduler.Append(entry)
 			}
 
-			var got []SchedulerEntry
-			scheduler.entries.Ascend(func(entry SchedulerEntry) bool {
-				got = append(got, entry)
-				return true
-			})
-
-			if len(got) != len(tt.expected) {
-				t.Errorf("expected %d entries, got %d", len(tt.expected), len(got))
-			}
-
-			for i, entry := range got {
-				if entry.From != tt.expected[i].From || entry.To != tt.expected[i].To || entry.Sequence.Name != tt.expected[i].Sequence.Name {
-					t.Errorf("expected entry %v, got %v", tt.expected[i], entry)
-				}
+			if scheduler.entries.Len() != len(tt.expected) {
+				t.Errorf("expected %d entries, got %d", len(tt.expected), scheduler.entries.Len())
+			} else {
+				i := 0
+				scheduler.entries.Ascend(func(entry SchedulerEntry) bool {
+					if entry.From != tt.expected[i].From || entry.To != tt.expected[i].To || entry.Sequence.Name != tt.expected[i].Sequence.Name {
+						t.Errorf("expected entry %v, got %v", tt.expected[i], entry)
+					}
+					i++
+					return true
+				})
 			}
 		})
 	}

@@ -46,6 +46,8 @@ func (entries SchedulerEntries) String() string {
 }
 
 type Scheduler struct {
+	now     time.Time
+	window  time.Duration
 	entries *btree.BTreeG[SchedulerEntry]
 }
 
@@ -59,6 +61,23 @@ func NewScheduler() Scheduler {
 	return Scheduler{
 		entries: btree.NewG(2, RulesLess),
 	}
+}
+
+func (s *Scheduler) String() string {
+	var sb strings.Builder
+	sb.WriteString("Scheduler Entries:\n")
+	s.entries.Ascend(func(entry SchedulerEntry) bool {
+		sb.WriteString("  - ")
+		sb.WriteString(entry.String())
+		sb.WriteString("\n")
+		return true
+	})
+	return sb.String()
+}
+
+func (s *Scheduler) SetWindow(now time.Time, window time.Duration) {
+	s.now = now
+	s.window = window
 }
 
 // Solve the rule against an Higer Priority Rule resolving the conflict according to rule policy
@@ -126,6 +145,12 @@ func (s *Scheduler) Append(lpEntry SchedulerEntry) {
 		if entry.Duration() > time.Duration(0) {
 			s.entries.ReplaceOrInsert(entry)
 		}
+	}
+}
+
+func (s *Scheduler) AddSequence(seq *TariffSequence) {
+	for _, seg := range seq.ValidityPeriod.Between(s.now, s.now.Add(s.window)) {
+		s.Append(SchedulerEntry{seg.ToRelativeTimeSpan(s.now), seq})
 	}
 }
 
