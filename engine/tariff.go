@@ -25,7 +25,8 @@ func DefaultConfig() TariffConfig {
 
 func (td TariffDefinition) Compute(now time.Time, history []AssignedRight) {
 
-	now = now.Truncate(time.Second)
+	now = now.Local().Truncate(time.Second)
+	fmt.Println("Now is", now)
 
 	// Update the quotas depending on the history
 	td.Quotas.Update(now, history)

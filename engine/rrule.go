@@ -107,11 +107,11 @@ type RecurrentDatePattern struct {
 }
 
 func (r *RecurrentDatePattern) ParseFromDatePattern(pattern string) error {
-	rule, err := builRRuleFromDatePattern(pattern)
+	rule, err := buildRRuleFromDatePattern(pattern)
 	if err != nil {
 		return fmt.Errorf("error while parsing %s rule pattern, %v", pattern, err)
 	}
-	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
+	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.Local)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
 	r.rule = rule
 	r.origPattern = pattern
 	return nil
@@ -122,7 +122,7 @@ func (r *RecurrentDatePattern) ParseFromRRule(pattern string) error {
 	if err != nil {
 		return fmt.Errorf("error while parsing %s rule pattern, %v", pattern, err)
 	}
-	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
+	rule.DTStart(time.Date(2020, 01, 01, 0, 0, 0, 0, time.Local)) //TODO: Start date must be before the current date to find the previous occurrence, see if any smarter thing can be done
 	r.rule = rule
 	r.origPattern = pattern
 	return nil
@@ -226,8 +226,8 @@ func expandDateComponentList(pattern string) ([]int, error) {
 // Regular expression to parse a date pattern in the form of "<yyyy/>mm/dd <weekdays> hh:mm<:ss> <extra>"
 var rrule_regex = regexp.MustCompile(`^(?:([\d\-,*]+)\/)?([\d\-,*]+)\/([\d\-,*]+)\s+(?:([\w\-,*]*)\s+)?([\d\-,*]+):([\d\-,*]+)(?::([\d\-,*]*))?(?: (.*))?$`)
 
-// builRRuleFromDatePattern takes a date pattern in the form of "<yyyy/>mm/dd <weekdays> hh:mm<:ss> <extra>" and returns a RRule object
-func builRRuleFromDatePattern(pattern string) (*rrule.RRule, error) {
+// buildRRuleFromDatePattern takes a date pattern in the form of "<yyyy/>mm/dd <weekdays> hh:mm<:ss> <extra>" and returns a RRule object
+func buildRRuleFromDatePattern(pattern string) (*rrule.RRule, error) {
 
 	//Parse the date pattern
 	matches := rrule_regex.FindStringSubmatch(pattern)
