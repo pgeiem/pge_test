@@ -1,15 +1,14 @@
-package parser
+package engine
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/goccy/go-yaml"
-	"github.com/iem-rd/quoteengine/engine"
 )
 
 // TODO rewrite this based on ast.Node
-func unmarshalQuota(quota *engine.Quota, data []byte) error {
+func unmarshalQuota(quota *Quota, data []byte) error {
 	temp := struct {
 		Type string `yaml:"type"`
 	}{}
@@ -22,8 +21,8 @@ func unmarshalQuota(quota *engine.Quota, data []byte) error {
 	switch strings.ToLower(temp.Type) {
 	case "duration":
 		q := struct {
-			engine.DurationQuota `yaml:",inline"`
-			Type                 string `yaml:"type"`
+			DurationQuota `yaml:",inline"`
+			Type          string `yaml:"type"`
 		}{}
 		if err := yaml.UnmarshalWithOptions(data, &q, decoderOptions()...); err != nil {
 			return fmt.Errorf("failed to parse duration quota: %w", err)
@@ -31,8 +30,8 @@ func unmarshalQuota(quota *engine.Quota, data []byte) error {
 		*quota = &q.DurationQuota
 	case "counter":
 		q := struct {
-			engine.CounterQuota `yaml:",inline"`
-			Type                string `yaml:"type"`
+			CounterQuota `yaml:",inline"`
+			Type         string `yaml:"type"`
 		}{}
 		if err := yaml.UnmarshalWithOptions(data, &q, decoderOptions()...); err != nil {
 			return fmt.Errorf("failed to parse counter quota: %w", err)

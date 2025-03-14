@@ -1,4 +1,4 @@
-package parser
+package engine
 
 import (
 	"bytes"
@@ -8,7 +8,6 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
-	"github.com/iem-rd/quoteengine/engine"
 )
 
 type ParserTariffRoot struct {
@@ -41,12 +40,12 @@ func nodeToValueContext(ctx context.Context, node ast.Node, v interface{}, opts 
 	return nil
 }
 
-func ParseTariffDefinition(data []byte) (engine.TariffDefinition, error) {
+func ParseTariffDefinition(data []byte) (TariffDefinition, error) {
 	/* This parse the YAML file root level manually, section after section because
 	we need to parse them in a specific order. For example the quotas need to be
 	parsed before any section that references them. */
 
-	var tariff engine.TariffDefinition
+	var tariff TariffDefinition
 
 	// Parse YAML into a temporary root level only struct
 	var desc ParserTariffRoot
@@ -69,7 +68,7 @@ func ParseTariffDefinition(data []byte) (engine.TariffDefinition, error) {
 			return tariff, fmt.Errorf("failed to parse nonpaying section: %w", err)
 		}
 	} else {
-		tariff.Config = engine.DefaultConfig()
+		tariff.Config = DefaultConfig()
 	}
 
 	// Decode the nonpaying section
@@ -101,10 +100,10 @@ func ParseTariffDefinition(data []byte) (engine.TariffDefinition, error) {
 	return tariff, nil
 }
 
-func ParseTariffDefinitionFile(filename string) (engine.TariffDefinition, error) {
+func ParseTariffDefinitionFile(filename string) (TariffDefinition, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return engine.TariffDefinition{}, err
+		return TariffDefinition{}, err
 	}
 	return ParseTariffDefinition(data)
 }

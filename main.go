@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/iem-rd/quoteengine/parser"
+	"github.com/iem-rd/quoteengine/engine"
 )
 
 func main() {
@@ -79,17 +79,10 @@ sequences:
           name: "A"
           duration: 1h
           hourlyrate: 1.0
-          meta: 
-            color: red
-      - flatrate:
-          name: "B"
-          duration: 24h
-          amount: 2.0 
-          meta: 
-            color: blue
+          duration: 20h        
 `
 
-	t, err := parser.ParseTariffDefinition([]byte(sampleyaml))
+	t, err := engine.ParseTariffDefinition([]byte(sampleyaml2))
 	if err != nil {
 		panic(err)
 	}
