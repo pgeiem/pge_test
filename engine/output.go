@@ -55,7 +55,7 @@ func (s *SolverRules) GenerateOutput(now time.Time, detailed bool) Output {
 		}
 		seg := OutputSegment{
 			Duration:     int(math.Round(rule.To.Seconds() - previous.To.Seconds())),
-			Amount:       rule.EndAmount,
+			Amount:       rule.EndAmount.Simplify(),
 			Islinear:     !rule.IsFlatRate(),
 			DurationType: rule.DurationType,
 			Meta:         rule.Meta,

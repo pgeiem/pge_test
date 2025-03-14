@@ -95,7 +95,11 @@ sequences:
 	}
 	fmt.Printf("%v\n", t)
 
-	t.Sequences.Solve(time.Now(), time.Hour*24*7)
+	//now := time.Now()
+	now, _ := time.ParseInLocation("2006-01-02T15:04:05", "2025-03-14T15:54:30", time.Local)
+	t.Compute(now, []engine.AssignedRight{})
+
+	//t.Sequences.Solve(time.Now(), time.Hour*24*7)
 
 }
 

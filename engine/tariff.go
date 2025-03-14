@@ -7,7 +7,7 @@ import (
 
 type TariffDefinition struct {
 	Quotas    QuotaInventory
-	NonPaying NonPayingInventory
+	NonPaying AbsoluteNonPayingRules
 	Sequences TariffSequenceInventory
 	Config    TariffConfig
 }

@@ -35,7 +35,7 @@ func (ts TariffSequence) String() string {
 	return sb.String()
 }
 
-func (ts TariffSequence) Solve(now time.Time, window time.Duration, globalNonpaying NonPayingInventory) {
+func (ts TariffSequence) Solve(now time.Time, window time.Duration, globalNonpaying AbsoluteNonPayingRules) {
 	ts.Solver.SetWindow(now, window)
 	// Append first all global nonpaying rules...
 	for i := range globalNonpaying {
@@ -66,6 +66,7 @@ func (tsi TariffSequenceInventory) String() string {
 		}
 		sb.WriteString("\n")
 	}
+
 	return sb.String()
 }
 
@@ -105,7 +106,7 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 	return out, nil
 }
 
-func (inventory TariffSequenceInventory) Solve(now time.Time, window time.Duration, globalNonpaying NonPayingInventory) {
+func (inventory TariffSequenceInventory) Solve(now time.Time, window time.Duration, globalNonpaying AbsoluteNonPayingRules) {
 	//Solve all sequences individually
 	for i := range inventory {
 		inventory[i].Solve(now, window, globalNonpaying)

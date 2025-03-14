@@ -213,7 +213,7 @@ func (s *Solver) SolveVsAll(lpRule SolverRule) (SolverRules, bool) {
 	} else {
 		s.rules.Ascend(func(hpRule *SolverRule) bool {
 			newRules, changed = s.solveVsSingle(lpRule, hpRule)
-			fmt.Println(" >> solveVsSingle Result", newRules, changed)
+			//fmt.Println(" >> solveVsSingle Result", newRules, changed)
 			return !changed // Stop the iterator loop if the rule has been changed
 		})
 	}

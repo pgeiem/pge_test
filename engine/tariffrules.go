@@ -96,6 +96,8 @@ type AbsoluteNonPayingRule struct {
 	RecurrentTimeSpan `yaml:",inline"`
 }
 
+type AbsoluteNonPayingRules []AbsoluteNonPayingRule
+
 func (r AbsoluteNonPayingRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
 	cnt := 0
 	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {

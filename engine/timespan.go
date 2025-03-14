@@ -161,5 +161,8 @@ func (rs *RecurrentTimeSpan) IsWithin(t time.Time) (bool, AbsTimeSpan, error) {
 
 // Stringer for RecurrentSegment display start and end
 func (rs RecurrentTimeSpan) String() string {
-	return rs.Start.String() + " -> " + rs.End.String()
+	if rs.Start != nil && rs.End != nil {
+		return rs.Start.String() + " -> " + rs.End.String()
+	}
+	return "<nil>"
 }
