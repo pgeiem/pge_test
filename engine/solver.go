@@ -132,6 +132,7 @@ func (s *Solver) solveVsSingle(lpRule SolverRule, hpRule *SolverRule) (SolverRul
 	}
 
 	fmt.Println("   ## solveVsSingle", lpRule.Name(), "vs", hpRule.Name())
+	lpRule.Trace = append(lpRule.Trace, fmt.Sprintf("solve against %s", hpRule.Name()))
 
 	switch lpRule.RuleResolutionPolicy {
 
@@ -328,17 +329,17 @@ func (s *Solver) ExtractRulesInRange(timespan RelativeTimeSpan) SolverRules {
 			// rule is longer than timespan (timespan fully inside rule), then rule beginning and end are truncated
 		} else if rule.From <= timespan.From && rule.To >= timespan.To {
 			r := rule.TruncateAfter(timespan.To).TruncateBefore(timespan.From)
-			r.Trace = append(r.Trace, fmt.Sprintf("truncate from %s to %sfor sequence merging", timespan.From, timespan.To))
+			r.Trace = append(r.Trace, "truncated for sequence merging")
 			out = append(out, r)
 			// rule is partially at the end of timespan, then rule end is truncated
 		} else if rule.From < timespan.To && rule.To >= timespan.To {
 			r := rule.TruncateAfter(timespan.To)
-			r.Trace = append(r.Trace, fmt.Sprintf("truncate after %s for sequence merging", timespan.To))
+			r.Trace = append(r.Trace, "truncated for sequence merging")
 			out = append(out, r)
 			// rule is partially at the end beginning of timespan, then rule beginning is truncated
 		} else if rule.From <= timespan.From && rule.To > timespan.From {
 			r := rule.TruncateBefore(timespan.From)
-			r.Trace = append(r.Trace, fmt.Sprintf("truncate before %s for sequence merging", timespan.From))
+			r.Trace = append(r.Trace, "truncated for sequence merging")
 			out = append(out, r)
 		}
 		return true

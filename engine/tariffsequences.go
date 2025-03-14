@@ -11,7 +11,6 @@ type TariffSequence struct {
 	Name           string
 	ValidityPeriod RecurrentTimeSpan
 	Quota          Quota
-	NonPaying      NonPayingInventory
 	Rules          SolvableRules
 	Solver         Solver
 }
@@ -36,18 +35,16 @@ func (ts TariffSequence) String() string {
 	return sb.String()
 }
 
-func (ts TariffSequence) Solve(now time.Time, window time.Duration) {
+func (ts TariffSequence) Solve(now time.Time, window time.Duration, globalNonpaying NonPayingInventory) {
 	ts.Solver.SetWindow(now, window)
-	//TODO append NonPaying rules
-	/*for i := range ts.NonPaying {
-		ts.NonPaying[i].ToSolverRules(now, now.Add(window), ts.Solver.Append)
-		ts.Solver.Append(ts.NonPaying[i])
-	}*/
+	// Append first all global nonpaying rules...
+	for i := range globalNonpaying {
+		globalNonpaying[i].ToSolverRules(now, now.Add(window), ts.Solver.Append)
+	}
+	// ... then the sequence rules
 	for i := range ts.Rules {
 		ts.Rules[i].ToSolverRules(now, now.Add(window), ts.Solver.Append)
 	}
-
-	//FIXME PGE
 }
 
 type TariffSequenceInventory []TariffSequence
@@ -61,13 +58,6 @@ func (tsi TariffSequenceInventory) String() string {
 		sb.WriteString(s.String())
 		sb.WriteString("\n")
 
-		sb.WriteString("    NonPaying:\n")
-		for _, r := range s.NonPaying {
-			sb.WriteString("      - ")
-			sb.WriteString(r.String())
-			sb.WriteString("\n")
-		}
-
 		sb.WriteString("    Rules:\n")
 		for _, r := range s.Rules {
 			sb.WriteString("     - ")
@@ -80,7 +70,7 @@ func (tsi TariffSequenceInventory) String() string {
 }
 
 // Merge all sequences into a single list of rules
-func (inventory TariffSequenceInventory) merge(now time.Time, window time.Duration) (SolverRules, error) { //TODO remove error
+func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Duration) (SolverRules, error) { //TODO remove error
 	var out SolverRules
 
 	if len(inventory) == 0 {
@@ -99,7 +89,7 @@ func (inventory TariffSequenceInventory) merge(now time.Time, window time.Durati
 	for i := range (inventory)[:len(inventory)-1] {
 		scheduler.AddSequence(&inventory[i])
 	}
-	// Add latest sequences. Lowest priority sequence must always match the window as it is the default one
+	// Add latest sequences. Lowest priority sequence must always match the window as it's the default one
 	scheduler.Append(SchedulerEntry{
 		RelativeTimeSpan: RelativeTimeSpan{0, window},
 		Sequence:         &inventory[len(inventory)-1],
@@ -109,32 +99,27 @@ func (inventory TariffSequenceInventory) merge(now time.Time, window time.Durati
 	// Merge all sequences
 	scheduler.entries.Ascend(func(entry SchedulerEntry) bool {
 		out = append(out, entry.Sequence.Solver.ExtractRulesInRange(entry.RelativeTimeSpan)...)
+		fmt.Println("Merging", entry.Sequence.Name, "rules", out)
 		return true
 	})
 	return out, nil
 }
 
-func (inventory TariffSequenceInventory) Solve(now time.Time, window time.Duration) {
+func (inventory TariffSequenceInventory) Solve(now time.Time, window time.Duration, globalNonpaying NonPayingInventory) {
+	//Solve all sequences individually
 	for i := range inventory {
-		inventory[i].Solve(now, window)
+		inventory[i].Solve(now, window, globalNonpaying)
 	}
-
-	//TODO handle error
-	rules, _ := inventory.merge(now, window)
-	out := rules.GenerateOutput(now, true)
-	json, _ := out.ToJson()
-	fmt.Println(string(json))
 }
 
 func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
 
 	// Temporarily unmarshal the sequences section in a temporary struct
 	temp := []struct {
-		Name           string             `yaml:"name"`
-		ValidityPeriod RecurrentTimeSpan  `yaml:",inline"`
-		Quota          string             `yaml:"quota,"`
-		NonPayingRules NonPayingInventory `yaml:"nonpaying"`
-		Rules          SolvableRules      `yaml:"rules"`
+		Name           string            `yaml:"name"`
+		ValidityPeriod RecurrentTimeSpan `yaml:",inline"`
+		Quota          string            `yaml:"quota,"`
+		Rules          SolvableRules     `yaml:"rules"`
 	}{}
 	err := unmarshal(&temp)
 	if err != nil {
@@ -148,7 +133,6 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 		seq := NewTariffSequence()
 		seq.Name = n.Name
 		seq.ValidityPeriod = n.ValidityPeriod
-		seq.NonPaying = n.NonPayingRules
 		seq.Rules = n.Rules
 
 		// Search the coresponding quota

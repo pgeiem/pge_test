@@ -24,8 +24,8 @@ type RelativeLinearRule struct {
 	HourlyRate Amount        `yaml:"hourlyrate"`
 }
 
-func (r RelativeLinearRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
-	iterator(NewRelativeLinearRule(r.RuleName, r.Duration, r.HourlyRate, r.Meta))
+func (r RelativeLinearRule) ToSolverRules(from, to time.Time, appender func(SolverRule)) {
+	appender(NewRelativeLinearRule(r.RuleName, r.Duration, r.HourlyRate, r.Meta))
 }
 
 func (r RelativeLinearRule) String() string {
@@ -38,8 +38,8 @@ type RelativeFlatRateRule struct {
 	Amount   Amount        `yaml:"amount"`
 }
 
-func (r RelativeFlatRateRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
-	iterator(NewRelativeFlatRateRule(r.RuleName, r.Duration, r.Amount, r.Meta))
+func (r RelativeFlatRateRule) ToSolverRules(from, to time.Time, appender func(SolverRule)) {
+	appender(NewRelativeFlatRateRule(r.RuleName, r.Duration, r.Amount, r.Meta))
 }
 
 func (r RelativeFlatRateRule) String() string {
@@ -53,10 +53,14 @@ type AbsoluteLinearRule struct {
 }
 
 // Unrolling the recurrent segment into a list of solver rules
-func (r AbsoluteLinearRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
+func (r AbsoluteLinearRule) ToSolverRules(from, to time.Time, appender func(SolverRule)) {
+	cnt := 0
 	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
-		iterator(NewAbsoluteLinearRule(r.RuleName, ts, r.HourlyRate, r.Meta))
+		solverRule := NewAbsoluteLinearRule(r.RuleName, ts, r.HourlyRate, r.Meta)
+		solverRule.Trace = append(solverRule.Trace, fmt.Sprintf("Occurence no%d", cnt))
+		appender(solverRule)
+		cnt++
 		return true
 	})
 }
@@ -72,9 +76,13 @@ type AbsoluteFlatRateRule struct {
 }
 
 func (r AbsoluteFlatRateRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
+	cnt := 0
 	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
-		iterator(NewAbsoluteFlatRateRule(r.RuleName, ts, r.Amount, r.Meta))
+		solverRule := NewAbsoluteFlatRateRule(r.RuleName, ts, r.Amount, r.Meta)
+		solverRule.Trace = append(solverRule.Trace, fmt.Sprintf("Occurence no%d", cnt))
+		iterator(solverRule)
+		cnt++
 		return true
 	})
 }
@@ -89,9 +97,13 @@ type AbsoluteNonPayingRule struct {
 }
 
 func (r AbsoluteNonPayingRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
+	cnt := 0
 	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
-		iterator(NewAbsoluteNonPaying(r.RuleName, ts, r.Meta))
+		solverRule := NewAbsoluteNonPaying(r.RuleName, ts, r.Meta)
+		solverRule.Trace = append(solverRule.Trace, fmt.Sprintf("Occurence no%d", cnt))
+		iterator(solverRule)
+		cnt++
 		return true
 	})
 }

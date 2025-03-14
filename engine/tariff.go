@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -29,6 +30,14 @@ func (td TariffDefinition) Compute(now time.Time, history []AssignedRight) {
 	// Update the quotas depending on the history
 	td.Quotas.Update(now, history)
 
-	td.Sequences.Solve(now, td.Config.Window)
+	// Solve all sequences
+	td.Sequences.Solve(now, td.Config.Window, td.NonPaying)
+
+	// Merge all sequences together
+	rules, _ := td.Sequences.Merge(now, td.Config.Window) //TODO handle error if needed
+
+	out := rules.GenerateOutput(now, true)
+	json, _ := out.ToJson()
+	fmt.Println(string(json))
 
 }

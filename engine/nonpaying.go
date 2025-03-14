@@ -2,35 +2,9 @@ package engine
 
 import (
 	"strings"
-	"time"
 )
 
-// Non paying rules
-type NonPayingRule struct {
-	RuleName          string `yaml:"name"`
-	RecurrentTimeSpan `yaml:",inline"`
-}
-
-// Stringer for NonPayingRule display rule name and segment
-func (npr NonPayingRule) String() string {
-	return npr.RuleName + ": " + npr.RecurrentTimeSpan.String()
-}
-
-func (npr NonPayingRule) Name() string {
-	return npr.RuleName
-}
-
-func (npr NonPayingRule) RelativeToWindow(from, to time.Time, iterator func(RelativeTimeSpan) bool) {
-	npr.RecurrentTimeSpan.BetweenIterator(from, to, func(s AbsTimeSpan) bool {
-		return iterator(s.ToRelativeTimeSpan(from))
-	})
-}
-
-func (npr NonPayingRule) Policies() (StartTimePolicy, RuleResolutionPolicy) {
-	return FixedPolicy, TruncatePolicy
-}
-
-type NonPayingInventory []NonPayingRule
+type NonPayingInventory []AbsoluteNonPayingRule
 
 // Stringer for NonPayingInventory display all rules as a dashed list
 func (npi NonPayingInventory) String() string {
