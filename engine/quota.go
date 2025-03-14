@@ -71,9 +71,9 @@ type Quota interface {
 
 // AbstractQuota is a helper to ease the implementation of different quotas types
 type AbstractQuota struct {
-	Name               string        `yaml:"name" validate:"required"`
+	Name               string        `yaml:"name"`
 	MatchingRules      MatchingRules `yaml:"matching"`
-	PeriodicityRule    RecurrentDate `yaml:"periodicity" validate:"required"`
+	PeriodicityRule    RecurrentDate `yaml:"periodicity"`
 	DefaultAreaPattern string        `yaml:"-"`
 	DefaultTypePattern string        `yaml:"-"`
 }

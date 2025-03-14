@@ -31,8 +31,8 @@ func (r RelativeTimeSpan) IsValid() bool {
 }
 
 type AbsTimeSpan struct {
-	Start time.Time `yaml:"start" validate:"required"`
-	End   time.Time `yaml:"end" validate:"required"`
+	Start time.Time `yaml:"start"`
+	End   time.Time `yaml:"end"`
 }
 
 func (s *AbsTimeSpan) Duration() time.Duration {
@@ -55,8 +55,8 @@ func (s *AbsTimeSpan) ToRelativeTimeSpan(now time.Time) RelativeTimeSpan {
 }
 
 type RecurrentTimeSpan struct {
-	Start RecurrentDate `yaml:"start" validate:"required"`
-	End   RecurrentDate `yaml:"end" validate:"required"`
+	Start RecurrentDate `yaml:"start"`
+	End   RecurrentDate `yaml:"end"`
 }
 
 // Create a recurrent timespan from two recurrent dates pattern
