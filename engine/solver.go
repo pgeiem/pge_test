@@ -201,7 +201,7 @@ func (s *Solver) SolveVsAll(lpRule SolverRule) (SolverRules, bool) {
 		s.activatedFlatRatesSum += bestFlatRate.EndAmount
 		if newRule.Duration() > time.Duration(0) {
 			// Add a new rule based on the activated flatrate
-			newRule.StartAmount, newRule.EndAmount = AmountZero, AmountZero
+			newRule.StartAmount, newRule.EndAmount = 0, 0
 			newRule.Trace = append(newRule.Trace, fmt.Sprintf("derivated from flatrate %s, crossed by %s", bestFlatRate.Name(), lpRule.Name()))
 			s.rules.ReplaceOrInsert(&newRule)
 		}

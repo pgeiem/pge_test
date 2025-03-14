@@ -10,7 +10,7 @@ import (
 type OutputSegment struct {
 	SegName      string       `json:"n,omitempty"`
 	Trace        []string     `json:"dbg,omitempty"`
-	Time         int          `json:"t"`
+	Duration     int          `json:"d"`
 	Amount       Amount       `json:"a"`
 	Islinear     bool         `json:"l"`
 	DurationType DurationType `json:"dt,omitempty"`
@@ -18,7 +18,7 @@ type OutputSegment struct {
 }
 
 func (seg OutputSegment) String() string {
-	at := time.Duration(seg.Time) * time.Second
+	at := time.Duration(seg.Duration) * time.Second
 	return fmt.Sprintf(" - %s: %s (isLinear %t)", at, seg.Amount, seg.Islinear)
 }
 
@@ -54,8 +54,8 @@ func (s *SolverRules) GenerateOutput(now time.Time, detailed bool) Output {
 			break
 		}
 		seg := OutputSegment{
-			Time:         int(math.Round(rule.To.Seconds())),
-			Amount:       rule.EndAmount + previous.EndAmount,
+			Duration:     int(math.Round(rule.To.Seconds() - previous.To.Seconds())),
+			Amount:       rule.EndAmount,
 			Islinear:     !rule.IsFlatRate(),
 			DurationType: rule.DurationType,
 			Meta:         rule.Meta,
