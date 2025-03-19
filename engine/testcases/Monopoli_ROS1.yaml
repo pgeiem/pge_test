@@ -2,24 +2,20 @@ version: "0.1"
 config:
   window: 30d
 nonpaying:
-  - name: "sunday"
-    start: pattern(*/* SUN 00:00)
-    end: pattern(*/* MON 00:00)
   - name: "night"
-    start: pattern(*/* 21:00)
+    start: pattern(*/* 19:00)
     end: pattern(*/* 09:00)
-  - name: "lunch"
-    start: pattern(*/*  13:00)
-    end: pattern(*/* 17:00)
 
 sequences:
-  - name: "BIMA"
+  - name: "ROS1 Summer"
+    start: pattern(06/01 00:00)
+    end: pattern(09/30 23:59:59)
     rules:
       - flatrate:
           name: "minamount"
           duration: 30m
-          amount: 0.5
+          amount: 0.50
       - linear:
           name: "hourlyrate"
           hourlyrate: 1.0
-          duration: 30d
+          duration: 3h

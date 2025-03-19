@@ -1,24 +1,26 @@
-- name: "Simple ticket"
-  tests:
-    now: 2025-03-17T06:00:00
-    2h30m: 3.00
-    end: 2025-03-17T10:30:00
-    description: "..."
-- name: "Late arrival long duration"
-  tests:
-    now: 2025-03-21T23:15:00
-    32h: 10.00
-    end: 2025-03-24T23:15:00
-    description: "Need to be sure forfeit is for 24 hours"
-- name: "2 days"
-  tests:
-    now: 2025-03-17T14:00:00
-    48h: 15.00
-    end: 2025-03-20T14:00:00
-    description: "Need to be sure forfeit is for 24 hours"
-- name: "4 hours of parking with sunday inside"
-  tests:
-    now: 2025-03-22T22:30:00
-    4h: 4.80
-    end: 2025-03-24T10:30:00
-    description: "..."
+version: "0.1"
+config:
+  window: 30d
+nonpaying:
+  - name: "sunday"
+    start: pattern(*/* SUN 00:00)
+    end: pattern(*/* MON 00:00)  
+  - name: "night"
+    start: pattern(*/* 00:00)
+    end: pattern(*/* 08:00)
+
+sequences:
+  - name: "SCP1"
+    rules:
+      - flatrate:
+          name: "minamount"
+          duration: 30m
+          amount: 0.60
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.2
+          duration: 30d
+      - flatrate:
+          name: "daily"
+          duration: 24h
+          amount: 5.0

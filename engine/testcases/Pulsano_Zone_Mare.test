@@ -1,0 +1,25 @@
+- name: "Simple ticket"
+  now: 2025-06-16T07:37:00
+  desc: "2 hours and 30 min ticket with early arrival"
+  end: 2025-06-16T10:30:00
+  amount: 2.50
+- name: "simple ticket 2"
+  now: 2025-06-16T08:15:00
+  desc: "..."
+  end: 2025-06-16T12:30:00
+  amount: 4.20
+- name: "1 day forfeit"
+  now: 2025-07-08T07:23:00
+  desc: "7hours of parking means 1day flatrate for 5€"
+  end: 2025-07-09T08:00:00
+  amount: 5.00
+- name: "3 day forfeit"
+  now: 2025-07-14T20:00:00
+  desc: "42h of parking mean 3x 5€ flatrate"
+  end: 2025-07-17T08:00:00
+  amount: 15.00
+- name: "5 € with Late arrival "
+  now: 2025-07-15T00:10:00
+  desc: ".."
+  end: 2025-07-16T00:10:00
+  amount: 5.00

@@ -1,36 +1,55 @@
-- name: "Simple summer tariff"
-  tests:
-    now: 2025-07-10T09:15:00
-    1h: 5.00
-    end: 2025-03-17T10:15:00
-    description: "..."
-- name: "Simple summer tariff"
-  tests:
-    now: 2025-07-10T013:18:00
-    1h12: 6.00
-    end: 2025-03-17T14:30:00
-    description: "..."
-- name: "Max amount summer"
-  tests:
-    now: 2025-07-09T22:15:00
-    1h42m: 8.50
-    end: 2025-03-17T08:42:00
-    description: "Parking start 07/10 at 00:00 for 1h30, then 12 last minutes start 8h30"
-- name: "Simple winter tariff"
-  tests:
-    now: 2025-04-11T15:14:00
-    1h: 5.00
-    end: 2025-04-12T01:00:00
-    description: "Friday is free, parking start saturday 12 at 00:00 for 1h"
-- name: "Simple winter tariff"
-  tests:
-    now: 2025-04-12T15:14:00
-    1h12: 6.00
-    end: 2025-04-12T16:26:00
-    description: "Friday is free, parking start saturday 12 at 00:00 for 1h"
-- name: "Max amount winter"
-  tests:
-    now: 2025-04-10T22:15:00
-    1h42m: 8.50
-    end: 2025-04-12T08:42:00
-    description: "Thursday is free, parking start saturday 12 at 00:00 for 1h30 and 12 last minutes start 8h30"
+version: "0.1"
+config:
+  window: 1d
+nonpaying:
+  name: "night"
+  start: pattern(*/* 01:30)
+  end: pattern(*/* 08:30)
+
+sequences:
+  - name: "ESMB"
+    start: pattern(06/01 00:00)
+    end: pattern(10/01 00:00)
+    rules:
+      - flatrate:
+          name: "minamount"
+          duration: 1h
+          amount: 5.0
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 5.0
+          duration: 1h42m
+
+  - name: "MPBE Jun-Sep"
+    start: pattern(04/01 00:00)
+    end: pattern(06/01 00:00)
+    rules:
+      - nonpaying:
+          name: "weekdays-free"
+          start: pattern(*/* TUE 00:00)
+          end: pattern(*/* SAT 00:00)
+      - flatrate:
+          name: "minamount"
+          duration: 1h
+          amount: 5.0
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 5.0
+          duration: 1h42m
+
+  - name: "MPBE October"
+    start: pattern(10/01 00:00)
+    end: pattern(11/01 00:00)
+    rules:
+      - nonpaying:
+          name: "weekdays-free"
+          start: pattern(*/* TUE 00:00)
+          end: pattern(*/* SAT 00:00)
+      - flatrate:
+          name: "minamount"
+          duration: 1h
+          amount: 5.0
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 5.0
+          duration: 1h42m

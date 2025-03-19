@@ -1,41 +1,42 @@
 version: "0.1"
 config:
   window: 30d
+
 sequences:
-  - name: "R2EE"
+  - name: "V1EE"
     start: pattern(06/01 00:00)
     end: pattern(10/01 00:00)
     rules:
       - nonpaying:
-        name: "night"
-        start: pattern(*/* 01:30)
-        end: pattern(*/* 08:30)
+          name: "night"
+          start: pattern(*/* 01:30)
+          end: pattern(*/* 08:30)
       - flatrate:
           name: "minamount"
           duration: 30m
           amount: 0.50
       - linear:
           name: "hourlyrate"
-          hourlyrate: 2.0
-          duration: 12h15m
+          hourlyrate: 1.0
+          duration: 24h30m
 
-  - name: "R2EI"
+  - name: "V1EI"
     start: pattern(10/01 00:00)
     end: pattern(06/01 00:00)
     rules:
       - nonpaying:
-        name: "night"
-        start: pattern(*/* 20:30)
-        end: pattern(*/* 08:30)
+          name: "night"
+          start: pattern(*/* 20:30)
+          end: pattern(*/* 08:30)
       - nonpaying:
-        name: "lunch"
-        start: pattern(*/* 13:30)
-        end: pattern(*/* 16:30)
+          name: "lunch"
+          start: pattern(*/* 13:30)
+          end: pattern(*/* 16:30)
       - flatrate:
           name: "minamount"
           duration: 30m
           amount: 0.50
       - linear:
           name: "hourlyrate"
-          hourlyrate: 2.0
-          duration: 12h15m
+          hourlyrate: 1.0
+          duration: 24h30m

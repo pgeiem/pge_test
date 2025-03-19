@@ -1,36 +1,37 @@
-- name: "Simple winter tariff"
-  tests:
-    now: 2025-03-17T06:15:00
-    3h: 3.00
-    end: 2025-03-17T11:30:00
-    description: "..."
-- name: "Simple winter tariff max amount"
-  tests:
-    now: 2025-03-17T08:30:00
-    25h: 25.00
-    end: 2025-03-19T18:30:00
-    description: "..."
-- name: "Simple summer tariff"
-  tests:
-    now: 2025-07-02T06:15:00
-    3h: 3.00
-    end: 2025-03-17T11:30:00
-    escription: "..."
-- name: "Simple summer tariff max amount"
-  tests:
-    now: 2025-07-02T00:00:00
-    25h: 25.00
-    end: 2025-07-03T15:00:00
-    description: "..."
-- name: "Winter x Summer"
-  tests:
-    now: 2025-05-31T07:00:00
-    25h: 25.00
-    end: 2025-06-01T23:00:00
-    description: "31/05 its winter tariff so start at 8:30 and finish at 20:30 so 9h, and next day its summer 1h30 + 14h30 = 16h, for a total of 25h (max amnount)"
-- name: "Summer x Winter"
-  tests:
-    now: 2025-09-29T23:15:00
-    25h: 25.00
-    end: 2025-10-01T19:30:00
-    description: "Parking start 09/30 at 00:00, 17h of parking for 09/30 and 8h for 10/01, total 25h (max amount)"
+version: "0.1"
+config:
+  window: 30d
+sequences:
+  - name: "G1EE"
+    start: pattern(06/01 00:00)
+    end: pattern(10/01 00:00)
+    rules:
+      - nonpaying:
+          name: "night"
+          start: pattern(*/* 01:30)
+          end: pattern(*/* 08:30)
+      - flatrate:
+          name: "minamount"
+          duration: 30m
+          amount: 0.50
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.0
+          duration: 24h30m
+
+  - name: "G1EI"
+    start: pattern(10/01 00:00)
+    end: pattern(06/01 00:00)
+    rules:
+      - nonpaying:
+          name: "night"
+          start: pattern(*/* 20:30)
+          end: pattern(*/* 08:30)
+      - flatrate:
+          name: "minamount"
+          duration: 30m
+          amount: 0.50
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.0
+          duration: 24h30m

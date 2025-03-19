@@ -1,3 +1,4 @@
+#how to manage more than one fllaterate day
 version: "0.1"
 config:
   window: 30d
@@ -7,19 +8,24 @@ nonpaying:
     end: pattern(*/* MON 00:00)
   - name: "night"
     start: pattern(*/* 20:00)
-    end: pattern(*/* 08:30)
+    end: pattern(*/* 09:00)
   - name: "lunch"
-    start: pattern(*/* MON-SAT 13:30)
-    end: pattern(*/* MON-SAT 16:00)
+    start: pattern(*/* 13:00)
+    end: pattern(*/* 15:30)
 
 sequences:
-  - name: "LUP1"
+  - name: "BC01"
     rules:
+      - absflatrate:
+          name: "daily"
+          start: pattern(*/* 00:00)
+          end: pattern(*/* 23:59)
+          amount: 3.50
       - flatrate:
           name: "minamount"
           duration: 30m
-          amount: 0.50
+          amount: 0.70
       - linear:
           name: "hourlyrate"
           hourlyrate: 1.0
-          duration: 30d
+          duration: 10h

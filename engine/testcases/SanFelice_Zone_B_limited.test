@@ -1,24 +1,20 @@
 - name: "Min amount"
-  tests:
-    now: 2025-03-17T07:00:00
-    30m: 0.50
-    end: 2025-03-17T08:30:00
-    description: "30 min tickets (min amount)"
+  now: 2025-03-17T07:00:00
+  desc: "30 min tickets (min amount)"
+  end: 2025-03-17T08:30:00
+  amount: 0.50
 - name: "Max amount Summer"
-  tests:
-    now: 2025-05-07T10:00:00
-    2h00m: 2.00
-    end: 2025-05-07T12:00:00
-    description: "Max amount ticket 2 hours during summer"
+  now: 2025-05-07T10:00:00
+  desc: "Max amount ticket 2 hours during summer"
+  end: 2025-05-07T12:00:00
+  amount: 2.00
 - name: "Summer x winter"
-  tests:
-    now: 2025-09-30T01:00:00
-    3h: 3.00
-    end: 2025-10-01T04:00:00
-    description: "33h of parking 13hour for winter tariff and 20h for summer tariff"
+  now: 2025-09-30T01:00:00
+  desc: "..."
+  end: 2025-10-01T04:00:00
+  amount: 3.00
 - name: "Winter x summer"
-  tests:
-    now: 2025-03-31T05:00:00
-    17h: 17.00
-    end: 2025-04-01T10:00:00
-    description: "15 first hours during winter period and 2 hours during summer period"
+  now: 2025-03-31T05:00:00
+  desc: "15 first hours during winter period and 2 hours during summer period"
+  end: 2025-04-01T10:00:00
+  amount: 17.00

@@ -1,24 +1,38 @@
-- name: "Min amount"
-  tests:
-    now: 2025-03-17T07:00:00
-    30m: 0.50
-    end: 2025-03-17T08:30:00
-    description: "30 min tickets (min amount)"
-- name: "Max amount Summer"
-  tests:
-    now: 2025-05-07T10:00:00
-    2h00m: 2.00
-    end: 2025-05-07T12:00:00
-    description: "Max amount ticket 2 hours during summer"
-- name: "Summer x winter"
-  tests:
-    now: 2025-09-30T01:00:00
-    3h: 3.00
-    end: 2025-10-01T04:00:00
-    description: "..."
-- name: "Winter x summer"
-  tests:
-    now: 2025-03-31T05:00:00
-    17h: 17.00
-    end: 2025-04-01T10:00:00
-    description: "15 first hours during winter period and 2 hours during summer period"
+version: "0.1"
+config:
+  window: 30d
+
+sequences:
+  - name: "SFLE"
+    start: pattern(04/01 00:00)
+    end: pattern(10/01 00:00)
+    rules:
+      - nonpaying:
+        name: "night"
+        start: pattern(*/* 02:00)
+        end: pattern(*/* 08:00)
+      - flatrate:
+          name: "minamount"
+          duration: 30m
+          amount: 0.50
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.0
+          duration: 2h
+
+  - name: "SFLI"
+    start: pattern(10/01 00:00)
+    end: pattern(04/01 00:00)
+    rules:
+      - nonpaying:
+        name: "night"
+        start: pattern(*/* 20:00)
+        end: pattern(*/* 02:00)
+      - flatrate:
+          name: "minamount"
+          duration: 30m
+          amount: 0.50
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.0
+          duration: 30d
