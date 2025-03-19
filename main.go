@@ -90,7 +90,10 @@ sequences:
 
 	//now := time.Now()
 	now, _ := time.ParseInLocation("2006-01-02T15:04:05", "2025-03-14T15:54:30", time.Local)
-	t.Compute(now, []engine.AssignedRight{})
+	out := t.Compute(now, []engine.AssignedRight{})
+
+	json, _ := out.ToJson()
+	fmt.Println(string(json))
 
 	//t.Sequences.Solve(time.Now(), time.Hour*24*7)
 
