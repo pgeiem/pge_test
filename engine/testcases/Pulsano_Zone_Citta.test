@@ -1,0 +1,24 @@
+- name: "Simple Winter ticket"
+  tests:
+    now: 2025-03-17T07:00:00
+    2h30m: 2.50
+    end: 2025-03-17T11:30:00
+    description: "..."
+- name: "Winter 2 days"
+  tests:
+    now: 2025-03-17T09:10:00
+    22h: 6.00
+    end: 2025-03-19T09:10:00
+    description: "2 day of parking with 3€/day flatrate"
+- name: "Winter x summer"
+  tests:
+    now: 2025-05-31T17:00:00
+    7h: 3.00
+    end: 2025-06-01T17:00:00
+    description: "Dunno if it will work because of forfait and tariff change"
+- name: "Summer x winter"
+  tests:
+    now: 2025-08-31T23:00:00
+    8h: 3.00
+    end: 2025-09-01T20:00:00
+    description: "..."

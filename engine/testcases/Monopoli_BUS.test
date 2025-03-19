@@ -1,0 +1,36 @@
+- name: "Simple summer tariff"
+  tests:
+    now: 2025-07-10T09:15:00
+    1h: 5.00
+    end: 2025-03-17T10:15:00
+    description: "..."
+- name: "Simple summer tariff"
+  tests:
+    now: 2025-07-10T013:18:00
+    1h12: 6.00
+    end: 2025-03-17T14:30:00
+    description: "..."
+- name: "Max amount summer"
+  tests:
+    now: 2025-07-09T22:15:00
+    1h42m: 8.50
+    end: 2025-03-17T08:42:00
+    description: "Parking start 07/10 at 00:00 for 1h30, then 12 last minutes start 8h30"
+- name: "Simple winter tariff"
+  tests:
+    now: 2025-04-11T15:14:00
+    1h: 5.00
+    end: 2025-04-12T01:00:00
+    description: "Friday is free, parking start saturday 12 at 00:00 for 1h"
+- name: "Simple winter tariff"
+  tests:
+    now: 2025-04-12T15:14:00
+    1h12: 6.00
+    end: 2025-04-12T16:26:00
+    description: "Friday is free, parking start saturday 12 at 00:00 for 1h"
+- name: "Max amount winter"
+  tests:
+    now: 2025-04-10T22:15:00
+    1h42m: 8.50
+    end: 2025-04-12T08:42:00
+    description: "Thursday is free, parking start saturday 12 at 00:00 for 1h30 and 12 last minutes start 8h30"

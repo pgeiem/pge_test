@@ -1,0 +1,30 @@
+- name: "Basic tariff test"
+  tests:
+    now: 2025-03-17T10:00:00
+    2h: 2.0
+    end: 2025-03-17T12:00:00
+    description: "Standard charge applies, 2 hours at 1.00€/hour."
+- name: "Minimum charge test before start of paying time"
+  tests:
+    now: 2025-03-17T08:50:00
+    30m: 0.50
+    end: 2025-03-17T09:30:00
+    description: "Before 09:00 is free, so charge starts at 09:00."
+- name: "Ticket during lunch break"
+  tests:
+    now: 2025-03-17T14:00:00
+    3h: 3.0
+    end: 2025-03-17T20:00:00
+    description: "During lunch is free. so charge starts at 17:00 then 3 hours for 3 €"
+- name: "Night period test"
+  tests:
+    now: 2025-03-17T20:00:00
+    6h: 6.0
+    end: 2025-03-18T18:00:00
+    description: "First hour (20:00-21:00) is charged at 1.00€, but 21:00-09:00 is free due to night period.Then paying until lunch time (4hours/4€) and then free until 17:00. Last hour is charged at 1.00€."
+- name: "Two days parking ticket with week end"
+  tests:
+    now: 2025-03-15T10:00:00
+    10h: 10.0
+    end: 2025-03-17T12:00:00
+    description: "First hours (10:00-13:00) is charged at 2.00€, then lunch time is free (2 hours), then 4 hours until 21:00 (4€), then free until monday 09:00 because sunday is free, then 3 hours until 12:00 (3€)."
