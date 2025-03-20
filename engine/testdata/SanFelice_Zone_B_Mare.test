@@ -1,0 +1,20 @@
+- name: "Winter simple ticket"
+  now: 2025-03-17T07:00:00
+  desc: "2 hours and 30 minutes of parking with early arrival"
+  end: 2025-03-17T10:30:00
+  amount: 2.50
+- name: "Sunmmer simple ticket"
+  now: 2025-07-14T08:15:00
+  desc: "3 hours of parking on a summer day"
+  end: 2025-03-17T11:15:00
+  amount: 3.00
+- name: "Winter x summer"
+  now: 2025-03-30T19:00:00
+  desc: "1hour of winter tariff and 5h of summer tariff"
+  end: 2025-04-01T12:00:00
+  amount: 6.00
+- name: "Summer x winter"
+  now: 2025-09-30T06:00:00
+  desc: "3h of summer tariff and 12h of winter tariff"
+  end: 2025-10-02T10:00:00
+  amount: 15.00

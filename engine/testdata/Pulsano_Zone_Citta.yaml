@@ -1,0 +1,50 @@
+version: "0.1"
+config:
+  window: 30d
+nonpaying:
+  - name: "lunch"
+    start: pattern(*/* 13:00)
+    end: pattern(*/* 17:00)
+
+sequences:
+  - name: "PS08"
+    start: pattern(09/01 00:00)
+    end: pattern(06/01 00:00)
+    rules:
+      - nonpaying:
+          name: "night"
+          start: pattern(*/* 00:00)
+          end: pattern(*/* 09:00)
+      - flatrate:
+          name: "minamount"
+          duration: 12m
+          amount: 0.20
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.0
+          duration: 30d
+      - flatrate:
+          name: "daily"
+          duration: 24h
+          amount: 3.0
+
+  - name: "PS07"
+    start: pattern(06/01 00:00)
+    end: pattern(09/01 00:00)
+    rules:
+      - nonpaying:
+          name: "night"
+          start: pattern(*/* 20:00)
+          end: pattern(*/* 09:00)
+      - flatrate:
+          name: "minamount"
+          duration: 12m
+          amount: 0.20
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.0
+          duration: 30d
+      - flatrate:
+          name: "daily"
+          duration: 24h
+          amount: 3.0

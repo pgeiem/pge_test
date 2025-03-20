@@ -1,0 +1,26 @@
+version: "0.1"
+config:
+  window: 30d
+nonpaying:
+  - name: "sunday"
+    start: pattern(*/* SUN 00:00)
+    end: pattern(*/* MON 00:00)  
+  - name: "night"
+    start: pattern(*/* 00:00)
+    end: pattern(*/* 08:00)
+
+sequences:
+  - name: "SCP1"
+    rules:
+      - flatrate:
+          name: "minamount"
+          duration: 30m
+          amount: 0.60
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.2
+          duration: 30d
+      - flatrate:
+          name: "daily"
+          duration: 24h
+          amount: 5.0

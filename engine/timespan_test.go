@@ -308,12 +308,49 @@ func TestRecurrentSegment_Between(t *testing.T) {
 				{Start: time.Date(2023, 4, 12, 14, 35, 0, 0, time.Local), End: time.Date(2023, 4, 12, 16, 50, 0, 0, time.Local)},
 			},
 		},
+		{
+			name:         "DailyPatternBetweenExactStart",
+			startPattern: "pattern(2023/10/* 12:00:00)",
+			endPattern:   "pattern(2023/10/* 18:00:00)",
+			from:         time.Date(2023, 10, 14, 12, 0, 0, 0, time.Local),
+			to:           time.Date(2023, 10, 16, 0, 0, 0, 0, time.Local),
+			expected: []AbsTimeSpan{
+				{Start: time.Date(2023, 10, 14, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 14, 18, 0, 0, 0, time.Local)},
+				{Start: time.Date(2023, 10, 15, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 15, 18, 0, 0, 0, time.Local)},
+			},
+		},
+		{
+			name:         "MonthlyPatternBetweenExactStart",
+			startPattern: "pattern(2023/*/7 08:00:00)",
+			endPattern:   "pattern(2023/*/9 10:00:00)",
+			from:         time.Date(2023, 9, 7, 8, 0, 0, 0, time.Local),
+			to:           time.Date(2023, 12, 10, 0, 0, 0, 0, time.Local),
+			expected: []AbsTimeSpan{
+				{Start: time.Date(2023, 9, 7, 8, 0, 0, 0, time.Local), End: time.Date(2023, 9, 9, 10, 0, 0, 0, time.Local)},
+				{Start: time.Date(2023, 10, 7, 8, 0, 0, 0, time.Local), End: time.Date(2023, 10, 9, 10, 0, 0, 0, time.Local)},
+				{Start: time.Date(2023, 11, 7, 8, 0, 0, 0, time.Local), End: time.Date(2023, 11, 9, 10, 0, 0, 0, time.Local)},
+				{Start: time.Date(2023, 12, 7, 8, 0, 0, 0, time.Local), End: time.Date(2023, 12, 9, 10, 0, 0, 0, time.Local)},
+			},
+		},
+		{
+			name:         "DailyPatternBetweenStartInbetween",
+			startPattern: "pattern(2023/10/* 12:00:00)",
+			endPattern:   "pattern(2023/10/* 18:00:00)",
+			from:         time.Date(2023, 10, 14, 14, 0, 0, 0, time.Local),
+			to:           time.Date(2023, 10, 16, 17, 0, 0, 0, time.Local),
+			expected: []AbsTimeSpan{
+				{Start: time.Date(2023, 10, 14, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 14, 18, 0, 0, 0, time.Local)},
+				{Start: time.Date(2023, 10, 15, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 15, 18, 0, 0, 0, time.Local)},
+				{Start: time.Date(2023, 10, 16, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 16, 18, 0, 0, 0, time.Local)},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			fmt.Printf("\n------\nHandling test case %v\n", tc)
 
+			// Create the recurrent timespan from the patterns
 			start, errStart := ParseRecurrentDate(tc.startPattern)
 			if errStart != nil {
 				t.Fatalf("unexpected error in ParseRecurrentDate for start: %v", errStart)
@@ -324,7 +361,25 @@ func TestRecurrentSegment_Between(t *testing.T) {
 			}
 			rs := RecurrentTimeSpan{Start: start, End: end}
 
+			// Test Between
 			segments := rs.Between(tc.from, tc.to)
+
+			if len(segments) != len(tc.expected) {
+				t.Errorf("Between(%v, %v) expected %v segments, got %v", tc.from, tc.to, len(tc.expected), len(segments))
+			} else {
+				for i, segment := range segments {
+					if !segment.Start.Equal(tc.expected[i].Start) || !segment.End.Equal(tc.expected[i].End) {
+						t.Errorf("Between(%v, %v) expected segment %v, got %v", tc.from, tc.to, tc.expected[i], segment)
+					}
+				}
+			}
+
+			// Test BetweenIterator
+			segments = []AbsTimeSpan{}
+			rs.BetweenIterator(tc.from, tc.to, func(segment AbsTimeSpan) bool {
+				segments = append(segments, segment)
+				return true
+			})
 
 			if len(segments) != len(tc.expected) {
 				t.Errorf("Between(%v, %v) expected %v segments, got %v", tc.from, tc.to, len(tc.expected), len(segments))

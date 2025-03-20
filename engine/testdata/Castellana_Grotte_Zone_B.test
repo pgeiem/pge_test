@@ -1,0 +1,30 @@
+- name: "Estival Simple ticket"
+  now: 2025-07-10T07:55:00
+  desc: "Early arrival 1hour 30 minutes for 1.50€(parking start at 8:00)"
+  end: 2025-07-10T08:30:00
+  amount: 0.90
+- name: "Winter simple ticket"
+  now: 2025-03-17T07:12:00
+  desc: "Early arrival 1hour 30 minutes for 1.50€ (parking start at 9:00)"
+  end: 2025-03-17T10:30:00
+  amount: 0.90
+- name: "Winter x summer"
+  now: 2025-06-14T13:00:00
+  desc: "Ticket starts in the winter season and ends in the summer season."
+  end: 2025-06-17T08:00:00
+  amount: 9.00
+- name: "Winter x summer 2"
+  now: 2025-03-14T19:00:00
+  desc: "Ticket starts in the winter season and ends in the summer season."
+  end: 2025-03-16T09:00:00
+  amount: 1.20
+- name: "summer x winter"
+  now: 2025-09-15T12:00:00
+  desc: "Ticket starts in the sunner season and ends in the winter season."
+  end: 2025-09-16T10:00:00
+  amount: 4.80
+- name: "summer x winter"
+  now: 2025-09-13T07:00:00
+  desc: "Ticket starts in the sunner season and ends in the winter season."
+  end: 2025-09-16T11:00:00
+  amount: 14.40

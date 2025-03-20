@@ -1,0 +1,11 @@
+version: "0.1"
+config:
+  window: 120d
+
+sequences:
+  - name: "BCAB"
+    rules:
+      - flatrate:
+          name: "monthly"
+          duration: 30d
+          amount: 25.0

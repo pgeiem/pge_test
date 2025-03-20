@@ -1,0 +1,20 @@
+- name: "Simple ticket"
+  now: 2025-03-17T06:00:00
+  desc: "..."
+  end: 2025-03-17T10:30:00
+  amount: 3.00
+- name: "Late arrival long duration"
+  now: 2025-03-21T23:15:00
+  desc: "Need to be sure forfeit is for 24 hours"
+  end: 2025-03-24T23:15:00
+  amount: 10.00
+- name: "2 days"
+  now: 2025-03-17T14:00:00
+  desc: "Need to be sure forfeit is for 24 hours"
+  end: 2025-03-20T14:00:00
+  amount: 15.00
+- name: "4 hours of parking with sunday inside"
+  now: 2025-03-22T22:30:00
+  desc: "..."
+  end: 2025-03-24T10:30:00
+  amount: 4.80

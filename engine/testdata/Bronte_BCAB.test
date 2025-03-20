@@ -1,0 +1,15 @@
+- name: "1 month"
+  now: 2025-03-17T07:00:00
+  desc: "30 days of parking for 25€"
+  end: 2025-04-16T07:00:00
+  amount: 25
+- name: "2 months"
+  now: 2025-03-17T07:00:00
+  desc: "60 days of parking for 50€"
+  end: 2025-05-16T07:00:00
+  amount: 50
+- name: "3 months"
+  now: 2025-03-17T07:00:00
+  desc: "90 days of parking for 75€"
+  end: 2025-06-16T07:00:00
+  amount: 75

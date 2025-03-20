@@ -23,7 +23,7 @@ func DefaultConfig() TariffConfig {
 	}
 }
 
-func (td TariffDefinition) Compute(now time.Time, history []AssignedRight) {
+func (td TariffDefinition) Compute(now time.Time, history []AssignedRight) Output {
 
 	now = now.Local().Truncate(time.Second)
 	fmt.Println("Now is", now)
@@ -37,8 +37,5 @@ func (td TariffDefinition) Compute(now time.Time, history []AssignedRight) {
 	// Merge all sequences together
 	rules, _ := td.Sequences.Merge(now, td.Config.Window) //TODO handle error if needed
 
-	out := rules.GenerateOutput(now, true)
-	json, _ := out.ToJson()
-	fmt.Println(string(json))
-
+	return rules.GenerateOutput(now, true)
 }

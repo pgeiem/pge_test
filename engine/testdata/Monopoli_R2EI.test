@@ -1,0 +1,30 @@
+- name: "Simple winter tariff"
+  now: 2025-03-17T06:15:00
+  desc: "..."
+  end: 2025-03-17T11:30:00
+  amount: 6.00
+- name: "Simple winter tariff max amount"
+  now: 2025-03-17T08:30:00
+  desc: "..."
+  end: 2025-03-18T12:00:00
+  amount: 25.00
+- name: "Simple summer tariff"
+  now: 2025-07-02T06:15:00
+  desc: "..."
+  end: 2025-07-02T11:30:00
+  amount: 6.00
+- name: "Simple summer tariff max amount"
+  now: 2025-07-02T00:00:00
+  desc: "..."
+  end: 2025-07-03T19:30:00
+  amount: 25.00
+- name: "Winter x Summer"
+  now: 2025-05-31T17:00:00
+  desc: "31/05 its winter tariff so start at 17:30 and finish at 20:30 so 3h30, and next day its summer 1h30 + 7h30 = 9h, for a total of 12h30 (max amnount)"
+  end: 2025-06-01T16:00:00
+  amount: 25.00
+- name: "Summer x Winter"
+  now: 2025-09-30T17:00:00
+  desc: "Parking start 09/30 at 17:00, 7h of parking and 5h30 for 10/01, total 12h30 (max amount)"
+  end: 2025-10-01T17:00:00
+  amount: 25.00

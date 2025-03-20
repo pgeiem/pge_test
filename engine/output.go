@@ -41,6 +41,22 @@ func (segs Output) ToJson() ([]byte, error) {
 	return json.Marshal(segs)
 }
 
+func (segs Output) AmountForDuration(targetDuration time.Duration) Amount {
+	totAmount := Amount(0)
+	totDuration := time.Duration(0)
+	for _, seg := range segs.Table {
+		fmt.Println("Segment", seg, "Total amount", totAmount, "Total duration", totDuration)
+		segDuration := time.Duration(seg.Duration) * time.Second
+		if targetDuration < totDuration+segDuration {
+			return Amount(float64(seg.Amount)*float64(targetDuration-totDuration)/float64(segDuration)) + totAmount
+		}
+		totAmount += seg.Amount
+		totDuration += segDuration
+	}
+	fmt.Println("Warning: Duration is greater than the total duration of the output")
+	return Amount(0)
+}
+
 func (s *SolverRules) GenerateOutput(now time.Time, detailed bool) Output {
 	var out Output
 	var previous SolverRule
