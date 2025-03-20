@@ -66,8 +66,8 @@ func TestTariffs(t *testing.T) {
 					}
 					out := tariff.Compute(now, []AssignedRight{})
 					amount := out.AmountForDuration(end.Sub(now))
-					if amount != Amount(testCase.Amount) {
-						t.Errorf("Amount mismatch: got %v, expected %v", amount, testCase.Amount)
+					if amount.Simplify() != Amount(testCase.Amount) {
+						t.Errorf("Amount mismatch: got %f, expected %f", amount.Simplify(), testCase.Amount)
 					}
 				})
 			}

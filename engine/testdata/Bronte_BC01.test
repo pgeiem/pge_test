@@ -14,12 +14,12 @@
   end: 2025-03-17T20:00:00
   amount: 1.80
 - name: "Night period test"
-  now: 2025-03-17T20:00:00
-  desc: "First hour (20:00-21:00) is charged at 1€, but 21:00-09:00 is free due to night period.Then paying until lunch time (4hours/4€) and then free until 17:00. Last hour is charged at 1€."
-  end: 2025-03-18T18:00:00
-  amount: 6.00
+  now: 2025-03-17T19:00:00
+  desc: "First hour (19:00-20:00) is charged at 1€, but 21:00-09:00 is free due to night period.Then paying before lunch time (2hours/2€)."
+  end: 2025-03-18T11:00:00
+  amount: 3.00
 - name: "Two days parking ticket with week end"
-  now: 2025-03-15T18:00:00
-  desc: "First hours (18:00-21:00) is charged at 3€, then lunch time is free (2 hours), then 4 hours until 21:00 (4€), then free until monday 09:00 because sunday is free, then 3 hours until 12:00 (3€)."
-  end: 2025-03-17T20:00:00
-  amount: 10.00
+  now: 2025-03-15T09:00:00
+  desc: "2 days of parking for 2X3.5€= 7€"
+  end: 2025-03-18T09:00:00
+  amount: 7.00

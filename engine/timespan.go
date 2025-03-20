@@ -106,26 +106,34 @@ func (rs *RecurrentTimeSpan) Prev(now time.Time) (AbsTimeSpan, error) {
 
 func (rs *RecurrentTimeSpan) Between(from, to time.Time) []AbsTimeSpan {
 	var segments []AbsTimeSpan
-	now := from
-	for now.Before(to) {
-		segment, err := rs.Next(now)
-		if err != nil {
-			break
-		}
-		if segment.Start.After(to) {
-			break
-		}
-		segments = append(segments, segment)
-		now = segment.Start
-	}
+	rs.BetweenIterator(from, to, func(s AbsTimeSpan) bool {
+		segments = append(segments, s)
+		return true
+	})
 	return segments
 }
 
 func (rs *RecurrentTimeSpan) BetweenIterator(from, to time.Time, iterator func(AbsTimeSpan) bool) {
+
+	// Check if from is already in the first occurrence
+	segment, err := rs.Prev(from.Add(1))
+	if err != nil {
+		fmt.Println("Error when unrolling RRule:", err)
+		return
+	}
+
+	if segment.End.After(from) {
+		if !iterator(segment) {
+			return
+		}
+	}
+
+	// loop through all others occurrences
 	now := from
 	for now.Before(to) {
 		segment, err := rs.Next(now)
 		if err != nil {
+			fmt.Println("Error when unrolling RRule:", err)
 			break
 		}
 		if segment.Start.After(to) {

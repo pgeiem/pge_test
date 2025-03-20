@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/iem-rd/quoteengine/engine"
+	"github.com/iem-rd/quote-engine/engine"
 )
 
 func main() {
