@@ -1,4 +1,4 @@
-module github.com/iem-rd/quoteengine
+module github.com/iem-rd/quote-engine
 
 go 1.23.0
 
