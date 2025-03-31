@@ -71,11 +71,43 @@ func (rule SolverRule) Split(splitStart, splitEnd time.Duration) SolverRules {
 	return SolverRules{ruleA, ruleB}
 }
 
+func (rule *SolverRule) And(timespan RelativeTimeSpan) (*SolverRule, bool) {
+	// rule is fully inside timespan, then rule is not touched
+	if rule.From >= timespan.From && rule.To <= timespan.To {
+		return rule, true
+		// rule is longer than timespan (timespan fully inside rule), then rule beginning and end are truncated
+	} else if rule.From <= timespan.From && rule.To >= timespan.To {
+		r := rule.TruncateAfter(timespan.To).TruncateBefore(timespan.From)
+		r.Trace = append(r.Trace, "truncated for sequence merging")
+		return &r, true
+		// rule is partially at the end of timespan, then rule end is truncated
+	} else if rule.From < timespan.To && rule.To >= timespan.To {
+		r := rule.TruncateAfter(timespan.To)
+		r.Trace = append(r.Trace, "truncated for sequence merging")
+		return &r, true
+		// rule is partially at the end beginning of timespan, then rule beginning is truncated
+	} else if rule.From <= timespan.From && rule.To > timespan.From {
+		r := rule.TruncateBefore(timespan.From)
+		r.Trace = append(r.Trace, "truncated for sequence merging")
+		return &r, true
+	} else {
+		return nil, false
+	}
+}
+
+func (rule *SolverRule) DurationForAmount(amount Amount) time.Duration {
+	fmt.Println(" >> DurationForAmount", rule.Name(), amount, rule.StartAmount, rule.EndAmount, rule.Duration())
+	return rule.From + time.Duration(float64(rule.Duration())*float64(amount)/float64(rule.EndAmount-rule.StartAmount))
+}
+
 type Solver struct {
 	now                         time.Time
 	window                      time.Duration
 	rules                       *btree.BTreeG[*SolverRule]
 	flatrates                   *btree.BTreeG[*SolverRule]
+	solvedRules                 *btree.BTreeG[*SolverRule]
+	fixedRules                  *btree.BTreeG[*SolverRule]
+	shiftableRules              []*SolverRule
 	currentRelativeStartOffset  time.Duration
 	currentRelativeAmountOffset Amount
 	activatedFlatRatesSum       Amount
@@ -96,8 +128,10 @@ func NewSolver() Solver {
 	}
 
 	return Solver{
-		rules:     btree.NewG(2, RulesLess),
-		flatrates: btree.NewG(2, RulesLess),
+		rules:       btree.NewG(2, RulesLess),
+		flatrates:   btree.NewG(2, RulesLess),
+		solvedRules: btree.NewG(2, RulesLess),
+		fixedRules:  btree.NewG(2, RulesLess),
 	}
 }
 
@@ -108,16 +142,20 @@ func (s *Solver) SetWindow(now time.Time, window time.Duration) {
 
 func (s *Solver) AppendMany(rules ...SolverRule) {
 	for i := range rules {
-		s.Append(rules[i])
+		s.Append(&rules[i])
 	}
 }
 
-func (s *Solver) Append(rule SolverRule) {
-	if rule.IsAbsoluteFlatRate() {
-		s.flatrates.ReplaceOrInsert(&rule)
+func (s *Solver) Append(rule *SolverRule) {
+	if rule.StartTimePolicy == FixedPolicy {
+		s.fixedRules.ReplaceOrInsert(rule)
 	} else {
-		s.solveAndAppend(rule)
+		s.shiftableRules = append(s.shiftableRules, rule)
 	}
+}
+
+func (s *Solver) Solve() {
+
 }
 
 // Solve the rule against an Higer Priority Rule resolving the conflict according to rule policy
@@ -268,6 +306,60 @@ func (s *Solver) solveAndAppend(lpRule SolverRule) {
 	s.currentRelativeStartOffset += incRelativeStartOffset
 }
 
+/*
+func (s *Solver) solvedRulesSumAmountInRange(timespan RelativeTimeSpan, extraRules ...*SolverRule) Amount {
+	var sumAmount Amount
+	// Sum amount of all solved rules included in the timespan range
+	s.solvedRules.Ascend(func(rule *SolverRule) bool {
+		r, _ := rule.And(timespan)
+		if r != nil {
+			sumAmount += r.EndAmount
+		}
+		return true
+	})
+	// Sum amount of all extra rules included in the timespan rnage
+	for _, rule := range extraRules {
+		r, _ := rule.And(timespan)
+		if r != nil {
+			sumAmount += r.EndAmount
+		}
+	}
+	return sumAmount
+}*/
+
+func (s *Solver) findFlatRateActivationTime(flatRateRule *SolverRule, extraRules ...*SolverRule) (time.Duration, bool) {
+	var sumAmount Amount
+	var activated bool
+	var activatedAfter time.Duration
+
+	processRule := func(rule *SolverRule) (time.Duration, bool) {
+		r, _ := rule.And(flatRateRule.RelativeTimeSpan)
+		if r != nil {
+			fmt.Println(" >> processRule", rule.Name(), sumAmount, "+", r.EndAmount, "vs", flatRateRule.ActiveAmount)
+			if sumAmount+r.EndAmount > flatRateRule.ActiveAmount {
+				return r.DurationForAmount(flatRateRule.ActiveAmount - sumAmount), true
+			}
+			sumAmount += r.EndAmount
+		}
+		return 0, false
+	}
+
+	// Sum amount of all solved rules included in the timespan range
+	s.solvedRules.Ascend(func(rule *SolverRule) bool {
+		activatedAfter, activated = processRule(rule)
+		return !activated
+	})
+
+	// Sum amount of all extra rules included in the timespan rnage
+	if !activated {
+		for _, rule := range extraRules {
+			activatedAfter, activated = processRule(rule)
+
+		}
+	}
+	return activatedAfter, activated
+}
+
 func (s *Solver) IsIntersectingFlatRate(relativeRule, flatRateRule *SolverRule) bool {
 	flatrateAmount := flatRateRule.EndAmount + s.activatedFlatRatesSum
 	intersect := flatRateRule.IsAbsoluteFlatRate() && relativeRule.IsRelative()
@@ -323,24 +415,9 @@ func (s *Solver) GetBestFlatRate(lpRule *SolverRule) *SolverRule {
 func (s *Solver) ExtractRulesInRange(timespan RelativeTimeSpan) SolverRules {
 	var out SolverRules
 	s.rules.Ascend(func(rule *SolverRule) bool {
-		// rule is fully inside timespan, then rule is not touched
-		if rule.From >= timespan.From && rule.To <= timespan.To {
-			out = append(out, *rule)
-			// rule is longer than timespan (timespan fully inside rule), then rule beginning and end are truncated
-		} else if rule.From <= timespan.From && rule.To >= timespan.To {
-			r := rule.TruncateAfter(timespan.To).TruncateBefore(timespan.From)
-			r.Trace = append(r.Trace, "truncated for sequence merging")
-			out = append(out, r)
-			// rule is partially at the end of timespan, then rule end is truncated
-		} else if rule.From < timespan.To && rule.To >= timespan.To {
-			r := rule.TruncateAfter(timespan.To)
-			r.Trace = append(r.Trace, "truncated for sequence merging")
-			out = append(out, r)
-			// rule is partially at the end beginning of timespan, then rule beginning is truncated
-		} else if rule.From <= timespan.From && rule.To > timespan.From {
-			r := rule.TruncateBefore(timespan.From)
-			r.Trace = append(r.Trace, "truncated for sequence merging")
-			out = append(out, r)
+		r, _ := rule.And(timespan)
+		if r != nil {
+			out = append(out, *r)
 		}
 		return true
 	})

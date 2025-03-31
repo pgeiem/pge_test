@@ -60,6 +60,8 @@ type SolverRule struct {
 	StartAmount Amount
 	// Amount in cents at the end of the rule segment
 	EndAmount Amount
+	// Amount for which this flatrate rule is active
+	ActiveAmount Amount
 	// Trace buffer for debugging all rule changes
 	Trace []string
 	// StartTimePolicy defines the policy for determining the start time of the rule.
@@ -134,8 +136,9 @@ func NewAbsoluteFlatRateRule(name string, timespan RelativeTimeSpan, amount Amou
 		RuleName:             name,
 		Meta:                 meta,
 		RelativeTimeSpan:     timespan,
-		StartAmount:          amount,
-		EndAmount:            amount,
+		StartAmount:          0,
+		EndAmount:            0,
+		ActiveAmount:         amount,
 		StartTimePolicy:      FixedPolicy,
 		RuleResolutionPolicy: TruncatePolicy,
 		DurationType:         DurationTypeFromAmount(amount),

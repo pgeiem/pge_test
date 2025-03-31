@@ -683,3 +683,118 @@ func TestExtractRange(t *testing.T) {
 		})
 	}
 }
+
+func TestFindFlatRateActivationTime(t *testing.T) {
+	tests := map[string]struct {
+		flatRateRule         SolverRule
+		solvedRules          SolverRules
+		extraRule            SolverRule
+		expectedActivation   bool
+		expectedActivationAt time.Duration
+	}{
+		// 0 - No activation, no extra rules
+		"0-NoActivationNoExtraRules": {
+			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 4.0, MetaData{}),
+			extraRule:            SolverRule{},
+			solvedRules:          SolverRules{},
+			expectedActivation:   false,
+			expectedActivationAt: 0,
+		},
+		// 1 - Activation with one extra rule fully in range
+		"1-ActivationWithOneExtraRuleFullyInRange": {
+			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			extraRule:            NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}),
+			expectedActivation:   true,
+			expectedActivationAt: 10 * time.Hour,
+		},
+		// 2 - Activation with multiple extra rules
+		"2-ActivationWithMultipleExtraRules": {
+			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			extraRule:            NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(4 * time.Hour),
+			expectedActivation:   true,
+			expectedActivationAt: 10 * time.Hour,
+		},
+		// 3 - No activation, extra rules do not meet the required amount
+		"3-NoActivationExtraRulesInsufficient": {
+			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			extraRule:            NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(5 * time.Hour),
+			expectedActivation:   true,
+			expectedActivationAt: 10 * time.Hour,
+		},
+		// 4 - Activation with overlapping extra rules
+		"4-ActivationWithOverlappingExtraRules": {
+			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			extraRule:            NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(8 * time.Hour),
+			expectedActivation:   false,
+			expectedActivationAt: 0,
+		},
+		// 5 - Activation with one extra rule fully in range
+		"5-ActivationWithOneExtraRuleFullyInRangeDuplicate": {
+			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			solvedRules:          SolverRules{NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{})},
+			expectedActivation:   true,
+			expectedActivationAt: 10 * time.Hour,
+		},
+		// 6 - Activation with multiple extra rules
+		"6-ActivationWithMultipleExtraRulesDuplicate": {
+			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			solvedRules:          SolverRules{NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(4 * time.Hour)},
+			expectedActivation:   true,
+			expectedActivationAt: 10 * time.Hour,
+		},
+		// 7 - No activation, extra rules do not meet the required amount
+		"7-NoActivationExtraRulesInsufficientDuplicate": {
+			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			solvedRules:          SolverRules{NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(5 * time.Hour)},
+			expectedActivation:   true,
+			expectedActivationAt: 10 * time.Hour,
+		},
+		// 8 - Activation with overlapping extra rules
+		"8-ActivationWithOverlappingExtraRulesDuplicate": {
+			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			solvedRules:          SolverRules{NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(8 * time.Hour)},
+			expectedActivation:   false,
+			expectedActivationAt: 0,
+		},
+		// 9 - Activation with one extra rule fully in range
+		"9-ActivationWithOneExtraRuleFullyInRange": {
+			flatRateRule: NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{6 * time.Hour, 20 * time.Hour}, 8.0, MetaData{}),
+			solvedRules: SolverRules{
+				NewRelativeLinearRule("A", 10*time.Hour, 1.0, MetaData{}),
+				NewRelativeLinearRule("B", 1*time.Hour, 0, MetaData{}).Shift(10 * time.Hour),
+				NewRelativeLinearRule("C", 10*time.Hour, 1.0, MetaData{}).Shift(11 * time.Hour),
+			},
+			expectedActivation:   true,
+			expectedActivationAt: 15 * time.Hour,
+		},
+		// 10 - Activation with one extra rule fully in range
+		"10-ActivationWithOneExtraRuleFullyInRange": {
+			flatRateRule: NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{6 * time.Hour, 20 * time.Hour}, 8.0, MetaData{}),
+			solvedRules: SolverRules{
+				NewRelativeLinearRule("A", 10*time.Hour, 1.0, MetaData{}),
+				NewRelativeLinearRule("B", 1*time.Hour, 0, MetaData{}).Shift(10 * time.Hour),
+			},
+			extraRule:            NewRelativeLinearRule("C", 10*time.Hour, 1.0, MetaData{}).Shift(11 * time.Hour),
+			expectedActivation:   true,
+			expectedActivationAt: 15 * time.Hour,
+		},
+	}
+
+	for name, testcase := range tests {
+		t.Run(name, func(t *testing.T) {
+			solver := NewSolver()
+			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
+			for i := range testcase.solvedRules {
+				solver.solvedRules.ReplaceOrInsert(&testcase.solvedRules[i])
+			}
+
+			activationAt, activated := solver.findFlatRateActivationTime(&testcase.flatRateRule, &testcase.extraRule)
+			if activated != testcase.expectedActivation {
+				t.Errorf("findFlatRateActivationTime expected activation %v, got %v", testcase.expectedActivation, activated)
+			}
+			if activationAt != testcase.expectedActivationAt {
+				t.Errorf("findFlatRateActivationTime expected activation at %v, got %v", testcase.expectedActivationAt, activationAt)
+			}
+		})
+	}
+}
