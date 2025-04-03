@@ -224,12 +224,13 @@ func TestSolveVsSingle(t *testing.T) {
 	}
 }
 
-func TestAppend(t *testing.T) {
+func TestSolver(t *testing.T) {
 
 	tests := map[string]struct {
 		rules    SolverRules
 		expected SolverRules
 	}{
+
 		// 0 - No conflict, empty rules§
 		"0-NoConflictEmptyRules": {
 			rules: SolverRules{
@@ -306,11 +307,11 @@ func TestAppend(t *testing.T) {
 		// 6 - Overlapping rules, Truncate policy, Shiftable policy
 		"6-OverlapTruncateShiftablePolicy": {
 			rules: SolverRules{
-				NewAbsoluteNonPaying("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}, MetaData{}),
-				NewAbsoluteNonPaying("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}, MetaData{}),
+				NewNonPayingFixedRule("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}, MetaData{}),
+				NewNonPayingFixedRule("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}, MetaData{}),
 				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 10 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 15 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				NewAbsoluteNonPaying("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}, MetaData{}),
+				NewNonPayingFixedRule("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}, MetaData{}),
 				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 15 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 				{RuleName: "F", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 			},
@@ -327,11 +328,11 @@ func TestAppend(t *testing.T) {
 		// 7 - Overlapping rules, Truncate policy, Shiftable policy
 		"7-OverlapTruncateShiftablePolicy": {
 			rules: SolverRules{
-				NewAbsoluteNonPaying("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}, MetaData{}),
-				NewAbsoluteNonPaying("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}, MetaData{}),
+				NewNonPayingFixedRule("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}, MetaData{}),
+				NewNonPayingFixedRule("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}, MetaData{}),
 				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				NewAbsoluteNonPaying("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}, MetaData{}),
+				NewNonPayingFixedRule("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}, MetaData{}),
 				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
 			},
 			expected: SolverRules{
@@ -347,8 +348,8 @@ func TestAppend(t *testing.T) {
 		// 8 - Overlapping rules, Truncate policy, Shiftable policy
 		"8-OverlapTruncateShiftablePolicy": {
 			rules: SolverRules{
-				NewAbsoluteLinearRule("A", RelativeTimeSpan{2 * time.Hour, 4 * time.Hour}, 2.0, MetaData{}),
-				NewRelativeLinearRule("Hourly", 10*time.Hour, 1.0, MetaData{}),
+				NewLinearFixedRule("A", RelativeTimeSpan{2 * time.Hour, 4 * time.Hour}, 2.0, MetaData{}),
+				NewLinearSequentialRule("Hourly", 10*time.Hour, 1.0, MetaData{}),
 			},
 			expected: SolverRules{
 				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 2 * time.Hour}, StartAmount: 0, EndAmount: 2.0},
@@ -359,9 +360,9 @@ func TestAppend(t *testing.T) {
 		// 10 - Overlapping multiple calendar flatrate with linear in the middle and multiple flatrate activation
 		"10-MultipleCalendarFlatrate": {
 			rules: SolverRules{
-				NewAbsoluteFlatRateRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 3.0, MetaData{}),
-				NewAbsoluteFlatRateRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
-				NewRelativeLinearRule("Hourly", 10*time.Hour, 1.0, MetaData{}),
+				NewFlatRateFixedRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 3.0, MetaData{}),
+				NewFlatRateFixedRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+				NewLinearSequentialRule("Hourly", 10*time.Hour, 1.0, MetaData{}),
 			},
 			expected: SolverRules{
 				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 3 * time.Hour}, StartAmount: 0, EndAmount: 3.0},
@@ -373,26 +374,102 @@ func TestAppend(t *testing.T) {
 		},
 
 		// 12 - Overlapping multiple calendar flatrate with linear in the middle and multiple flatrate activation
-		// This one is not working because the daily flat rate amount should not be summed with others flatrates
-		// Overlaped flatrates are not supported
-		/*"12-MultipleCalendarFlatrate": {
+		"12-MultipleCalendarFlatrate": {
 			rules: SolverRules{
-				NewAbsoluteFlatRateRule("Morning", 2*time.Hour, 6*time.Hour, 3.0),
-				NewAbsoluteFlatRateRule("Evening", 7*time.Hour, 11*time.Hour, 3.0),
-				NewAbsoluteFlatRateRule("Daily", 2*time.Hour, 14*time.Hour, 7.0),
-				NewRelativeLinearRule("Hourly", 10*time.Hour, 1.0),
+				NewFlatRateFixedRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 3.0, MetaData{}),
+				NewFlatRateFixedRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+				NewFlatRateFixedRule("Daily", RelativeTimeSpan{2 * time.Hour, 14 * time.Hour}, 7.0, MetaData{}),
+				NewLinearSequentialRule("Hourly", 12*time.Hour, 1.0, MetaData{}),
 			},
 			expected: SolverRules{
-				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 3 * time.Hour, StartAmount: 0, EndAmount: 3.0},
-				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 3 * time.Hour, To: 6 * time.Hour, StartAmount: 0, EndAmount: 0},
-				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 9 * time.Hour, StartAmount: 0, EndAmount: 3.0},
-				{RuleName: "Evening", RelativeTimeSpan: RelativeTimeSpan{From: 9 * time.Hour, To: 11 * time.Hour, StartAmount: 0, EndAmount: 0},
-				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 11 * time.Hour, To: 12 * time.Hour, StartAmount: 0, EndAmount: 4.0},
-				{RuleName: "Daily", RelativeTimeSpan: RelativeTimeSpan{From: 12 * time.Hour, To: 14 * time.Hour, StartAmount: 0, EndAmount: 0},
-				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 14 * time.Hour, To: 17 * time.Hour, StartAmount: 0, EndAmount: 4.0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 5 * time.Hour}, StartAmount: 0, EndAmount: 5.0},
+				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Hour, To: 6 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 10 * time.Hour}, StartAmount: 0, EndAmount: 4.0},
+				{RuleName: "Daily", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Hour, To: 14 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 14 * time.Hour, To: 17 * time.Hour}, StartAmount: 0, EndAmount: 3.0},
 			},
 		},
-		*/
+		// 13 - Almost the same as above but with different time spans to make evening flatrate more advantageous than daily
+		"13-MultipleCalendarFlatrate": {
+			rules: SolverRules{
+				NewFlatRateFixedRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 3.0, MetaData{}),
+				NewFlatRateFixedRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+				NewFlatRateFixedRule("Daily", RelativeTimeSpan{3 * time.Hour, 14 * time.Hour}, 7.0, MetaData{}),
+				NewLinearSequentialRule("Hourly", 12*time.Hour, 1.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 5 * time.Hour}, StartAmount: 0, EndAmount: 5.0},
+				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Hour, To: 6 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 10 * time.Hour}, StartAmount: 0, EndAmount: 4.0},
+				{RuleName: "Evening", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Hour, To: 11 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 11 * time.Hour, To: 12 * time.Hour}, StartAmount: 0, EndAmount: 1.0},
+				{RuleName: "Daily", RelativeTimeSpan: RelativeTimeSpan{From: 12 * time.Hour, To: 14 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 14 * time.Hour, To: 16 * time.Hour}, StartAmount: 0, EndAmount: 2.0},
+			},
+		},
+
+		// 20 - Figma test case with single flat rate rule (activating the flatrate)
+		"20-Figma-SingleFlatRule-1": {
+			rules: SolverRules{
+				NewFlatRateFixedRule("Morning", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+				NewLinearSequentialRule("Hourly", 20*time.Hour, 1.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 10 * time.Hour}, StartAmount: 0, EndAmount: 10.0},
+				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Hour, To: 11 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 11 * time.Hour, To: 21 * time.Hour}, StartAmount: 0, EndAmount: 10.0},
+			},
+		},
+		// 21 - Figma test case with single flat rate rule (activating the flatrate)
+		"21-Figma-SingleFlatRule-2": {
+			rules: SolverRules{
+				NewFlatRateFixedRule("Morning", RelativeTimeSpan{3 * time.Hour, 7 * time.Hour}, 3.0, MetaData{}),
+				NewLinearSequentialRule("Hourly", 20*time.Hour, 1.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 6 * time.Hour}, StartAmount: 0, EndAmount: 6.0},
+				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 7 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 7 * time.Hour, To: 21 * time.Hour}, StartAmount: 0, EndAmount: 14.0},
+			},
+		},
+		// 22 - Figma test case with single flat rate rule (activating the flatrate)
+		"22-Figma-SingleFlatRule-3": {
+			rules: SolverRules{
+				NewFlatRateFixedRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 3.0, MetaData{}),
+				NewLinearSequentialRule("Hourly", 20*time.Hour, 1.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 5 * time.Hour}, StartAmount: 0, EndAmount: 5.0},
+				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Hour, To: 6 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 21 * time.Hour}, StartAmount: 0, EndAmount: 15.0},
+			},
+		},
+		// 23 - Figma test case with single flat rate rule (flatrate is not activated)
+
+		"23-Figma-SingleFlatRule-4": {
+			rules: SolverRules{
+				NewFlatRateFixedRule("Morning", RelativeTimeSpan{-1 * time.Hour, 3 * time.Hour}, 3.0, MetaData{}),
+				NewLinearSequentialRule("Hourly", 20*time.Hour, 1.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 20 * time.Hour}, StartAmount: 0, EndAmount: 20.0},
+			},
+		},
+		// 30 - Figma test case with multiple flat rate rules (activating both flatrate)
+		"30-Figma-Multi-1": {
+			rules: SolverRules{
+				NewFlatRateFixedRule("Morning", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+				NewFlatRateFixedRule("Evening", RelativeTimeSpan{6 * time.Hour, 20 * time.Hour}, 8.0, MetaData{}),
+				NewLinearSequentialRule("Hourly", 20*time.Hour, 1.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 10 * time.Hour}, StartAmount: 0, EndAmount: 10.0},
+				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Hour, To: 11 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 11 * time.Hour, To: 15 * time.Hour}, StartAmount: 0, EndAmount: 4.0},
+				{RuleName: "Evening", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Hour, To: 20 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Hour, To: 26 * time.Hour}, StartAmount: 0, EndAmount: 6.0},
+			},
+		},
 	}
 
 	for name, testcase := range tests {
@@ -401,11 +478,13 @@ func TestAppend(t *testing.T) {
 			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
 			solver.AppendMany(testcase.rules...)
 
-			if solver.rules.Len() != len(testcase.expected) {
-				t.Errorf("SolveAndAppend expected %v rules, got %v", len(testcase.expected), solver.rules.Len())
+			solver.Solve()
+
+			if solver.solvedRules.Len() != len(testcase.expected) {
+				t.Errorf("SolveAndAppend expected %v rules, got %v", len(testcase.expected), solver.solvedRules.Len())
 			} else {
 				i := 0
-				solver.rules.Ascend(func(rule *SolverRule) bool {
+				solver.solvedRules.Ascend(func(rule *SolverRule) bool {
 					expected := testcase.expected[i]
 					if rule.From != expected.From || rule.To != expected.To {
 						t.Errorf("SolveAndAppend(%d) time error, expected rule %v, got %v", i, expected, rule)
@@ -420,162 +499,6 @@ func TestAppend(t *testing.T) {
 					i++
 					return true
 				})
-				//Testing output
-				/*out := solver.GenerateOutput(true)
-				fmt.Println(out)
-				data, err := out.ToJson()
-				if err != nil {
-					t.Errorf("SolveAndAppend(%d) error converting to json %v", i, err)
-				} else {
-					fmt.Println(string(data))
-				}*/
-			}
-		})
-	}
-}
-
-func TestFindIntersectPositionFlatRate(t *testing.T) {
-	tests := map[string]struct {
-		relativeRule          SolverRule
-		flatRateRule          SolverRule
-		realtiveStartOffset   time.Duration
-		relativeAmountOffset  Amount
-		activatedFlatRatesSum Amount
-		expectedIntersect     bool
-		expected              time.Duration
-	}{
-		// 0 - No intersection below
-		"0-NoIntersectionBelow": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 4.0, MetaData{}),
-			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, 1.0, MetaData{}),
-			realtiveStartOffset:   8 * time.Hour,
-			relativeAmountOffset:  0,
-			activatedFlatRatesSum: 0,
-			expectedIntersect:     false,
-			expected:              0,
-		},
-		// 1 - No intersection below
-		"1-NoIntersectionAbove": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 4.0, MetaData{}),
-			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, 1.0, MetaData{}),
-			realtiveStartOffset:   8 * time.Hour,
-			relativeAmountOffset:  4.0,
-			activatedFlatRatesSum: 0,
-			expectedIntersect:     false,
-			expected:              0,
-		},
-		// 2 - No intersection before
-		"2-NoIntersectionBefore": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 4.0, MetaData{}),
-			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, 1.0, MetaData{}),
-			realtiveStartOffset:   2 * time.Hour,
-			relativeAmountOffset:  2.0,
-			activatedFlatRatesSum: 0,
-			expectedIntersect:     false,
-			expected:              0,
-		},
-		// 3 - No intersection after
-		"3-NoIntersectionAfter": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 4.0, MetaData{}),
-			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, 1.0, MetaData{}),
-			realtiveStartOffset:   12 * time.Hour,
-			relativeAmountOffset:  4.0,
-			activatedFlatRatesSum: 0,
-			expectedIntersect:     false,
-			expected:              0,
-		},
-		// 4 - Intersection in the middle
-		"4-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 4.0, MetaData{}),
-			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, 1.0, MetaData{}),
-			realtiveStartOffset:   8 * time.Hour,
-			relativeAmountOffset:  2.0,
-			activatedFlatRatesSum: 0,
-			expectedIntersect:     true,
-			expected:              10 * time.Hour,
-		},
-		// 5 - Intersection in the middle
-		"5-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 2.0, MetaData{}),
-			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, 1.0, MetaData{}),
-			realtiveStartOffset:   8 * time.Hour,
-			relativeAmountOffset:  2.0,
-			activatedFlatRatesSum: 2.0,
-			expectedIntersect:     true,
-			expected:              10 * time.Hour,
-		},
-		// 6 - Intersection in the middle
-		"6-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 2.0, MetaData{}),
-			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, 1.0, MetaData{}),
-			realtiveStartOffset:   6 * time.Hour,
-			relativeAmountOffset:  2.0,
-			activatedFlatRatesSum: 2.0,
-			expectedIntersect:     true,
-			expected:              8 * time.Hour,
-		},
-		// 7 - Intersection in the beginning
-		"7-IntersectionInBeginning": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 2.0, MetaData{}),
-			relativeRule:          NewRelativeLinearRule("B", 3*time.Hour, 1.0, MetaData{}),
-			realtiveStartOffset:   9 * time.Hour,
-			relativeAmountOffset:  3.0,
-			activatedFlatRatesSum: 2.0,
-			expectedIntersect:     true,
-			expected:              10 * time.Hour,
-		},
-		// 8 - Intersection in the beginning
-		"8-IntersectionInBeginning": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 2.0, MetaData{}),
-			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, 1.0, MetaData{}),
-			realtiveStartOffset:   4 * time.Hour,
-			relativeAmountOffset:  0,
-			activatedFlatRatesSum: 2.0,
-			expectedIntersect:     true,
-			expected:              8 * time.Hour,
-		},
-		// 9 - Intersection in the end must be considered as not intersection
-		"9-IntersectionInEnd": {
-			flatRateRule:          NewAbsoluteFlatRateRule("A", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 2.0, MetaData{}),
-			relativeRule:          NewRelativeLinearRule("B", 4*time.Hour, 1.0, MetaData{}),
-			realtiveStartOffset:   12 * time.Hour,
-			relativeAmountOffset:  0,
-			activatedFlatRatesSum: 4.0,
-			expectedIntersect:     false,
-			expected:              0,
-		},
-		// 10 - Intersection
-		//>> FindIntersectPositionFlatRate Hourly vs Evening => 10h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s
-		//>> FindIntersectPositionFlatRate Hourly vs Evening => 9h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s
-
-		// >> FindIntersectPositionFlatRate Hourly vs Evening => 10h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s | 7.000 3.000 10.000 6h0m0s
-		// >> FindIntersectPositionFlatRate Hourly vs Evening => 9h0m0s | Hourly(6h0m0s -> 13h0m0s; 0.000 -> 7.000) Evening(7h0m0s -> 11h0m0s; 0.000 -> 0.000) | 3.000 3.000 0s | 6.000 3.000 10.000 6h0m0s
-		"10-IntersectionInMiddle": {
-			flatRateRule:          NewAbsoluteFlatRateRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
-			relativeRule:          SolverRule{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 13 * time.Hour}, StartAmount: 0, EndAmount: 7.0, StartTimePolicy: ShiftablePolicy, RuleResolutionPolicy: ResolvePolicy},
-			realtiveStartOffset:   0, //3 * time.Hour,
-			relativeAmountOffset:  3.0,
-			activatedFlatRatesSum: 3.0,
-			expectedIntersect:     true,
-			expected:              9 * time.Hour,
-		},
-	}
-
-	for name, testcase := range tests {
-		t.Run(name, func(t *testing.T) {
-			solver := NewSolver()
-			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
-			solver.currentRelativeStartOffset = testcase.realtiveStartOffset
-			solver.currentRelativeAmountOffset = testcase.relativeAmountOffset
-			solver.activatedFlatRatesSum = testcase.activatedFlatRatesSum
-
-			intersect := solver.IsIntersectingFlatRate(&testcase.relativeRule, &testcase.flatRateRule)
-			if intersect != testcase.expectedIntersect {
-				t.Errorf("IsIntersectingFlatRate expected %v, got %v", testcase.expectedIntersect, intersect)
-			}
-			out := solver.FindIntersectPositionFlatRate(&testcase.relativeRule, &testcase.flatRateRule)
-			if out != testcase.expected {
-				t.Errorf("FindIntersectPositionFlatRate expected %v, got %v", testcase.expected, out)
 			}
 		})
 	}
@@ -665,7 +588,9 @@ func TestExtractRange(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			solver := NewSolver()
 			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
-			solver.AppendMany(testcase.rules...)
+			for i := range testcase.rules {
+				solver.solvedRules.ReplaceOrInsert(&testcase.rules[i])
+			}
 
 			out := solver.ExtractRulesInRange(testcase.timespan)
 			if len(out) != len(testcase.expected) {
@@ -694,7 +619,7 @@ func TestFindFlatRateActivationTime(t *testing.T) {
 	}{
 		// 0 - No activation, no extra rules
 		"0-NoActivationNoExtraRules": {
-			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 4.0, MetaData{}),
+			flatRateRule:         NewFlatRateFixedRule("FlatRate", RelativeTimeSpan{8 * time.Hour, 12 * time.Hour}, 4.0, MetaData{}),
 			extraRule:            SolverRule{},
 			solvedRules:          SolverRules{},
 			expectedActivation:   false,
@@ -702,79 +627,79 @@ func TestFindFlatRateActivationTime(t *testing.T) {
 		},
 		// 1 - Activation with one extra rule fully in range
 		"1-ActivationWithOneExtraRuleFullyInRange": {
-			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
-			extraRule:            NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}),
+			flatRateRule:         NewFlatRateFixedRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			extraRule:            NewLinearSequentialRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}),
 			expectedActivation:   true,
 			expectedActivationAt: 10 * time.Hour,
 		},
 		// 2 - Activation with multiple extra rules
 		"2-ActivationWithMultipleExtraRules": {
-			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
-			extraRule:            NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(4 * time.Hour),
+			flatRateRule:         NewFlatRateFixedRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			extraRule:            NewLinearSequentialRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(4 * time.Hour),
 			expectedActivation:   true,
 			expectedActivationAt: 10 * time.Hour,
 		},
 		// 3 - No activation, extra rules do not meet the required amount
 		"3-NoActivationExtraRulesInsufficient": {
-			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
-			extraRule:            NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(5 * time.Hour),
+			flatRateRule:         NewFlatRateFixedRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			extraRule:            NewLinearSequentialRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(5 * time.Hour),
 			expectedActivation:   true,
 			expectedActivationAt: 10 * time.Hour,
 		},
 		// 4 - Activation with overlapping extra rules
 		"4-ActivationWithOverlappingExtraRules": {
-			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
-			extraRule:            NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(8 * time.Hour),
+			flatRateRule:         NewFlatRateFixedRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			extraRule:            NewLinearSequentialRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(8 * time.Hour),
 			expectedActivation:   false,
 			expectedActivationAt: 0,
 		},
 		// 5 - Activation with one extra rule fully in range
 		"5-ActivationWithOneExtraRuleFullyInRangeDuplicate": {
-			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
-			solvedRules:          SolverRules{NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{})},
+			flatRateRule:         NewFlatRateFixedRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			solvedRules:          SolverRules{NewLinearSequentialRule("ExtraRule", 16*time.Hour, 1.0, MetaData{})},
 			expectedActivation:   true,
 			expectedActivationAt: 10 * time.Hour,
 		},
 		// 6 - Activation with multiple extra rules
 		"6-ActivationWithMultipleExtraRulesDuplicate": {
-			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
-			solvedRules:          SolverRules{NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(4 * time.Hour)},
+			flatRateRule:         NewFlatRateFixedRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			solvedRules:          SolverRules{NewLinearSequentialRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(4 * time.Hour)},
 			expectedActivation:   true,
 			expectedActivationAt: 10 * time.Hour,
 		},
 		// 7 - No activation, extra rules do not meet the required amount
 		"7-NoActivationExtraRulesInsufficientDuplicate": {
-			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
-			solvedRules:          SolverRules{NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(5 * time.Hour)},
+			flatRateRule:         NewFlatRateFixedRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			solvedRules:          SolverRules{NewLinearSequentialRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(5 * time.Hour)},
 			expectedActivation:   true,
 			expectedActivationAt: 10 * time.Hour,
 		},
 		// 8 - Activation with overlapping extra rules
 		"8-ActivationWithOverlappingExtraRulesDuplicate": {
-			flatRateRule:         NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
-			solvedRules:          SolverRules{NewRelativeLinearRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(8 * time.Hour)},
+			flatRateRule:         NewFlatRateFixedRule("FlatRate", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
+			solvedRules:          SolverRules{NewLinearSequentialRule("ExtraRule", 16*time.Hour, 1.0, MetaData{}).Shift(8 * time.Hour)},
 			expectedActivation:   false,
 			expectedActivationAt: 0,
 		},
 		// 9 - Activation with one extra rule fully in range
 		"9-ActivationWithOneExtraRuleFullyInRange": {
-			flatRateRule: NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{6 * time.Hour, 20 * time.Hour}, 8.0, MetaData{}),
+			flatRateRule: NewFlatRateFixedRule("FlatRate", RelativeTimeSpan{6 * time.Hour, 20 * time.Hour}, 8.0, MetaData{}),
 			solvedRules: SolverRules{
-				NewRelativeLinearRule("A", 10*time.Hour, 1.0, MetaData{}),
-				NewRelativeLinearRule("B", 1*time.Hour, 0, MetaData{}).Shift(10 * time.Hour),
-				NewRelativeLinearRule("C", 10*time.Hour, 1.0, MetaData{}).Shift(11 * time.Hour),
+				NewLinearSequentialRule("A", 10*time.Hour, 1.0, MetaData{}),
+				NewLinearSequentialRule("B", 1*time.Hour, 0, MetaData{}).Shift(10 * time.Hour),
+				NewLinearSequentialRule("C", 10*time.Hour, 1.0, MetaData{}).Shift(11 * time.Hour),
 			},
 			expectedActivation:   true,
 			expectedActivationAt: 15 * time.Hour,
 		},
 		// 10 - Activation with one extra rule fully in range
 		"10-ActivationWithOneExtraRuleFullyInRange": {
-			flatRateRule: NewAbsoluteFlatRateRule("FlatRate", RelativeTimeSpan{6 * time.Hour, 20 * time.Hour}, 8.0, MetaData{}),
+			flatRateRule: NewFlatRateFixedRule("FlatRate", RelativeTimeSpan{6 * time.Hour, 20 * time.Hour}, 8.0, MetaData{}),
 			solvedRules: SolverRules{
-				NewRelativeLinearRule("A", 10*time.Hour, 1.0, MetaData{}),
-				NewRelativeLinearRule("B", 1*time.Hour, 0, MetaData{}).Shift(10 * time.Hour),
+				NewLinearSequentialRule("A", 10*time.Hour, 1.0, MetaData{}),
+				NewLinearSequentialRule("B", 1*time.Hour, 0, MetaData{}).Shift(10 * time.Hour),
 			},
-			extraRule:            NewRelativeLinearRule("C", 10*time.Hour, 1.0, MetaData{}).Shift(11 * time.Hour),
+			extraRule:            NewLinearSequentialRule("C", 10*time.Hour, 1.0, MetaData{}).Shift(11 * time.Hour),
 			expectedActivation:   true,
 			expectedActivationAt: 15 * time.Hour,
 		},

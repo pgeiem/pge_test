@@ -79,10 +79,9 @@ sequences:
           name: "A"
           duration: 1h
           hourlyrate: 1.0
-          duration: 20h        
 `
 
-	t, err := engine.ParseTariffDefinition([]byte(sampleyaml2))
+	t, err := engine.ParseTariffDefinition([]byte(sampleyaml))
 	if err != nil {
 		panic(err)
 	}

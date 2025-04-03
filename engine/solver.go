@@ -101,16 +101,13 @@ func (rule *SolverRule) DurationForAmount(amount Amount) time.Duration {
 }
 
 type Solver struct {
-	now                         time.Time
-	window                      time.Duration
-	rules                       *btree.BTreeG[*SolverRule]
-	flatrates                   *btree.BTreeG[*SolverRule]
-	solvedRules                 *btree.BTreeG[*SolverRule]
-	fixedRules                  *btree.BTreeG[*SolverRule]
-	shiftableRules              []*SolverRule
-	currentRelativeStartOffset  time.Duration
-	currentRelativeAmountOffset Amount
-	activatedFlatRatesSum       Amount
+	now                        time.Time
+	window                     time.Duration
+	flatrateRules              *btree.BTreeG[*SolverRule]
+	solvedRules                *btree.BTreeG[*SolverRule]
+	fixedRules                 *btree.BTreeG[*SolverRule]
+	shiftableRules             []*SolverRule
+	currentRelativeStartOffset time.Duration
 }
 
 func NewSolver() Solver {
@@ -120,7 +117,7 @@ func NewSolver() Solver {
 	RulesLess := func(i, j *SolverRule) bool {
 		if i.From == j.From {
 			if i.StartAmount == j.StartAmount {
-				return i.To < j.To
+				return i.To > j.To
 			}
 			return i.StartAmount < j.StartAmount
 		}
@@ -128,10 +125,10 @@ func NewSolver() Solver {
 	}
 
 	return Solver{
-		rules:       btree.NewG(2, RulesLess),
-		flatrates:   btree.NewG(2, RulesLess),
-		solvedRules: btree.NewG(2, RulesLess),
-		fixedRules:  btree.NewG(2, RulesLess),
+		//rules:       btree.NewG(2, RulesLess),
+		flatrateRules: btree.NewG(2, RulesLess),
+		solvedRules:   btree.NewG(2, RulesLess),
+		fixedRules:    btree.NewG(2, RulesLess),
 	}
 }
 
@@ -147,15 +144,42 @@ func (s *Solver) AppendMany(rules ...SolverRule) {
 }
 
 func (s *Solver) Append(rule *SolverRule) {
-	if rule.StartTimePolicy == FixedPolicy {
+	if rule.ActivationAmount > 0 {
+		// flatrate rules are stored in a b-tree
+		s.flatrateRules.ReplaceOrInsert(rule)
+	} else if rule.StartTimePolicy == FixedPolicy {
+		// fixed rules are stored in a sorted b-tree
 		s.fixedRules.ReplaceOrInsert(rule)
 	} else {
+		// shiftable rules are stored in a list in the appended order
 		s.shiftableRules = append(s.shiftableRules, rule)
 	}
 }
 
 func (s *Solver) Solve() {
 
+	fmt.Println("Solving rules...")
+	fmt.Println("  >> flatrates")
+	s.flatrateRules.Ascend(func(rule *SolverRule) bool {
+		fmt.Println("    >>", rule.Name(), rule.From, rule.To, rule.ActivationAmount)
+		return true
+	})
+	fmt.Println("  >> fixed rules")
+	s.fixedRules.Ascend(func(rule *SolverRule) bool {
+		fmt.Println("    >>", rule.Name(), rule.From, rule.To, rule.StartAmount, rule.EndAmount)
+		return true
+	})
+	fmt.Println("  >> shiftable rules")
+	for i := range s.shiftableRules {
+		fmt.Println("    >>", s.shiftableRules[i].Name(), s.shiftableRules[i].From, s.shiftableRules[i].To, s.shiftableRules[i].StartAmount, s.shiftableRules[i].EndAmount)
+	}
+
+	// TODO solve fixed rules first
+
+	// Solve all shiftable rules against all fixed rules
+	for i := range s.shiftableRules {
+		s.solveVsFixedRules(s.shiftableRules[i])
+	}
 }
 
 // Solve the rule against an Higer Priority Rule resolving the conflict according to rule policy
@@ -169,7 +193,7 @@ func (s *Solver) solveVsSingle(lpRule SolverRule, hpRule *SolverRule) (SolverRul
 		return SolverRules{lpRule}, false
 	}
 
-	fmt.Println("   ## solveVsSingle", lpRule.Name(), "vs", hpRule.Name())
+	fmt.Println(" >> solveVsSingle", lpRule.Name(), "vs", hpRule.Name())
 	lpRule.Trace = append(lpRule.Trace, fmt.Sprintf("solve against %s", hpRule.Name()))
 
 	switch lpRule.RuleResolutionPolicy {
@@ -224,6 +248,147 @@ func (s *Solver) solveVsSingle(lpRule SolverRule, hpRule *SolverRule) (SolverRul
 	return SolverRules{}, true
 }
 
+func (s *Solver) buildFixedRulesList(lpRule *SolverRule) *btree.BTreeG[*SolverRule] {
+
+	fixedRules := s.fixedRules.Clone()
+
+	s.flatrateRules.Ascend(func(flatRateRule *SolverRule) bool {
+		// Check if the higer priority rule is activated, if not skip the rule
+		activatedAfter, activated := s.findFlatRateActivationTime(flatRateRule, lpRule)
+		fmt.Println(" >> findFlatRateActivationTime", flatRateRule.Name(), activatedAfter, activated)
+		//Skip rules if not activated
+		if !activated {
+			return true
+		}
+
+		// If the higer priority is activated after a certains time (flatrate), then truncate the rule before this activation time
+		if activatedAfter > 0 {
+			tmp := flatRateRule.TruncateBefore(activatedAfter)
+			flatRateRule = &tmp
+			fmt.Println(" >> truncate flatrate rule before flatrate activation", activatedAfter)
+		}
+
+		fixedRules.ReplaceOrInsert(flatRateRule)
+		fmt.Println(" >> append flatrate rule", flatRateRule)
+		return true
+	})
+
+	fmt.Println(" >> fixed rules list", fixedRules.Len(), "rules")
+	fixedRules.Ascend(func(rule *SolverRule) bool {
+		fmt.Println("    >>", rule.Name(), rule.From, rule.To, rule.StartAmount, rule.EndAmount)
+		return true
+	})
+
+	return fixedRules
+}
+
+// Solve the rule against a collection of fixed rules resolving the conflict according to rules policy
+// a collection of new rules is returned and current rule is not changed
+func (s *Solver) solveVsFixedRules(lpRule *SolverRule) {
+
+	/*rulesfifo := arrayqueue.New[*SolverRule]()
+	rulesfifo.Enqueue(lpRule)
+
+	for !rulesfifo.Empty() {*/
+
+	//rule, _ := rulesfifo.Dequeue()
+
+	fmt.Println("\n------\nSolving rule", lpRule.Name(), "from", lpRule.From, "to", lpRule.To)
+
+	// Shift the rule if needed using the current start offset
+	_, startOffset := s.sumAllSolvedRules()
+	tmp := lpRule.Shift(startOffset)
+	lpRule = &tmp
+	fmt.Println(" >> shift rule", lpRule.Name(), "at", s.currentRelativeStartOffset)
+
+	solved := false
+	for !solved {
+		fmt.Println("---")
+
+		// Build a list of fixed rules including all fixed rules and activated flatrates
+		fixedRules := s.buildFixedRulesList(lpRule)
+
+		// Iterate over the previously built fixedrules list and solve the current rule against each of them
+		fixedRules.Ascend(func(hpRule *SolverRule) bool {
+			// Solve the lower priority rule against the higher priority rule
+			ret, changed := s.solveVsSingle(*lpRule, hpRule)
+			fmt.Println(" >> solveVsSingle Result", ret, changed)
+			solved = !changed
+			if changed {
+				switch len(ret) {
+				case 0: // Rule deleted, exit the loop as there is nothing to solve anymore
+					lpRule = nil
+					solved = true
+				case 1: // Rule Shifted or truncated, continue the solving process with the new rule
+					lpRule = &ret[0]
+				case 2: // Rule splitted
+					lpRule = &ret[1]                         // right part is the new rule to solve
+					s.solvedRules.ReplaceOrInsert(&(ret[0])) // Left part may be inserted in the new rules collection
+					s.solvedRules.ReplaceOrInsert(hpRule)    //
+					fmt.Println(" >> append splitted fixed rule", ret[0])
+				}
+			}
+			return !changed
+		})
+
+		if fixedRules.Len() == 0 {
+			solved = true
+		}
+	}
+
+	if lpRule != nil && lpRule.Duration() > time.Duration(0) {
+		// Insert the last rule part in the new rules collection
+		s.solvedRules.ReplaceOrInsert(lpRule)
+	}
+
+	//}
+}
+
+func (s *Solver) sumAllSolvedRules() (Amount, time.Duration) {
+	var amountSum Amount
+	var durationSum time.Duration
+
+	// Loop over all already solved entries and determine the end amount and end duration
+	s.solvedRules.Ascend(func(rule *SolverRule) bool {
+		amountSum += rule.EndAmount
+		durationSum = rule.To // last rule duration is the total duration
+		return true
+	})
+
+	return amountSum, durationSum
+}
+
+/*
+func (s *Solver) addAndSolveFixedRule(lpRule *SolverRule) {
+
+	s.fixedRules.Ascend(func(hpRule *SolverRule) bool {
+		ret, changed := s.solveVsSingle(*lpRule, hpRule)
+		if changed {
+			switch len(ret) {
+			case 0: // Rule deleted
+				lpRule = nil
+				return false
+			case 1: // Rule Shifted, truncated or untouched
+				lpRule = &ret[0]
+			case 2: // Rule splitted
+				lpRule = &ret[1]                        // right part is the new rule to solve
+				s.fixedRules.ReplaceOrInsert(&(ret[0])) // Left part may be inserted in the new rules collection
+				s.currentRelativeAmountOffset += ret[0].EndAmount
+				fmt.Println(" >> append splitted fixed rule", ret[0])
+			}
+		}
+		return true
+	})
+
+	// Insert the last rule part in the new rules collection
+	if lpRule != nil && lpRule.Duration() > time.Duration(0) {
+		s.fixedRules.ReplaceOrInsert(lpRule)
+		fmt.Println(" >> append final fixed rule", lpRule)
+	}
+}
+*/
+
+/*
 func (s *Solver) SolveVsAll(lpRule SolverRule) (SolverRules, bool) {
 	var newRules SolverRules
 	var changed bool
@@ -258,7 +423,9 @@ func (s *Solver) SolveVsAll(lpRule SolverRule) (SolverRules, bool) {
 
 	return newRules, changed
 }
+*/
 
+/*
 // Solve the rule against a collection of Higer Priority Rule resolving the conflict according to rules policy
 // a collection of new rules is returned and current rule is not changed
 func (s *Solver) solveAndAppend(lpRule SolverRule) {
@@ -305,7 +472,7 @@ func (s *Solver) solveAndAppend(lpRule SolverRule) {
 	// Update the current start offset used for relative rules
 	s.currentRelativeStartOffset += incRelativeStartOffset
 }
-
+*/
 /*
 func (s *Solver) solvedRulesSumAmountInRange(timespan RelativeTimeSpan, extraRules ...*SolverRule) Amount {
 	var sumAmount Amount
@@ -332,12 +499,19 @@ func (s *Solver) findFlatRateActivationTime(flatRateRule *SolverRule, extraRules
 	var activated bool
 	var activatedAfter time.Duration
 
+	// Trivial case, if activation amount is 0, then always activated from the beginning
+	if flatRateRule.ActivationAmount == 0 {
+		return 0, true
+	}
+
+	//fmt.Println(" >> findFlatRateActivationTime for", flatRateRule.Name(), "with amount", flatRateRule.ActivationAmount)
+
 	processRule := func(rule *SolverRule) (time.Duration, bool) {
 		r, _ := rule.And(flatRateRule.RelativeTimeSpan)
 		if r != nil {
-			fmt.Println(" >> processRule", rule.Name(), sumAmount, "+", r.EndAmount, "vs", flatRateRule.ActiveAmount)
-			if sumAmount+r.EndAmount > flatRateRule.ActiveAmount {
-				return r.DurationForAmount(flatRateRule.ActiveAmount - sumAmount), true
+			//fmt.Println("    >> processRule", rule.Name(), sumAmount, "+", r.EndAmount, "vs", flatRateRule.ActivationAmount)
+			if sumAmount+r.EndAmount > flatRateRule.ActivationAmount {
+				return r.DurationForAmount(flatRateRule.ActivationAmount - sumAmount), true
 			}
 			sumAmount += r.EndAmount
 		}
@@ -360,6 +534,7 @@ func (s *Solver) findFlatRateActivationTime(flatRateRule *SolverRule, extraRules
 	return activatedAfter, activated
 }
 
+/*
 func (s *Solver) IsIntersectingFlatRate(relativeRule, flatRateRule *SolverRule) bool {
 	flatrateAmount := flatRateRule.EndAmount + s.activatedFlatRatesSum
 	intersect := flatRateRule.IsAbsoluteFlatRate() && relativeRule.IsRelative()
@@ -372,10 +547,11 @@ func (s *Solver) IsIntersectingFlatRate(relativeRule, flatRateRule *SolverRule) 
 	// End before the flatrate start
 	intersect = intersect && (s.currentRelativeStartOffset+relativeRule.To >= flatRateRule.From)
 
-	//fmt.Println(" >> IsIntersectingFlatRate", relativeRule.Name(), "vs", flatRateRule.Name(), intersect, s.currentRelativeAmountOffset, s.activatedFlatRatesSum, s.currentRelativeStartOffset /*, relativeRule, flatRateRule*/)
+	//fmt.Println(" >> IsIntersectingFlatRate", relativeRule.Name(), "vs", flatRateRule.Name(), intersect, s.currentRelativeAmountOffset, s.activatedFlatRatesSum, s.currentRelativeStartOffset)
 
 	return intersect
 }
+
 
 func (s *Solver) FindIntersectPositionFlatRate(relativeRule, flatRateRule *SolverRule) time.Duration {
 	var out time.Duration
@@ -412,9 +588,11 @@ func (s *Solver) GetBestFlatRate(lpRule *SolverRule) *SolverRule {
 	return bestRule
 }
 
+*/
+
 func (s *Solver) ExtractRulesInRange(timespan RelativeTimeSpan) SolverRules {
 	var out SolverRules
-	s.rules.Ascend(func(rule *SolverRule) bool {
+	s.solvedRules.Ascend(func(rule *SolverRule) bool {
 		r, _ := rule.And(timespan)
 		if r != nil {
 			out = append(out, *r)

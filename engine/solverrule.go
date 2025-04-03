@@ -61,7 +61,7 @@ type SolverRule struct {
 	// Amount in cents at the end of the rule segment
 	EndAmount Amount
 	// Amount for which this flatrate rule is active
-	ActiveAmount Amount
+	ActivationAmount Amount
 	// Trace buffer for debugging all rule changes
 	Trace []string
 	// StartTimePolicy defines the policy for determining the start time of the rule.
@@ -86,7 +86,7 @@ func DurationTypeFromAmount(amount Amount) DurationType {
 	return PayingDuration
 }
 
-func NewRelativeLinearRule(name string, duration time.Duration, hourlyRate Amount, meta MetaData) SolverRule {
+func NewLinearSequentialRule(name string, duration time.Duration, hourlyRate Amount, meta MetaData) SolverRule {
 	return SolverRule{
 		RuleName:             name,
 		Meta:                 meta,
@@ -99,7 +99,7 @@ func NewRelativeLinearRule(name string, duration time.Duration, hourlyRate Amoun
 	}
 }
 
-func NewRelativeFlatRateRule(name string, duration time.Duration, amount Amount, meta MetaData) SolverRule {
+func NewFixedRateSequentialRule(name string, duration time.Duration, amount Amount, meta MetaData) SolverRule {
 	return SolverRule{
 		RuleName:             name,
 		Meta:                 meta,
@@ -112,7 +112,7 @@ func NewRelativeFlatRateRule(name string, duration time.Duration, amount Amount,
 	}
 }
 
-func NewAbsoluteLinearRule(name string, timespan RelativeTimeSpan, hourlyRate Amount, meta MetaData) SolverRule {
+func NewLinearFixedRule(name string, timespan RelativeTimeSpan, hourlyRate Amount, meta MetaData) SolverRule {
 	if !timespan.IsValid() {
 		panic(fmt.Errorf("invalid rule timespan %v", timespan))
 	}
@@ -127,8 +127,23 @@ func NewAbsoluteLinearRule(name string, timespan RelativeTimeSpan, hourlyRate Am
 		DurationType:         DurationTypeFromAmount(hourlyRate),
 	}
 }
+func NewFixedRateFixedRule(name string, timespan RelativeTimeSpan, amount Amount, meta MetaData) SolverRule {
+	if !timespan.IsValid() {
+		panic(fmt.Errorf("invalid rule timespan %v", timespan))
+	}
+	return SolverRule{
+		RuleName:             name,
+		Meta:                 meta,
+		RelativeTimeSpan:     timespan,
+		StartAmount:          amount,
+		EndAmount:            amount,
+		StartTimePolicy:      FixedPolicy,
+		RuleResolutionPolicy: ResolvePolicy,
+		DurationType:         DurationTypeFromAmount(amount),
+	}
+}
 
-func NewAbsoluteFlatRateRule(name string, timespan RelativeTimeSpan, amount Amount, meta MetaData) SolverRule {
+func NewFlatRateFixedRule(name string, timespan RelativeTimeSpan, amount Amount, meta MetaData) SolverRule {
 	if !timespan.IsValid() {
 		panic(fmt.Errorf("invalid rule timespan %v", timespan))
 	}
@@ -138,27 +153,17 @@ func NewAbsoluteFlatRateRule(name string, timespan RelativeTimeSpan, amount Amou
 		RelativeTimeSpan:     timespan,
 		StartAmount:          0,
 		EndAmount:            0,
-		ActiveAmount:         amount,
+		ActivationAmount:     amount,
 		StartTimePolicy:      FixedPolicy,
 		RuleResolutionPolicy: TruncatePolicy,
 		DurationType:         DurationTypeFromAmount(amount),
 	}
 }
 
-func NewAbsoluteNonPaying(name string, timespan RelativeTimeSpan, meta MetaData) SolverRule {
-	if !timespan.IsValid() {
-		panic(fmt.Errorf("invalid rule timespan %v", timespan))
-	}
-	return SolverRule{
-		RuleName:             name,
-		Meta:                 meta,
-		RelativeTimeSpan:     timespan,
-		StartAmount:          0,
-		EndAmount:            0,
-		StartTimePolicy:      FixedPolicy,
-		RuleResolutionPolicy: TruncatePolicy,
-		DurationType:         NonPayingDuration,
-	}
+func NewNonPayingFixedRule(name string, timespan RelativeTimeSpan, meta MetaData) SolverRule {
+	r := NewFlatRateFixedRule(name, timespan, 0, meta)
+	r.DurationType = NonPayingDuration
+	return r
 }
 
 func (rule SolverRule) Duration() time.Duration {
