@@ -123,7 +123,7 @@ func NewLinearFixedRule(name string, timespan RelativeTimeSpan, hourlyRate Amoun
 		StartAmount:          0,
 		EndAmount:            Amount(float64(hourlyRate) * timespan.Duration().Hours()),
 		StartTimePolicy:      FixedPolicy,
-		RuleResolutionPolicy: ResolvePolicy,
+		RuleResolutionPolicy: TruncatePolicy,
 		DurationType:         DurationTypeFromAmount(hourlyRate),
 	}
 }
@@ -138,7 +138,7 @@ func NewFixedRateFixedRule(name string, timespan RelativeTimeSpan, amount Amount
 		StartAmount:          amount,
 		EndAmount:            amount,
 		StartTimePolicy:      FixedPolicy,
-		RuleResolutionPolicy: ResolvePolicy,
+		RuleResolutionPolicy: TruncatePolicy,
 		DurationType:         DurationTypeFromAmount(amount),
 	}
 }

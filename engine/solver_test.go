@@ -205,7 +205,6 @@ func TestSolveVsSingle(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			solver := NewSolver()
 			solver.SetWindow(time.Now(), time.Duration(48*time.Hour))
-			solver.currentRelativeStartOffset = 45 * time.Minute
 			out, _ := solver.solveVsSingle(testcase.lpRule, &testcase.hpRule)
 			if len(out) != len(testcase.expected) {
 				t.Errorf("solveVsSingle expected %v rules, got %v", len(testcase.expected), len(out))
@@ -230,151 +229,153 @@ func TestSolver(t *testing.T) {
 		rules    SolverRules
 		expected SolverRules
 	}{
+		"01-Sequential-SingleLinear": {
+			rules: SolverRules{
+				NewLinearSequentialRule("Hourly", 10*time.Hour, 1.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 10 * time.Hour}, StartAmount: 0, EndAmount: 10.0},
+			},
+		},
+		"02-Sequential-MultipleLinear": {
+			rules: SolverRules{
+				NewLinearSequentialRule("A", 4*time.Hour, 1.0, MetaData{}),
+				NewLinearSequentialRule("B", 5*time.Hour, 2.0, MetaData{}),
+				NewLinearSequentialRule("C", 7*time.Hour, 3.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 4 * time.Hour}, StartAmount: 0, EndAmount: 4.0},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 4 * time.Hour, To: 9 * time.Hour}, StartAmount: 0, EndAmount: 10.0},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 9 * time.Hour, To: 16 * time.Hour}, StartAmount: 0, EndAmount: 21.0},
+			},
+		},
+		"03-Sequential-SingleFixedRate": {
+			rules: SolverRules{
+				NewFixedRateSequentialRule("A", 4*time.Hour, 3.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 4 * time.Hour}, StartAmount: 3.0, EndAmount: 3.0},
+			},
+		},
+		"04-Sequential-MultipleFixedRate": {
+			rules: SolverRules{
+				NewFixedRateSequentialRule("A", 4*time.Hour, 3.0, MetaData{}),
+				NewFixedRateSequentialRule("B", 5*time.Hour, 4.0, MetaData{}),
+				NewFixedRateSequentialRule("C", 7*time.Hour, 5.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 4 * time.Hour}, StartAmount: 3.0, EndAmount: 3.0},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 4 * time.Hour, To: 9 * time.Hour}, StartAmount: 4.0, EndAmount: 4.0},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 9 * time.Hour, To: 16 * time.Hour}, StartAmount: 5.0, EndAmount: 5.0},
+			},
+		},
+		"05-Sequential-MixedLinearAndFixedRate": {
+			rules: SolverRules{
+				NewLinearSequentialRule("A", 4*time.Hour, 1.0, MetaData{}),
+				NewFixedRateSequentialRule("B", 5*time.Hour, 2.0, MetaData{}),
+				NewLinearSequentialRule("C", 7*time.Hour, 3.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 4 * time.Hour}, StartAmount: 0, EndAmount: 4.0},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 4 * time.Hour, To: 9 * time.Hour}, StartAmount: 2.0, EndAmount: 2.0},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 9 * time.Hour, To: 16 * time.Hour}, StartAmount: 0, EndAmount: 21.0},
+			},
+		},
+		"06-Fixed-MultipleLinearBasic": {
+			rules: SolverRules{
+				NewLinearFixedRule("A", RelativeTimeSpan{0 * time.Hour, 2 * time.Hour}, 1.0, MetaData{}),
+				NewLinearFixedRule("B", RelativeTimeSpan{2 * time.Hour, 5 * time.Hour}, 2.0, MetaData{}),
+				NewLinearFixedRule("C", RelativeTimeSpan{5 * time.Hour, 9 * time.Hour}, 3.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 2 * time.Hour}, StartAmount: 0, EndAmount: 2.0},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 2 * time.Hour, To: 5 * time.Hour}, StartAmount: 0, EndAmount: 6.0},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Hour, To: 9 * time.Hour}, StartAmount: 0, EndAmount: 12.0},
+			},
+		},
+		"07-Fixed-MultipleLinearOverlapping": {
+			rules: SolverRules{
+				NewLinearFixedRule("A", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 1.0, MetaData{}),
+				NewLinearFixedRule("B", RelativeTimeSpan{1 * time.Hour, 5 * time.Hour}, 2.0, MetaData{}),
+				NewLinearFixedRule("X", RelativeTimeSpan{18 * time.Hour, 20 * time.Hour}, 2.0, MetaData{}),
+				NewLinearFixedRule("C", RelativeTimeSpan{3 * time.Hour, 9 * time.Hour}, 3.0, MetaData{}),
+				NewLinearFixedRule("D", RelativeTimeSpan{7 * time.Hour, 15 * time.Hour}, 4.0, MetaData{}),
+				NewLinearFixedRule("Y", RelativeTimeSpan{19 * time.Hour, 25 * time.Hour}, 2.0, MetaData{}),
+				NewLinearFixedRule("E", RelativeTimeSpan{0 * time.Hour, 7 * time.Hour}, 5.0, MetaData{}),
+				NewLinearFixedRule("F", RelativeTimeSpan{10 * time.Hour, 17 * time.Hour}, 6.0, MetaData{}),
+				NewLinearFixedRule("Z", RelativeTimeSpan{18 * time.Hour, 53 * time.Hour}, 2.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 1 * time.Hour}, StartAmount: 0.0, EndAmount: 5.0},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 1 * time.Hour, To: 2 * time.Hour}, StartAmount: 0.0, EndAmount: 2.0},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 2 * time.Hour, To: 6 * time.Hour}, StartAmount: 0.0, EndAmount: 4.0},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 9 * time.Hour}, StartAmount: 0.0, EndAmount: 9.0},
+				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 9 * time.Hour, To: 15 * time.Hour}, StartAmount: 0.0, EndAmount: 24.0},
+				{RuleName: "F", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Hour, To: 17 * time.Hour}, StartAmount: 0.0, EndAmount: 12.0},
+			},
+		},
+		"08-Mixed-MultipleLinearOverlappingAndSequential": {
+			rules: SolverRules{
+				NewLinearFixedRule("A", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 1.0, MetaData{}),
+				NewLinearFixedRule("B", RelativeTimeSpan{1 * time.Hour, 5 * time.Hour}, 2.0, MetaData{}),
+				NewLinearFixedRule("X", RelativeTimeSpan{18 * time.Hour, 20 * time.Hour}, 2.0, MetaData{}),
+				NewLinearFixedRule("C", RelativeTimeSpan{3 * time.Hour, 9 * time.Hour}, 3.0, MetaData{}),
+				NewLinearFixedRule("D", RelativeTimeSpan{7 * time.Hour, 15 * time.Hour}, 4.0, MetaData{}),
+				NewLinearFixedRule("Y", RelativeTimeSpan{19 * time.Hour, 25 * time.Hour}, 2.0, MetaData{}),
+				NewLinearFixedRule("E", RelativeTimeSpan{0 * time.Hour, 7 * time.Hour}, 5.0, MetaData{}),
+				NewLinearFixedRule("F", RelativeTimeSpan{10 * time.Hour, 17 * time.Hour}, 6.0, MetaData{}),
+				NewLinearFixedRule("Z", RelativeTimeSpan{18 * time.Hour, 53 * time.Hour}, 2.0, MetaData{}),
+				NewLinearSequentialRule("Q", 10*time.Hour, 1.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 1 * time.Hour}, StartAmount: 0.0, EndAmount: 5.0},
+				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 1 * time.Hour, To: 2 * time.Hour}, StartAmount: 0.0, EndAmount: 2.0},
+				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 2 * time.Hour, To: 6 * time.Hour}, StartAmount: 0.0, EndAmount: 4.0},
+				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 9 * time.Hour}, StartAmount: 0.0, EndAmount: 9.0},
+				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 9 * time.Hour, To: 15 * time.Hour}, StartAmount: 0.0, EndAmount: 24.0},
+				{RuleName: "F", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Hour, To: 17 * time.Hour}, StartAmount: 0.0, EndAmount: 12.0},
+				{RuleName: "Q", RelativeTimeSpan: RelativeTimeSpan{From: 17 * time.Hour, To: 18 * time.Hour}, StartAmount: 0.0, EndAmount: 1.0},
+				{RuleName: "X", RelativeTimeSpan: RelativeTimeSpan{From: 18 * time.Hour, To: 20 * time.Hour}, StartAmount: 0.0, EndAmount: 4.0},
+				{RuleName: "Y", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Hour, To: 25 * time.Hour}, StartAmount: 0.0, EndAmount: 10.0},
+				{RuleName: "Z", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Hour, To: 53 * time.Hour}, StartAmount: 0.0, EndAmount: 56.0},
+				{RuleName: "Q", RelativeTimeSpan: RelativeTimeSpan{From: 53 * time.Hour, To: 62 * time.Hour}, StartAmount: 0.0, EndAmount: 9.0},
+			},
+		},
 
-		// 0 - No conflict, empty rules§
-		"0-NoConflictEmptyRules": {
+		"10-LinearWithNonPaying": {
 			rules: SolverRules{
-				SolverRule{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-			},
-			expected: SolverRules{
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
-			},
-		},
-		// 1 - No conflict, multiple rules
-		"1-NoConflictMultipleRules": {
-			rules: SolverRules{
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 40 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-			},
-			expected: SolverRules{
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
-				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}},
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 40 * time.Minute}},
-			},
-		},
-		// 2 - Overlapping rules, Resolve policy
-		"2-OverlapResolvePolicy": {
-			rules: SolverRules{
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-			},
-			expected: SolverRules{
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
-				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}},
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 40 * time.Minute}},
-			},
-		},
-		// 3 - Overlapping rules, Truncate policy
-		"3-OverlapTruncatePolicy": {
-			rules: SolverRules{
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
-			},
-			expected: SolverRules{
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
-				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 25 * time.Minute}},
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}},
-			},
-		},
-		// 4 - Overlapping rules, Delete policy
-		"4-OverlapDeletePolicy": {
-			rules: SolverRules{
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
-			},
-			expected: SolverRules{
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}},
-			},
-		},
-		// 5 - Overlapping rules, mixed policies
-		"5-OverlapMixedPolicies": {
-			rules: SolverRules{
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: DeletePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: ResolvePolicy, StartTimePolicy: FixedPolicy},
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: FixedPolicy},
-			},
-			expected: SolverRules{
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
-				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}},
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 35 * time.Minute}},
-			},
-		},
-		// 6 - Overlapping rules, Truncate policy, Shiftable policy
-		"6-OverlapTruncateShiftablePolicy": {
-			rules: SolverRules{
-				NewNonPayingFixedRule("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}, MetaData{}),
-				NewNonPayingFixedRule("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}, MetaData{}),
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 10 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 15 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				NewNonPayingFixedRule("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}, MetaData{}),
-				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 15 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				{RuleName: "F", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 20 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-			},
-			expected: SolverRules{
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 10 * time.Minute}},
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
-				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 25 * time.Minute}},
-				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 25 * time.Minute, To: 30 * time.Minute}},
-				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 40 * time.Minute}},
-				{RuleName: "F", RelativeTimeSpan: RelativeTimeSpan{From: 40 * time.Minute, To: 55 * time.Minute}},
-				{RuleName: "Z", RelativeTimeSpan: RelativeTimeSpan{From: 60 * time.Minute, To: 90 * time.Minute}},
-			},
-		},
-		// 7 - Overlapping rules, Truncate policy, Shiftable policy
-		"7-OverlapTruncateShiftablePolicy": {
-			rules: SolverRules{
-				NewNonPayingFixedRule("A", RelativeTimeSpan{10 * time.Minute, 20 * time.Minute}, MetaData{}),
-				NewNonPayingFixedRule("B", RelativeTimeSpan{30 * time.Minute, 40 * time.Minute}, MetaData{}),
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 15 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 35 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-				NewNonPayingFixedRule("Z", RelativeTimeSpan{60 * time.Minute, 90 * time.Minute}, MetaData{}),
-				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Minute, To: 25 * time.Minute}, RuleResolutionPolicy: TruncatePolicy, StartTimePolicy: ShiftablePolicy},
-			},
-			expected: SolverRules{
-				{RuleName: "C", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Minute, To: 10 * time.Minute}},
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 10 * time.Minute, To: 20 * time.Minute}},
-				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 20 * time.Minute, To: 30 * time.Minute}},
-				{RuleName: "B", RelativeTimeSpan: RelativeTimeSpan{From: 30 * time.Minute, To: 40 * time.Minute}},
-				{RuleName: "D", RelativeTimeSpan: RelativeTimeSpan{From: 40 * time.Minute, To: 45 * time.Minute}},
-				{RuleName: "E", RelativeTimeSpan: RelativeTimeSpan{From: 45 * time.Minute, To: 60 * time.Minute}},
-				{RuleName: "Z", RelativeTimeSpan: RelativeTimeSpan{From: 60 * time.Minute, To: 90 * time.Minute}},
-			},
-		},
-		// 8 - Overlapping rules, Truncate policy, Shiftable policy
-		"8-OverlapTruncateShiftablePolicy": {
-			rules: SolverRules{
-				NewLinearFixedRule("A", RelativeTimeSpan{2 * time.Hour, 4 * time.Hour}, 2.0, MetaData{}),
+				NewNonPayingFixedRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, MetaData{}),
 				NewLinearSequentialRule("Hourly", 10*time.Hour, 1.0, MetaData{}),
 			},
 			expected: SolverRules{
 				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 2 * time.Hour}, StartAmount: 0, EndAmount: 2.0},
-				{RuleName: "A", RelativeTimeSpan: RelativeTimeSpan{From: 2 * time.Hour, To: 4 * time.Hour}, StartAmount: 0, EndAmount: 4.0},
-				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 4 * time.Hour, To: 12 * time.Hour}, StartAmount: 0, EndAmount: 8.0},
+				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 2 * time.Hour, To: 6 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 14 * time.Hour}, StartAmount: 0, EndAmount: 8.0},
 			},
 		},
-		// 10 - Overlapping multiple calendar flatrate with linear in the middle and multiple flatrate activation
-		"10-MultipleCalendarFlatrate": {
+		"11-LinearWithFlatrate": {
 			rules: SolverRules{
 				NewFlatRateFixedRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 3.0, MetaData{}),
-				NewFlatRateFixedRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
 				NewLinearSequentialRule("Hourly", 10*time.Hour, 1.0, MetaData{}),
 			},
 			expected: SolverRules{
-				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 3 * time.Hour}, StartAmount: 0, EndAmount: 3.0},
-				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 3 * time.Hour, To: 6 * time.Hour}, StartAmount: 0, EndAmount: 0},
-				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 9 * time.Hour}, StartAmount: 0, EndAmount: 3.0},
-				{RuleName: "Evening", RelativeTimeSpan: RelativeTimeSpan{From: 9 * time.Hour, To: 11 * time.Hour}, StartAmount: 0, EndAmount: 0},
-				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 11 * time.Hour, To: 15 * time.Hour}, StartAmount: 0, EndAmount: 4.0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 5 * time.Hour}, StartAmount: 0, EndAmount: 5.0},
+				{RuleName: "Morning", RelativeTimeSpan: RelativeTimeSpan{From: 5 * time.Hour, To: 6 * time.Hour}, StartAmount: 0, EndAmount: 0},
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 11 * time.Hour}, StartAmount: 0, EndAmount: 5.0},
+			},
+		},
+		"12-LinearWithNonActivatedFlatrate": {
+			rules: SolverRules{
+				NewFlatRateFixedRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 4.0, MetaData{}),
+				NewLinearSequentialRule("Hourly", 10*time.Hour, 1.0, MetaData{}),
+			},
+			expected: SolverRules{
+				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 10 * time.Hour}, StartAmount: 0, EndAmount: 10.0},
 			},
 		},
 
 		// 12 - Overlapping multiple calendar flatrate with linear in the middle and multiple flatrate activation
-		"12-MultipleCalendarFlatrate": {
+		"20-MultipleCalendarFlatrate": {
 			rules: SolverRules{
 				NewFlatRateFixedRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 3.0, MetaData{}),
 				NewFlatRateFixedRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
@@ -390,7 +391,7 @@ func TestSolver(t *testing.T) {
 			},
 		},
 		// 13 - Almost the same as above but with different time spans to make evening flatrate more advantageous than daily
-		"13-MultipleCalendarFlatrate": {
+		"21-MultipleCalendarFlatrate": {
 			rules: SolverRules{
 				NewFlatRateFixedRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 3.0, MetaData{}),
 				NewFlatRateFixedRule("Evening", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
@@ -408,8 +409,8 @@ func TestSolver(t *testing.T) {
 			},
 		},
 
-		// 20 - Figma test case with single flat rate rule (activating the flatrate)
-		"20-Figma-SingleFlatRule-1": {
+		// 30 - Figma test case with single flat rate rule (activating the flatrate)
+		"30-Figma-SingleFlatRule-1": {
 			rules: SolverRules{
 				NewFlatRateFixedRule("Morning", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
 				NewLinearSequentialRule("Hourly", 20*time.Hour, 1.0, MetaData{}),
@@ -420,8 +421,8 @@ func TestSolver(t *testing.T) {
 				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 11 * time.Hour, To: 21 * time.Hour}, StartAmount: 0, EndAmount: 10.0},
 			},
 		},
-		// 21 - Figma test case with single flat rate rule (activating the flatrate)
-		"21-Figma-SingleFlatRule-2": {
+		// 31 - Figma test case with single flat rate rule (activating the flatrate)
+		"31-Figma-SingleFlatRule-2": {
 			rules: SolverRules{
 				NewFlatRateFixedRule("Morning", RelativeTimeSpan{3 * time.Hour, 7 * time.Hour}, 3.0, MetaData{}),
 				NewLinearSequentialRule("Hourly", 20*time.Hour, 1.0, MetaData{}),
@@ -432,8 +433,8 @@ func TestSolver(t *testing.T) {
 				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 7 * time.Hour, To: 21 * time.Hour}, StartAmount: 0, EndAmount: 14.0},
 			},
 		},
-		// 22 - Figma test case with single flat rate rule (activating the flatrate)
-		"22-Figma-SingleFlatRule-3": {
+		// 32 - Figma test case with single flat rate rule (activating the flatrate)
+		"32-Figma-SingleFlatRule-3": {
 			rules: SolverRules{
 				NewFlatRateFixedRule("Morning", RelativeTimeSpan{2 * time.Hour, 6 * time.Hour}, 3.0, MetaData{}),
 				NewLinearSequentialRule("Hourly", 20*time.Hour, 1.0, MetaData{}),
@@ -444,9 +445,8 @@ func TestSolver(t *testing.T) {
 				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 6 * time.Hour, To: 21 * time.Hour}, StartAmount: 0, EndAmount: 15.0},
 			},
 		},
-		// 23 - Figma test case with single flat rate rule (flatrate is not activated)
-
-		"23-Figma-SingleFlatRule-4": {
+		// 33 - Figma test case with single flat rate rule (flatrate is not activated)
+		"33-Figma-SingleFlatRule-4": {
 			rules: SolverRules{
 				NewFlatRateFixedRule("Morning", RelativeTimeSpan{-1 * time.Hour, 3 * time.Hour}, 3.0, MetaData{}),
 				NewLinearSequentialRule("Hourly", 20*time.Hour, 1.0, MetaData{}),
@@ -455,8 +455,8 @@ func TestSolver(t *testing.T) {
 				{RuleName: "Hourly", RelativeTimeSpan: RelativeTimeSpan{From: 0 * time.Hour, To: 20 * time.Hour}, StartAmount: 0, EndAmount: 20.0},
 			},
 		},
-		// 30 - Figma test case with multiple flat rate rules (activating both flatrate)
-		"30-Figma-Multi-1": {
+		// 34 - Figma test case with multiple flat rate rules (activating both flatrate)
+		"34-Figma-MultiFlatRate-1": {
 			rules: SolverRules{
 				NewFlatRateFixedRule("Morning", RelativeTimeSpan{7 * time.Hour, 11 * time.Hour}, 3.0, MetaData{}),
 				NewFlatRateFixedRule("Evening", RelativeTimeSpan{6 * time.Hour, 20 * time.Hour}, 8.0, MetaData{}),
@@ -482,24 +482,23 @@ func TestSolver(t *testing.T) {
 
 			if solver.solvedRules.Len() != len(testcase.expected) {
 				t.Errorf("SolveAndAppend expected %v rules, got %v", len(testcase.expected), solver.solvedRules.Len())
-			} else {
-				i := 0
-				solver.solvedRules.Ascend(func(rule *SolverRule) bool {
-					expected := testcase.expected[i]
-					if rule.From != expected.From || rule.To != expected.To {
-						t.Errorf("SolveAndAppend(%d) time error, expected rule %v, got %v", i, expected, rule)
-					}
-					if rule.StartAmount != expected.StartAmount || rule.EndAmount != expected.EndAmount {
-						t.Errorf("SolveAndAppend(%d) amount error, expected rule %v, got %v", i, expected, rule)
-					}
-					// Test name
-					if rule.Name() != expected.Name() {
-						t.Errorf("SolveAndAppend(%d) mismatch names, expected name %s, got %s", i, expected.Name(), rule.Name())
-					}
-					i++
-					return true
-				})
 			}
+			i := 0
+			solver.solvedRules.Ascend(func(rule *SolverRule) bool {
+				expected := testcase.expected[i]
+				if rule.From != expected.From || rule.To != expected.To {
+					t.Errorf("SolveAndAppend(%d) time error, expected rule %v, got %v", i, expected, rule)
+				}
+				if rule.StartAmount != expected.StartAmount || rule.EndAmount != expected.EndAmount {
+					t.Errorf("SolveAndAppend(%d) amount error, expected rule %v, got %v", i, expected, rule)
+				}
+				// Test name
+				if rule.Name() != expected.Name() {
+					t.Errorf("SolveAndAppend(%d) mismatch names, expected name %s, got %s", i, expected.Name(), rule.Name())
+				}
+				i++
+				return i <= len(testcase.expected)
+			})
 		})
 	}
 }
