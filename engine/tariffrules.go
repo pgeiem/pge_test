@@ -78,6 +78,7 @@ type FixedRateFixedRule struct {
 func (r FixedRateFixedRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
 	cnt := 0
 	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
+		fmt.Println("####### FixedRateFixedRule", timespan, cnt)
 		ts := timespan.ToRelativeTimeSpan(from)
 		solverRule := NewFixedRateFixedRule(r.RuleName, ts, r.Amount, r.Meta)
 		solverRule.Trace = append(solverRule.Trace, fmt.Sprintf("Occurence no%d", cnt))
@@ -167,6 +168,8 @@ func (rules *SolvableRules) UnmarshalYAML(ctx context.Context, unmarshal func(in
 			quota = t.LinearFixedRule
 		} else if t.FlatRateFixedRule != nil {
 			quota = t.FlatRateFixedRule
+		} else if t.FixedRateFixedRule != nil {
+			quota = t.FixedRateFixedRule
 		} else if t.NonPayingFixedRule != nil {
 			quota = t.NonPayingFixedRule
 		}

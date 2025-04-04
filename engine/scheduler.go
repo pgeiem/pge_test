@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -119,7 +120,7 @@ func (s *Scheduler) solveVsSingle(lpSpan SchedulerEntry, hpSpan SchedulerEntry) 
 func (s *Scheduler) Append(lpEntry SchedulerEntry) {
 	var newEntries SchedulerEntries
 
-	//fmt.Println("\n------\nSolving entry", lpRule, "from", lpRule.From, "to", lpRule.To)
+	fmt.Println("Solving scheduler entry", lpEntry, "from", lpEntry.From, "to", lpEntry.To)
 
 	// Loop over all entries and solve the current entry against each of them
 	s.entries.Ascend(func(hpEntry SchedulerEntry) bool {
@@ -150,6 +151,10 @@ func (s *Scheduler) Append(lpEntry SchedulerEntry) {
 
 func (s *Scheduler) AddSequence(seq *TariffSequence) {
 	for _, seg := range seq.ValidityPeriod.Between(s.now, s.now.Add(s.window)) {
-		s.Append(SchedulerEntry{seg.ToRelativeTimeSpan(s.now), seq})
+		timespan := seg.ToRelativeTimeSpan(s.now)
+		if timespan.From < 0 {
+			timespan.From = 0
+		}
+		s.Append(SchedulerEntry{timespan, seq})
 	}
 }

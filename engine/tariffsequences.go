@@ -79,7 +79,7 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 		return out, nil
 	}
 
-	// If there is only one sequence, return its rules directly skipping merging
+	// If there is only one sequence, return its rules directly, skipping merging
 	if len(inventory) == 1 {
 		fmt.Println("Single sequence, skipping merging")
 		return inventory[0].Solver.ExtractRulesInRange(RelativeTimeSpan{0, window}), nil
@@ -101,9 +101,10 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 	// Merge all sequences
 	scheduler.entries.Ascend(func(entry SchedulerEntry) bool {
 		out = append(out, entry.Sequence.Solver.ExtractRulesInRange(entry.RelativeTimeSpan)...)
-		fmt.Println("Merging", entry.Sequence.Name, "rules", out)
+		fmt.Println("Merging", entry.Sequence.Name, "rules:\n", out)
 		return true
 	})
+
 	return out, nil
 }
 

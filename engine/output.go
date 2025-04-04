@@ -44,17 +44,21 @@ func (segs Output) ToJson() ([]byte, error) {
 func (segs Output) AmountForDuration(targetDuration time.Duration) Amount {
 	totAmount := Amount(0)
 	totDuration := time.Duration(0)
+	fmt.Println("AmountForDuration, Target duration", targetDuration, "nb rules", len(segs.Table))
 	for _, seg := range segs.Table {
-		fmt.Println("Segment", seg, "Total amount", totAmount, "Total duration", totDuration)
 		segDuration := time.Duration(seg.Duration) * time.Second
 		if targetDuration < totDuration+segDuration {
 			return Amount(float64(seg.Amount)*float64(targetDuration-totDuration)/float64(segDuration)) + totAmount
 		}
 		totAmount += seg.Amount
 		totDuration += segDuration
+		fmt.Println("   >> Segment", seg.SegName, "Total amount", totAmount, "Total duration", totDuration)
 	}
-	fmt.Println("Warning: Duration is greater than the total duration of the output")
-	return Amount(0)
+	if targetDuration > totDuration {
+		fmt.Println("WARNING: Duration is greater than the total duration of the output")
+		return Amount(0)
+	}
+	return totAmount
 }
 
 func (s *SolverRules) GenerateOutput(now time.Time, detailed bool) Output {
@@ -63,10 +67,12 @@ func (s *SolverRules) GenerateOutput(now time.Time, detailed bool) Output {
 
 	out.Now = now
 
+	fmt.Println("Generating output for", len(*s), "rules")
 	for _, rule := range *s {
-		fmt.Println("Rule", rule)
+		fmt.Println("   Rule", rule)
 		// If there is a gap between the previous rule and the current one this is the end of the output
 		if previous.To != rule.From {
+			fmt.Println("   >> Gap detected, end of output", previous, rule)
 			break
 		}
 		seg := OutputSegment{

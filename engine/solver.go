@@ -153,7 +153,7 @@ func (s *Solver) Append(rule *SolverRule) {
 		s.flatrateRules.ReplaceOrInsert(rule)
 	} else if rule.StartTimePolicy == FixedPolicy {
 		// fixed rules are stored in a sorted b-tree
-		s.solveAndAppendFixedRule(rule)
+		s.solveAndAppend(rule, s.fixedRules)
 		//s.fixedRules.ReplaceOrInsert(rule)
 	} else {
 		// shiftable rules are stored in a list in the appended order
@@ -275,7 +275,7 @@ func (s *Solver) buildFixedRulesList(lpRule *SolverRule) *btree.BTreeG[*SolverRu
 	s.flatrateRules.Ascend(func(flatRateRule *SolverRule) bool {
 		// Check if the higer priority rule is activated, if not skip the rule
 		activatedAfter, activated := s.findFlatRateActivationTime(flatRateRule, lpRule)
-		fmt.Println(" >> findFlatRateActivationTime", flatRateRule.Name(), activatedAfter, activated)
+		//fmt.Println(" >> findFlatRateActivationTime", flatRateRule.Name(), activatedAfter, activated)
 		//Skip rules if not activated
 		if !activated {
 			return true
@@ -288,7 +288,9 @@ func (s *Solver) buildFixedRulesList(lpRule *SolverRule) *btree.BTreeG[*SolverRu
 			fmt.Println(" >> truncate flatrate rule before flatrate activation", activatedAfter)
 		}
 
-		fixedRules.ReplaceOrInsert(flatRateRule)
+		//fixedRules.ReplaceOrInsert(flatRateRule)
+		s.solveAndAppend(flatRateRule, fixedRules)
+
 		fmt.Println(" >> append flatrate rule", flatRateRule)
 		return true
 	})
@@ -325,7 +327,7 @@ func (s *Solver) solveShiftableVsFixedRules(lpRule *SolverRule) {
 		fixedRules.Ascend(func(hpRule *SolverRule) bool {
 			// Solve the lower priority rule against the higher priority rule
 			ret, changed := s.solveVsSingle(*lpRule, hpRule)
-			fmt.Println(" >> solveVsSingle Result", ret, changed)
+			//fmt.Println(" >> solveVsSingle Result", ret, changed)
 			solved = !changed
 			if changed {
 				switch len(ret) {
@@ -357,15 +359,13 @@ func (s *Solver) solveShiftableVsFixedRules(lpRule *SolverRule) {
 }
 
 // TODO fix comment
-// Solve the rule against a collection of Higer Priority Rule resolving the conflict according to rules policy
-// a collection of new rules is returned and current rule is not changed
-func (s *Solver) solveAndAppendFixedRule(lpRule *SolverRule) {
+func (s *Solver) solveAndAppend(lpRule *SolverRule, collection *btree.BTreeG[*SolverRule]) {
 
 	var newRules []*SolverRule
 	//fmt.Println("------ Solving rule", lpRule.Name, "from", lpRule.From, "to", lpRule.To)
 
 	// Loop over all rules in the collection and solve the current rule against each of them
-	s.fixedRules.Ascend(func(hpRule *SolverRule) bool {
+	collection.Ascend(func(hpRule *SolverRule) bool {
 		fmt.Println(" >> Solving fixed rule", lpRule.Name(), "vs", hpRule.Name())
 		ret, _ := s.solveVsSingle(*lpRule, hpRule)
 		switch len(ret) {
@@ -389,7 +389,7 @@ func (s *Solver) solveAndAppendFixedRule(lpRule *SolverRule) {
 	// Effectively insert all parts of the resolved rules in the rules collection
 	for i := range newRules {
 		if newRules[i].Duration() > time.Duration(0) {
-			s.fixedRules.ReplaceOrInsert(newRules[i])
+			collection.ReplaceOrInsert(newRules[i])
 		}
 	}
 }
