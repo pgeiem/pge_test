@@ -142,6 +142,11 @@ func (s *Solver) AppendMany(rules ...SolverRule) {
 	}
 }
 
+// TODO remove this
+func (s *Solver) AppendByValue(rule SolverRule) {
+	s.Append(&rule)
+}
+
 func (s *Solver) Append(rule *SolverRule) {
 	if rule.ActivationAmount > 0 {
 		// flatrate rules are stored in a b-tree
@@ -377,7 +382,9 @@ func (s *Solver) solveAndAppendFixedRule(lpRule *SolverRule) {
 	})
 
 	// Insert the last rule in the new rules collection
-	newRules = append(newRules, lpRule)
+	if lpRule != nil && lpRule.Duration() > time.Duration(0) { //TODO check why we can get nil value here (bitonto test)
+		newRules = append(newRules, lpRule)
+	}
 
 	// Effectively insert all parts of the resolved rules in the rules collection
 	for i := range newRules {

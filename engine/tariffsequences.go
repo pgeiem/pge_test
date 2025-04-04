@@ -35,18 +35,18 @@ func (ts TariffSequence) String() string {
 	return sb.String()
 }
 
-/*
 func (ts TariffSequence) Solve(now time.Time, window time.Duration, globalNonpaying AbsoluteNonPayingRules) {
 	ts.Solver.SetWindow(now, window)
 	// Append first all global nonpaying rules...
 	for i := range globalNonpaying {
-		globalNonpaying[i].ToSolverRules(now, now.Add(window), ts.Solver.Append)
+		globalNonpaying[i].ToSolverRules(now, now.Add(window), ts.Solver.AppendByValue)
 	}
 	// ... then the sequence rules
 	for i := range ts.Rules {
-		ts.Rules[i].ToSolverRules(now, now.Add(window), ts.Solver.Append)
+		ts.Rules[i].ToSolverRules(now, now.Add(window), ts.Solver.AppendByValue)
 	}
-}*/
+	ts.Solver.Solve()
+}
 
 type TariffSequenceInventory []TariffSequence
 
@@ -109,9 +109,9 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 
 func (inventory TariffSequenceInventory) Solve(now time.Time, window time.Duration, globalNonpaying AbsoluteNonPayingRules) {
 	//Solve all sequences individually
-	/*for i := range inventory {
+	for i := range inventory {
 		inventory[i].Solve(now, window, globalNonpaying)
-	}*/
+	}
 }
 
 func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
