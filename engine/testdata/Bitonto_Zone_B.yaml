@@ -15,7 +15,7 @@ nonpaying:
 sequences:
   - name: "BIMB"
     rules:
-      - flatrate:
+      - fixedrate:
           name: "minamount"
           duration: 30m
           amount: 0.30

@@ -11,7 +11,7 @@ sequences:
     start: pattern(06/01 00:00)
     end: pattern(09/30 23:59:59)
     rules:
-      - flatrate:
+      - fixedrate:
           name: "minamount"
           duration: 30m
           amount: 0.50

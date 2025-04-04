@@ -15,7 +15,7 @@ sequences:
           name: "night"
           start: pattern(*/* 00:00)
           end: pattern(*/* 09:00)
-      - flatrate:
+      - fixedrate:
           name: "minamount"
           duration: 12m
           amount: 0.20
@@ -23,7 +23,7 @@ sequences:
           name: "hourlyrate"
           hourlyrate: 1.0
           duration: 30d
-      - flatrate:
+      - fixedrate:
           name: "daily"
           duration: 24h
           amount: 3.0
@@ -36,7 +36,7 @@ sequences:
           name: "night"
           start: pattern(*/* 20:00)
           end: pattern(*/* 09:00)
-      - flatrate:
+      - fixedrate:
           name: "minamount"
           duration: 12m
           amount: 0.20
@@ -44,7 +44,7 @@ sequences:
           name: "hourlyrate"
           hourlyrate: 1.0
           duration: 30d
-      - flatrate:
+      - fixedrate:
           name: "daily"
           duration: 24h
           amount: 3.0

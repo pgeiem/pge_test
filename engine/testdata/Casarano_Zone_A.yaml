@@ -14,7 +14,7 @@ nonpaying:
 sequences:
   - name: "CRAP"
     rules:
-      - flatrate:
+      - fixedrate:
           name: "minamount"
           duration: 22m30s
           amount: 0.30

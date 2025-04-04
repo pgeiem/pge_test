@@ -17,19 +17,19 @@ sequences:
     start: pattern(*/* 08:00)
     end: pattern(*/* 20:00)
     rules:
-      - flatrate:
+      - fixedrate:
           name: "minamount"
           duration: 2h
           amount: 3.00
-      - flatrate:
+      - fixedrate:
           name: "step1"
           duration: 2h
           amount: 2.00
-      - flatrate:
+      - fixedrate:
           name: "step2"
           duration: 2h
           amount: 1.00
-      - flatrate:
+      - fixedrate:
           name: "step3"
           duration: 6h
           amount: 1.50

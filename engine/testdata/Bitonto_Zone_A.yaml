@@ -15,7 +15,7 @@ nonpaying:
 sequences:
 - name: "BIMA"
   rules:
-  - flatrate:
+  - fixedrate:
       name: "minamount"
       duration: 30m
       amount: 0.5

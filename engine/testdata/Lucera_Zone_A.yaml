@@ -15,7 +15,7 @@ nonpaying:
 sequences:
   - name: "LUP1"
     rules:
-      - flatrate:
+      - fixedrate:
           name: "minamount"
           duration: 30m
           amount: 0.50

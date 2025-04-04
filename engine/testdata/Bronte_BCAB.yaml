@@ -5,7 +5,7 @@ config:
 sequences:
   - name: "BCAB"
     rules:
-      - flatrate:
+      - fixedrate:
           name: "monthly"
           duration: 30d
           amount: 25.0

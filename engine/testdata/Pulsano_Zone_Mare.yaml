@@ -12,7 +12,7 @@ nonpaying:
 sequences:
   - name: "PS09"
     rules:
-      - flatrate:
+      - fixedrate:
           name: "minamount"
           duration: 12m
           amount: 0.20
@@ -20,7 +20,7 @@ sequences:
           name: "hourlyrate"
           hourlyrate: 1.0
           duration: 30d
-      - flatrate:
+      - fixedrate:
           name: "daily"
           duration: 24h
           amount: 5.0

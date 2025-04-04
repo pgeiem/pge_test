@@ -11,7 +11,7 @@ sequences:
     start: pattern(06/01 00:00)
     end: pattern(10/01 00:00)
     rules:
-      - flatrate:
+      - fixedrate:
           name: "minamount"
           duration: 30m
           amount: 0.50
@@ -28,7 +28,7 @@ sequences:
           name: "weekdays-free"
           start: pattern(*/* MON 00:00)
           end: pattern(*/* WED 00:00)
-      - flatrate:
+      - fixedrate:
           name: "minamount"
           duration: 30m
           amount: 0.50
@@ -45,7 +45,7 @@ sequences:
           name: "weekdays-free"
           start: pattern(*/* MON 00:00)
           end: pattern(*/* WED 00:00)
-      - flatrate:
+      - fixedrate:
           name: "minamount"
           duration: 30m
           amount: 0.50
