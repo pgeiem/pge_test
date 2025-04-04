@@ -2,24 +2,24 @@ version: "0.1"
 config:
   window: 30d
 nonpaying:
-  - name: "sunday"
-    start: pattern(*/* SUN 00:00)
-    end: pattern(*/* MON 00:00)
-  - name: "night"
-    start: pattern(*/* 21:00)
-    end: pattern(*/* 09:00)
-  - name: "lunch"
-    start: pattern(*/* 13:00)
-    end: pattern(*/* 17:00)
+- name: "sunday"
+  start: pattern(*/* SUN 00:00)
+  end: pattern(*/* MON 00:00)
+- name: "night"
+  start: pattern(*/* 21:00)
+  end: pattern(*/* 09:00)
+- name: "lunch"
+  start: pattern(*/* 13:00)
+  end: pattern(*/* 17:00)
 
 sequences:
-  - name: "BIMB"
-    rules:
-      - fixedrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.30
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 0.60
-          duration: 30d
+- name: "BIMB"
+  rules:
+  - fixedrate:
+      name: "minamount"
+      duration: 30m
+      amount: 0.30
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 0.60
+      duration: 30d

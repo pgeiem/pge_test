@@ -1,25 +1,25 @@
 version: "0.1"
 config:
-  window: 30d
+  window: 10d
 nonpaying:
-  - name: "sunday"
-    start: pattern(*/* SUN 00:00)
-    end: pattern(*/* MON 00:00)
-  - name: "night"
-    start: pattern(*/* 20:00)
-    end: pattern(*/* 08:30)
-  - name: "lunch"
-    start: pattern(*/* MON-SAT 13:30)
-    end: pattern(*/* MON-SAT 16:00)
+- name: "sunday"
+  start: pattern(*/* SUN 00:00)
+  end: pattern(*/* MON 00:00)
+- name: "night"
+  start: pattern(*/* 20:00)
+  end: pattern(*/* 08:30)
+- name: "lunch"
+  start: pattern(*/* MON-SAT 13:30)
+  end: pattern(*/* MON-SAT 16:00)
 
 sequences:
-  - name: "LUP1"
-    rules:
-      - fixedrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.50
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 1.0
-          duration: 30d
+- name: "LUP1"
+  rules:
+  - fixedrate:
+      name: "minamount"
+      duration: 30m
+      amount: 0.50
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 1.0
+      duration: 30d

@@ -4,49 +4,47 @@ config:
   window: 30d
 
 nonpaying:
-  - name: "sunday"
-    start: pattern(*/* SUN 00:00)
-    end: pattern(*/* MON 00:00)
+- name: "sunday"
+  start: pattern(*/* SUN 00:00)
+  end: pattern(*/* MON 00:00)
 
 sequences:
-  - name: "CRBE"
-    start: pattern(06/01 00:00)
-    end: pattern(09/01 00:00)
-    rules:
-      - nonpaying:
-          name: "lunch"
-          start: pattern(*/* 13:00)
-          end: pattern(*/* 17:00)
-      - nonpaying:
-          name: "night"
-          start: pattern(*/* 21:00)
-          end: pattern(*/* 09:00)
-      - fixedrate:
-          name: "minamount"
-          duration: 22m30s
-          amount: 0.30
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 0.80
-          duration: 30d
+- name: "CRBE"
+  start: pattern(06/01 00:00)
+  end: pattern(09/01 00:00)
+  rules:
+  - nonpaying:
+      name: "lunch"
+      start: pattern(*/* 13:00)
+      end: pattern(*/* 17:00)
+  - nonpaying:
+      name: "night"
+      start: pattern(*/* 21:00)
+      end: pattern(*/* 09:00)
+  - fixedrate:
+      name: "minamount"
+      duration: 22m30s
+      amount: 0.30
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 0.80
+      duration: 30d
 
-  - name: "CRBI"
-    start: pattern(09/01 00:00)
-    end: pattern(06/01 00:00)
-    rules:
-      - nonpaying:
-          name: "lunch"
-          start: pattern(*/* 13:00)
-          end: pattern(*/* 16:00)
-      - nonpaying:
-          name: "night"
-          start: pattern(*/* 20:00)
-          end: pattern(*/* 09:00)
-      - fixedrate:
-          name: "minamount"
-          duration: 22m30s
-          amount: 0.30
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 0.80
-          duration: 30d
+- name: "CRBI"
+  rules:
+  - nonpaying:
+      name: "lunch"
+      start: pattern(*/* 13:00)
+      end: pattern(*/* 16:00)
+  - nonpaying:
+      name: "night"
+      start: pattern(*/* 20:00)
+      end: pattern(*/* 09:00)
+  - fixedrate:
+      name: "minamount"
+      duration: 22m30s
+      amount: 0.30
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 0.80
+      duration: 30d

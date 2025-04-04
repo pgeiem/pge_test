@@ -2,54 +2,35 @@ version: "0.1"
 config:
   window: 30d
 nonpaying:
-  name: "night"
+- name: "night"
   start: pattern(*/* 01:30)
   end: pattern(*/* 08:30)
 
 sequences:
-  - name: "A2GS"
-    start: pattern(06/01 00:00)
-    end: pattern(10/01 00:00)
-    rules:
-      - fixedrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.50
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 2.0
-          duration: 13h00m
+- name: "A2GS"
+  start: pattern(06/01 00:00)
+  end: pattern(10/01 00:00)
+  rules:
+  - fixedrate:
+      name: "minamount"
+      duration: 15m
+      amount: 0.50
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 2.0
+      duration: 12h15m
 
-  - name: "A2FP Jun-Sep"
-    start: pattern(04/01 00:00)
-    end: pattern(06/01 00:00)
-    rules:
-      - nonpaying:
-          name: "weekdays-free"
-          start: pattern(*/* MON 00:00)
-          end: pattern(*/* SAT 00:00)
-      - fixedrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.50
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 2.0
-          duration: 13h00m
-
-  - name: "A2FP October"
-    start: pattern(10/01 00:00)
-    end: pattern(11/01 00:00)
-    rules:
-      - nonpaying:
-          name: "weekdays-free"
-          start: pattern(*/* MON 00:00)
-          end: pattern(*/* SAT 00:00)
-      - fixedrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.50
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 2.0
-          duration: 13h00m
+- name: "A2FP"
+  rules:
+  - nonpaying:
+      name: "weekdays-free"
+      start: pattern(*/* MON 00:00)
+      end: pattern(*/* SAT 00:00)
+  - fixedrate:
+      name: "minamount"
+      duration: 15m
+      amount: 0.50
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 2.0
+      duration: 12h15m

@@ -1,7 +1,7 @@
 #how to manage more than one fllaterate day
 version: "0.1"
 config:
-  window: 30d
+  window: 5d
 nonpaying:
 - name: "sunday"
   start: pattern(*/* SUN 00:00)
@@ -19,7 +19,7 @@ sequences:
   - absflatrate:
       name: "daily"
       start: pattern(*/* 00:00)
-      end: pattern(*/* 23:59)
+      end: pattern(*/* 00:00)
       amount: 3.50
   - fixedrate:
       name: "minamount"
