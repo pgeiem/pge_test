@@ -1,7 +1,7 @@
 - name: "Min amount"
   now: 2025-03-17T07:00:00
   desc: "30 min tickets (min amount)"
-  end: 2025-03-17T08:30:00
+  end: 2025-03-17T07:30:00
   amount: 0.50
 - name: "Max amount Summer"
   now: 2025-05-07T10:00:00
