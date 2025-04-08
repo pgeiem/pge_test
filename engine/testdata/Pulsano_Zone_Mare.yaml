@@ -12,6 +12,11 @@ nonpaying:
 sequences:
   - name: "PS09"
     rules:
+      - absflatrate:
+          name: "daily"
+          start: pattern(*/* 02:00)
+          end: pattern(*/* 02:00)
+          amount: 5.00
       - fixedrate:
           name: "minamount"
           duration: 12m
@@ -20,7 +25,3 @@ sequences:
           name: "hourlyrate"
           hourlyrate: 1.0
           duration: 30d
-      - fixedrate:
-          name: "daily"
-          duration: 24h
-          amount: 5.0

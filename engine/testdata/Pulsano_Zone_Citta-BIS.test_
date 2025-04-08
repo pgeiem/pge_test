@@ -6,7 +6,7 @@
 - name: "Winter 2 days"
   now: 2025-03-17T09:10:00
   desc: "2 day of parking with 3€/day flatrate"
-  end: 2025-03-19T09:00:00
+  end: 2025-03-19T09:10:00
   amount: 6.00
 - name: "Winter x summer"
   now: 2025-05-31T17:00:00

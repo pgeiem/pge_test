@@ -9,9 +9,9 @@ sequences:
     end: pattern(10/01 00:00)
     rules:
       - nonpaying:
-        name: "night"
-        start: pattern(*/* 02:00)
-        end: pattern(*/* 08:00)
+          name: "night"
+          start: pattern(*/* 02:00)
+          end: pattern(*/* 08:00)
       - fixedrate:
           name: "minamount"
           duration: 30m
@@ -22,13 +22,11 @@ sequences:
           duration: 30d
 
   - name: "SFIA"
-    start: pattern(10/01 00:00)
-    end: pattern(04/01 00:00)
     rules:
       - nonpaying:
-        name: "night"
-        start: pattern(*/* 20:00)
-        end: pattern(*/* 08:00)
+          name: "night2"
+          start: pattern(*/* 20:00)
+          end: pattern(*/* 08:00)
       - fixedrate:
           name: "minamount"
           duration: 30m

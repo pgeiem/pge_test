@@ -21,8 +21,8 @@ sequences:
           end: pattern(*/* MON 00:00)
       - absflatrate:
           name: "daily"
-          start: pattern(*/* 00:00)
-          end: pattern(*/* 00:00)
+          start: duration(0h)
+          end: duration(24h)
           amount: 3.00
       - fixedrate:
           name: "minamount"

@@ -4,7 +4,7 @@ config:
 nonpaying:
   - name: "sunday"
     start: pattern(*/* SUN 00:00)
-    end: pattern(*/* MON 00:00)  
+    end: pattern(*/* MON 00:00)
   - name: "night"
     start: pattern(*/* 00:00)
     end: pattern(*/* 08:00)
@@ -12,6 +12,11 @@ nonpaying:
 sequences:
   - name: "SCP1"
     rules:
+      - absflatrate:
+          name: "daily"
+          start: pattern(*/* 00:00)
+          end: pattern(*/* 00:00)
+        amount: 5.00
       - fixedrate:
           name: "minamount"
           duration: 30m
@@ -20,7 +25,3 @@ sequences:
           name: "hourlyrate"
           hourlyrate: 1.2
           duration: 30d
-      - fixedrate:
-          name: "daily"
-          duration: 24h
-          amount: 5.0

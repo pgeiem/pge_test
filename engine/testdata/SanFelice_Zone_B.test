@@ -2,14 +2,14 @@
   now: 2025-03-17T07:00:00
   desc: "30 min tickets (min amount)"
   end: 2025-03-17T08:30:00
-  amount: 0.50
+  amount: 1.50
 - name: "Early arrival"
   now: 2025-05-07T05:00:00
   desc: "..."
   end: 2025-05-07T10:00:00
   amount: 2.00
 - name: "Summer x winter"
-  now: 2025-09-30T01:00:00
+  now: 2025-09-30T23:00:00
   desc: "..."
   end: 2025-10-01T04:00:00
   amount: 3.00
@@ -17,4 +17,4 @@
   now: 2025-03-31T05:00:00
   desc: "15 first hours during winter period and 2 hours during summer period"
   end: 2025-04-01T10:00:00
-  amount: 17.00
+  amount: 19.00
