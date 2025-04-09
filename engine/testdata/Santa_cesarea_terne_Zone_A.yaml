@@ -16,7 +16,7 @@ sequences:
           name: "daily"
           start: pattern(*/* 00:00)
           end: pattern(*/* 00:00)
-        amount: 5.00
+          amount: 5.00
       - fixedrate:
           name: "minamount"
           duration: 30m

@@ -1,0 +1,49 @@
+version: "0.1"
+config:
+  window: 30d
+nonpaying:
+  - name: "sunday"
+    start: pattern(*/* SUN 00:00)
+    end: pattern(*/* MON 00:00)
+  - name: "night"
+    start: pattern(*/* 19:00)
+    end: pattern(*/* 09:00)
+  - name: "lunch"
+    start: pattern(*/* 12:00)
+    end: pattern(*/* 14:00)
+
+sequences:
+  - name: "OrangeZone"
+    rules:
+      - fixedrate:
+          name: "minamount"
+          duration: 15m
+          amount: 0.50
+      - linear:
+          name: "firsthourlyrate"
+          hourlyrate: 2
+          duration: 15m
+      - linear:
+          name: "2ndhourlyrate"
+          hourlyrate: 3.00
+          duration: 30m
+      - linear:
+          name: "3rdhourlyrate"
+          hourlyrate: 2.7
+          duration: 1h
+      - fixedrate:
+          name: "flat1"
+          duration: 10m
+          amount: 1.8
+      - fixedrate:
+          name: "flat2"
+          duration: 10m
+          amount: 2
+      - fixedrate:
+          name: "flat3"
+          duration: 10m
+          amount: 8
+      - fixedrate:
+          name: "FPS"
+          duration: 30m
+          amount: 13
