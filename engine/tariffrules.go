@@ -162,7 +162,7 @@ func (rules *SolvableRules) UnmarshalYAML(ctx context.Context, unmarshal func(in
 		return err
 	}
 
-	fmt.Println("SolvableRules UnmarshalYAML", temp)
+	//fmt.Println("SolvableRules UnmarshalYAML", temp)
 
 	*rules = make(SolvableRules, 0, len(temp))
 	for _, t := range temp {
@@ -186,6 +186,6 @@ func (rules *SolvableRules) UnmarshalYAML(ctx context.Context, unmarshal func(in
 		}
 	}
 
-	fmt.Println("SolvableRules UnmarshalYAML", rules)
+	//fmt.Println("SolvableRules UnmarshalYAML", rules)
 	return nil
 }
