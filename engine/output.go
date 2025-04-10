@@ -48,7 +48,12 @@ func (segs Output) AmountForDuration(targetDuration time.Duration) Amount {
 	for _, seg := range segs.Table {
 		segDuration := time.Duration(seg.Duration) * time.Second
 		if targetDuration < totDuration+segDuration {
-			return Amount(float64(seg.Amount)*float64(targetDuration-totDuration)/float64(segDuration)) + totAmount
+			if seg.Islinear {
+				fmt.Println("   >> Segment (partially)", seg.SegName, "Total amount", totAmount, "Total duration", totDuration)
+				return Amount(float64(seg.Amount)*float64(targetDuration-totDuration)/float64(segDuration)) + totAmount
+			}
+			fmt.Println("   >> Segment", seg.SegName, "Total amount", totAmount, "Total duration", totDuration)
+			return seg.Amount + totAmount
 		}
 		totAmount += seg.Amount
 		totDuration += segDuration

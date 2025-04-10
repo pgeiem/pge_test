@@ -11,5 +11,5 @@
 - name: "3 months"
   now: 2025-03-17T07:00:00
   desc: "90 days of parking for 75€"
-  end: 2025-06-16T07:00:00
+  end: 2025-06-15T07:00:00
   amount: 75

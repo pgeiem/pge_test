@@ -36,10 +36,18 @@ type FixedRateSequentialRule struct {
 	BaseRule `yaml:",inline"`
 	Duration time.Duration `yaml:"duration"`
 	Amount   Amount        `yaml:"amount"`
+	Repeat   int           `yaml:"repeat"`
 }
 
 func (r FixedRateSequentialRule) ToSolverRules(from, to time.Time, appender func(SolverRule)) {
-	appender(NewFixedRateSequentialRule(r.RuleName, r.Duration, r.Amount, r.Meta))
+	if r.Repeat < 1 {
+		r.Repeat = 1
+	}
+	for i := 0; i < r.Repeat; i++ {
+		solverRule := NewFixedRateSequentialRule(r.RuleName, r.Duration, r.Amount, r.Meta)
+		solverRule.Trace = append(solverRule.Trace, fmt.Sprintf("Repetition no%d", i))
+		appender(solverRule)
+	}
 }
 
 func (r FixedRateSequentialRule) String() string {
