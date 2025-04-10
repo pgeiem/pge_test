@@ -10,6 +10,6 @@
   amount: 25.00
 - name: "Max amount winter"
   now: 2025-05-28T14:00:00
-  desc: "28 is a thursday its free, paying start friday 29 for 17h then 8 hours saturday 30 (1h30 morning/6h30 afternoon)"
-  end: 2025-05-30T15:00:00
+  desc: "paying start saturday 31,  "
+  end: 2025-05-31T19:30:00
   amount: 25.00

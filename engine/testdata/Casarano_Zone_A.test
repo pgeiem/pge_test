@@ -10,9 +10,9 @@
   amount: 16.00
 - name: "Late arrival"
   now: 2025-03-17T17:45:00
-  desc: "15 minutes of parking for 0.20€"
+  desc: "22.5 minutes of parking for 0.30€, min amount"
   end: 2025-03-17T18:00:00
-  amount: 0.20
+  amount: 0.30
 - name: "Two days parking ticket with week end"
   now: 2025-03-15T10:30:00
   desc: "First hours (10:30-18:30) is charged at 6.20€, then Sunday is free, then 2 hours on Monday to end parking at 10:30."

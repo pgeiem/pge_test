@@ -3,7 +3,6 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"time"
 )
 
@@ -44,44 +43,27 @@ func (segs Output) ToJson() ([]byte, error) {
 func (segs Output) AmountForDuration(targetDuration time.Duration) Amount {
 	totAmount := Amount(0)
 	totDuration := time.Duration(0)
+	fmt.Println("AmountForDuration, Target duration", targetDuration, "nb rules", len(segs.Table))
 	for _, seg := range segs.Table {
-		fmt.Println("Segment", seg, "Total amount", totAmount, "Total duration", totDuration)
 		segDuration := time.Duration(seg.Duration) * time.Second
-		if targetDuration < totDuration+segDuration {
+		// If the segement is linear and is longer than the target duration, we need to calculate the amount for the remaining duration
+		if seg.Islinear && targetDuration < totDuration+segDuration {
+			fmt.Println("   >> Segment (partial linear)", seg.SegName, "Total amount", totAmount, "Total duration", totDuration)
 			return Amount(float64(seg.Amount)*float64(targetDuration-totDuration)/float64(segDuration)) + totAmount
+		}
+		// If the segment is not linear and is longer or egual to the target duration, include it in the total
+		if !seg.Islinear && targetDuration <= totDuration+segDuration {
+			fmt.Println("   >> Segment (fixed)", seg.SegName, "Total amount", totAmount, "Total duration", totDuration)
+			return seg.Amount + totAmount
 		}
 		totAmount += seg.Amount
 		totDuration += segDuration
+		fmt.Println("   >> Segment", seg.SegName, "Total amount", totAmount, "Total duration", totDuration)
+
 	}
-	fmt.Println("Warning: Duration is greater than the total duration of the output")
-	return Amount(0)
-}
-
-func (s *SolverRules) GenerateOutput(now time.Time, detailed bool) Output {
-	var out Output
-	var previous SolverRule
-
-	out.Now = now
-
-	for _, rule := range *s {
-		fmt.Println("Rule", rule)
-		// If there is a gap between the previous rule and the current one this is the end of the output
-		if previous.To != rule.From {
-			break
-		}
-		seg := OutputSegment{
-			Duration:     int(math.Round(rule.To.Seconds() - previous.To.Seconds())),
-			Amount:       rule.EndAmount.Simplify(),
-			Islinear:     !rule.IsFlatRate(),
-			DurationType: rule.DurationType,
-			Meta:         rule.Meta,
-		}
-		if detailed {
-			seg.SegName = rule.Name()
-			seg.Trace = rule.Trace
-		}
-		out.Table = append(out.Table, seg)
-		previous = rule
+	if targetDuration > totDuration {
+		fmt.Println("WARNING: Duration is greater than the total duration of the output")
+		return Amount(0)
 	}
-	return out
+	return totAmount
 }

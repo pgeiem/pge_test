@@ -13,6 +13,7 @@ type TariffSequence struct {
 	Quota          Quota
 	Rules          SolvableRules
 	Solver         Solver
+	Limits         TariffLimits
 }
 
 // New TariffSequence from a name, a recurrent segment and a quota
@@ -39,12 +40,13 @@ func (ts TariffSequence) Solve(now time.Time, window time.Duration, globalNonpay
 	ts.Solver.SetWindow(now, window)
 	// Append first all global nonpaying rules...
 	for i := range globalNonpaying {
-		globalNonpaying[i].ToSolverRules(now, now.Add(window), ts.Solver.Append)
+		globalNonpaying[i].ToSolverRules(now, now.Add(window), ts.Solver.AppendByValue)
 	}
 	// ... then the sequence rules
 	for i := range ts.Rules {
-		ts.Rules[i].ToSolverRules(now, now.Add(window), ts.Solver.Append)
+		ts.Rules[i].ToSolverRules(now, now.Add(window), ts.Solver.AppendByValue)
 	}
+	ts.Solver.Solve()
 }
 
 type TariffSequenceInventory []TariffSequence
@@ -78,7 +80,7 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 		return out, nil
 	}
 
-	// If there is only one sequence, return its rules directly skipping merging
+	// If there is only one sequence, return its rules directly, skipping merging
 	if len(inventory) == 1 {
 		fmt.Println("Single sequence, skipping merging")
 		return inventory[0].Solver.ExtractRulesInRange(RelativeTimeSpan{0, window}), nil
@@ -99,10 +101,21 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 
 	// Merge all sequences
 	scheduler.entries.Ascend(func(entry SchedulerEntry) bool {
-		out = append(out, entry.Sequence.Solver.ExtractRulesInRange(entry.RelativeTimeSpan)...)
-		fmt.Println("Merging", entry.Sequence.Name, "rules", out)
+		rules := entry.Sequence.Solver.ExtractRulesInRange(entry.RelativeTimeSpan)
+		fmt.Println("Merging", entry.Sequence.Name, "rules between", entry.RelativeTimeSpan, "with", len(out), "rules in output")
+
+		// Calcul the position of the rules in the output and apply the sequence limits
+		limits := entry.Sequence.Limits
+		offsetAmout, offsetDuration := out.SumAll()
+		limits.AddOffset(offsetAmout, offsetDuration)
+		rules = rules.ApplyLimits(limits)
+		// FIXME: the limits are applied for each shduler entries but should be applied only once for all scheduler entries from the same sequence
+		// For example if one sequence has 2 entries, the limits are applied twice instead of once globally
+
+		out = append(out, rules...)
 		return true
 	})
+
 	return out, nil
 }
 
@@ -121,6 +134,7 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 		ValidityPeriod RecurrentTimeSpan `yaml:",inline"`
 		Quota          string            `yaml:"quota,"`
 		Rules          SolvableRules     `yaml:"rules"`
+		Limits         TariffLimits      `yaml:",inline"`
 	}{}
 	err := unmarshal(&temp)
 	if err != nil {
@@ -135,6 +149,7 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 		seq.Name = n.Name
 		seq.ValidityPeriod = n.ValidityPeriod
 		seq.Rules = n.Rules
+		seq.Limits = n.Limits
 
 		// Search the coresponding quota
 		if n.Quota != "" {

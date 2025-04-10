@@ -2,25 +2,26 @@ version: "0.1"
 config:
   window: 30d
 nonpaying:
-  - name: "out-of-season"
-    start: pattern(10/01 00:00)
-    end: pattern(06/01 00:00)
-  - name: "night"
-    start: pattern(*/* 02:00)
-    end: pattern(*/* 08:00)
+- name: "out-of-season"
+  start: pattern(10/01 00:00)
+  end: pattern(06/01 00:00)
+- name: "night"
+  start: pattern(*/* 02:00)
+  end: pattern(*/* 08:00)
 
 sequences:
-  - name: "PS09"
-    rules:
-      - flatrate:
-          name: "minamount"
-          duration: 12m
-          amount: 0.20
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 1.0
-          duration: 30d
-      - flatrate:
-          name: "daily"
-          duration: 24h
-          amount: 5.0
+- name: "PS09"
+  rules:
+  - absflatrate:
+      name: "daily"
+      start: pattern(*/* 02:00)
+      end: pattern(*/* 02:00)
+      amount: 5.00
+  - fixedrate:
+      name: "minamount"
+      duration: 12m
+      amount: 0.20
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 1.0
+      duration: 30d

@@ -3,36 +3,35 @@ config:
   window: 30d
 
 sequences:
-  - name: "SFLE"
-    start: pattern(04/01 00:00)
-    end: pattern(10/01 00:00)
-    rules:
-      - nonpaying:
-        name: "night"
-        start: pattern(*/* 02:00)
-        end: pattern(*/* 08:00)
-      - flatrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.50
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 1.0
-          duration: 2h
+- name: "SFLE"
+  maxduration: 2h
+  start: pattern(04/01 00:00)
+  end: pattern(10/01 00:00)
+  rules:
+  - nonpaying:
+      name: "night"
+      start: pattern(*/* 02:00)
+      end: pattern(*/* 08:00)
+  - fixedrate:
+      name: "minamountS"
+      duration: 30m
+      amount: 0.50
+  - linear:
+      name: "hourlyrateS"
+      hourlyrate: 1.0
+      duration: 24h
 
-  - name: "SFLI"
-    start: pattern(10/01 00:00)
-    end: pattern(04/01 00:00)
-    rules:
-      - nonpaying:
-        name: "night"
-        start: pattern(*/* 20:00)
-        end: pattern(*/* 02:00)
-      - flatrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.50
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 1.0
-          duration: 30d
+- name: "SFLI"
+  rules:
+  - nonpaying:
+      name: "night"
+      start: pattern(*/* 20:00)
+      end: pattern(*/* 02:00)
+  - fixedrate:
+      name: "minamountW"
+      duration: 30m
+      amount: 0.50
+  - linear:
+      name: "hourlyrateW"
+      hourlyrate: 1.0
+      duration: 30d

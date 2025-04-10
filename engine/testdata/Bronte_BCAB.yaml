@@ -3,9 +3,10 @@ config:
   window: 120d
 
 sequences:
-  - name: "BCAB"
-    rules:
-      - flatrate:
-          name: "monthly"
-          duration: 30d
-          amount: 25.0
+- name: "BCAB"
+  rules:
+  - fixedrate:
+      name: "monthly"
+      duration: 30d
+      amount: 25.0
+      repeat: 10

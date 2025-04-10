@@ -1,43 +1,35 @@
 version: "0.1"
 config:
-  window: 30d
+  window: 4d
 nonpaying:
-  - name: "night"
-    start: pattern(*/* 20:00)
-    end: pattern(*/* 09:00)
-  - name: "sunday"
-    start: pattern(*/* SUN 00:00)
-    end: pattern(*/* MON 00:00)
-  - name: "lunch"
-    start: pattern(*/* 13:00)
-    end: pattern(*/* 15:30)
+- name: "night"
+  start: pattern(*/* 20:00)
+  end: pattern(*/* 01:00)
+- name: "sunday"
+  start: pattern(*/* SUN 00:00)
+  end: pattern(*/* MON 00:00)
 
 sequences:
-  - name: "A82"
-    start: pattern(*/* 08:00)
-    end: pattern(*/* 20:00)
-    rules:
-      - flatrate:
-          name: "minamount"
-          duration: 2h
-          amount: 3.00
-      - flatrate:
-          name: "step1"
-          duration: 2h
-          amount: 2.00
-      - flatrate:
-          name: "step2"
-          duration: 2h
-          amount: 1.00
-      - flatrate:
-          name: "step3"
-          duration: 6h
-          amount: 1.50
-  - name: "A82Night"
-    start: pattern(*/* 01:00)
-    end: pattern(*/* 08:00)"
-    rules:
-      - absflatrate:
-          name: "NightRate"
-          duration: 7h
-          amount: 6.00
+- name: "main"
+  rules:
+  - absfixedrate:
+      name: "nightfixedrate"
+      start: pattern(*/* 01:00)
+      end: pattern(*/* 08:00)
+      amount: 6.00
+  - fixedrate:
+      name: "minamount"
+      duration: 2h
+      amount: 3.00
+  - fixedrate:
+      name: "step1"
+      duration: 2h
+      amount: 2.00
+  - fixedrate:
+      name: "step2"
+      duration: 2h
+      amount: 1.00
+  - fixedrate:
+      name: "step3"
+      duration: 6h
+      amount: 1.50

@@ -1,46 +1,46 @@
 version: "0.1"
 
 config:
-  window: 30d
+  window: 5d
 
 nonpaying:
-  - name: "sunday"
-    start: pattern(*/* SUN 00:00)
-    end: pattern(*/* MON 00:00)
-  - name: "lunch"
-    start: pattern(*/* 13:00)
-    end: pattern(*/* 16:00)
+- name: "sunday"
+  start: pattern(*/* SUN 00:00)
+  end: pattern(*/* MON 00:00)
+- name: "lunch"
+  start: pattern(*/* 13:00)
+  end: pattern(*/* 16:00)
 
 sequences:
-  - name: "CG08"
-    start: pattern(06/15 00:00)
-    end: pattern(10/01 00:00)
-    rules:
-      - nonpaying:
-          name: "night"
-          start: pattern(*/* 22:00)
-          end: pattern(*/* 08:00)
-      - flatrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.50
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 1.00
-          duration: 30d
+- name: "CG08"
+  start: pattern(06/15 00:00)
+  end: pattern(09/16 00:00)
+  rules:
+  - nonpaying:
+      name: "night"
+      start: pattern(*/* 22:00)
+      end: pattern(*/* 08:00)
+  - fixedrate:
+      name: "minamount"
+      duration: 30m
+      amount: 0.50
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 1.00
+      duration: 30d
 
-  - name: "CG07"
-    # 09/16 - 06/15
-    rules:
-      - nonpaying:
-          name: "night"
-          start: pattern(*/* 20:00)
-          end: pattern(*/* 09:00)
-      - flatrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.50
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 1.00
-          duration: 30d
+- name: "CG07"
+  # 09/16 - 06/15
+  rules:
+  - nonpaying:
+      name: "night"
+      start: pattern(*/* 20:00)
+      end: pattern(*/* 09:00)
+  - fixedrate:
+      name: "minamount"
+      duration: 30m
+      amount: 0.50
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 1.00
+      duration: 30d

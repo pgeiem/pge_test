@@ -64,6 +64,9 @@ func TestTariffs(t *testing.T) {
 					if err != nil {
 						t.Errorf("failed to parse end time: %v", err)
 					}
+					if end.Before(now) {
+						t.Errorf("invalid test case, end time is before now time: %v < %v", end, now)
+					}
 					out := tariff.Compute(now, []AssignedRight{})
 					amount := out.AmountForDuration(end.Sub(now))
 					if amount.Simplify() != Amount(testCase.Amount) {
