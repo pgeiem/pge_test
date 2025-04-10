@@ -1,11 +1,13 @@
 package engine
 
 import (
+	"strings"
 	"time"
 )
 
 func unmarshalTimeDuration(duration *time.Duration, data []byte) error {
-	d, err := ParseDuration(string(data))
+	str := strings.Trim(string(data), `"`)
+	d, err := ParseDuration(str)
 	if err != nil {
 		return err
 	}
@@ -14,7 +16,8 @@ func unmarshalTimeDuration(duration *time.Duration, data []byte) error {
 }
 
 func unmarshalDuration(duration *Duration, data []byte) error {
-	d, err := ParseDuration(string(data))
+	str := strings.Trim(string(data), `"`)
+	d, err := ParseDuration(str)
 	if err != nil {
 		return err
 	}
@@ -23,7 +26,8 @@ func unmarshalDuration(duration *Duration, data []byte) error {
 }
 
 func unmarshalRecurrentDate(rec *RecurrentDate, data []byte) error {
-	tmp, err := ParseRecurrentDate(string(data))
+	str := strings.Trim(string(data), `"`)
+	tmp, err := ParseRecurrentDate(str)
 	if err != nil {
 		return err
 	}

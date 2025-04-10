@@ -65,7 +65,7 @@ func ParseTariffDefinition(data []byte) (TariffDefinition, error) {
 	if desc.Config != nil {
 		err = nodeToValueContext(ctx, desc.Config, &tariff.Config, decoderOptions()...)
 		if err != nil {
-			return tariff, fmt.Errorf("failed to parse nonpaying section: %w", err)
+			return tariff, fmt.Errorf("failed to parse config section: %w", err)
 		}
 	} else {
 		tariff.Config = DefaultConfig()
