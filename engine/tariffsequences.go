@@ -109,6 +109,8 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 		offsetAmout, offsetDuration := out.SumAll()
 		limits.AddOffset(offsetAmout, offsetDuration)
 		rules = rules.ApplyLimits(limits)
+		// FIXME: the limits are applied for each shduler entries but should be applied only once for all scheduler entries from the same sequence
+		// For example if one sequence has 2 entries, the limits are applied twice instead of once globally
 
 		out = append(out, rules...)
 		return true

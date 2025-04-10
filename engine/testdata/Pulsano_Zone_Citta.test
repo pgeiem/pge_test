@@ -12,7 +12,7 @@
   now: 2025-05-31T17:00:00
   desc: "Dunno if it will work because of forfait and tariff change"
   end: 2025-06-01T17:00:00
-  amount: 3.00
+  amount: 6.00
 - name: "Summer x winter"
   now: 2025-08-31T23:00:00
   desc: "..."

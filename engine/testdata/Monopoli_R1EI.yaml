@@ -1,7 +1,7 @@
 version: "0.1"
 config:
   window: 30d
-
+  maxamount: 25.00
 sequences:
 - name: "R1EE"
   start: pattern(06/01 00:00)
@@ -18,7 +18,7 @@ sequences:
   - linear:
       name: "hourlyrate"
       hourlyrate: 1.0
-      duration: 24h30m
+      duration: 50h
 
 - name: "R1EI"
   rules:
@@ -37,4 +37,4 @@ sequences:
   - linear:
       name: "hourlyrate"
       hourlyrate: 1.0
-      duration: 24h30m
+      duration: 50h

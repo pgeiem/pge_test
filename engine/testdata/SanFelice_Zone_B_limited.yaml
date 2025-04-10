@@ -4,6 +4,7 @@ config:
 
 sequences:
 - name: "SFLE"
+  maxduration: 2h
   start: pattern(04/01 00:00)
   end: pattern(10/01 00:00)
   rules:
@@ -12,13 +13,13 @@ sequences:
       start: pattern(*/* 02:00)
       end: pattern(*/* 08:00)
   - fixedrate:
-      name: "minamount"
+      name: "minamountS"
       duration: 30m
       amount: 0.50
   - linear:
-      name: "hourlyrate"
+      name: "hourlyrateS"
       hourlyrate: 1.0
-      duration: 2h
+      duration: 24h
 
 - name: "SFLI"
   rules:
@@ -27,10 +28,10 @@ sequences:
       start: pattern(*/* 20:00)
       end: pattern(*/* 02:00)
   - fixedrate:
-      name: "minamount"
+      name: "minamountW"
       duration: 30m
       amount: 0.50
   - linear:
-      name: "hourlyrate"
+      name: "hourlyrateW"
       hourlyrate: 1.0
       duration: 30d
