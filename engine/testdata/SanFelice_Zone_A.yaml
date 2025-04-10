@@ -4,34 +4,34 @@ config:
   window: 30d
 
 sequences:
-  - name: "SFEA"
-    start: pattern(04/01 00:00)
-    end: pattern(10/01 00:00)
-    rules:
-      - nonpaying:
-          name: "night"
-          start: pattern(*/* 02:00)
-          end: pattern(*/* 08:00)
-      - fixedrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.50
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 1.0
-          duration: 30d
+- name: "SFEA"
+  start: pattern(04/01 00:00)
+  end: pattern(10/01 00:00)
+  rules:
+  - nonpaying:
+      name: "night"
+      start: pattern(*/* 02:00)
+      end: pattern(*/* 08:00)
+  - fixedrate:
+      name: "minamount"
+      duration: 30m
+      amount: 0.50
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 1.0
+      duration: 30d
 
-  - name: "SFIA"
-    rules:
-      - nonpaying:
-          name: "night2"
-          start: pattern(*/* 20:00)
-          end: pattern(*/* 08:00)
-      - fixedrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.50
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 1.0
-          duration: 30d
+- name: "SFIA"
+  rules:
+  - nonpaying:
+      name: "night2"
+      start: pattern(*/* 20:00)
+      end: pattern(*/* 08:00)
+  - fixedrate:
+      name: "minamount"
+      duration: 30m
+      amount: 0.50
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 1.0
+      duration: 30d

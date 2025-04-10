@@ -2,56 +2,56 @@ version: "0.1"
 config:
   window: 30d
 nonpaying:
-  - name: "sunday"
-    start: pattern(*/* SUN 00:00)
-    end: pattern(*/* MON 00:00)
-  - name: "night"
-    start: pattern(*/* 19:00)
-    end: pattern(*/* 09:00)
-  - name: "lunch"
-    start: pattern(*/* 12:00)
-    end: pattern(*/* 14:00)
+- name: "sunday"
+  start: pattern(*/* SUN 00:00)
+  end: pattern(*/* MON 00:00)
+- name: "night"
+  start: pattern(*/* 19:00)
+  end: pattern(*/* 09:00)
+- name: "lunch"
+  start: pattern(*/* 12:00)
+  end: pattern(*/* 14:00)
 
 sequences:
-  - name: "GreenZone"
-    rules:
-      - fixedrate:
-          name: "minamount"
-          duration: 15m
-          amount: 0.50
-      - fixedrate:
-          name: "minamount2"
-          duration: 15m
-          amount: 0.10
-      - linear:
-          name: "30 min linear"
-          hourlyrate: 1.60
-          duration: 30m
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 1.10
-          duration: 1h
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 1.00
-          duration: 2h
-      - linear:
-          name: "3rdhourlyrate"
-          hourlyrate: 0.50
-          duration: 3h
-      - fixedrate:
-          name: "flat1"
-          duration: 10m
-          amount: 1.0
-      - fixedrate:
-          name: "flat2"
-          duration: 10m
-          amount: 2.0
-      - fixedrate:
-          name: "flat3"
-          duration: 10m
-          amount: 8.0
-      - fixedrate:
-          name: "FPS"
-          duration: 30m
-          amount: 13.0
+- name: "GreenZone"
+  rules:
+  - fixedrate:
+      name: "minamount"
+      duration: 15m
+      amount: 0.50
+  - fixedrate:
+      name: "minamount2"
+      duration: 15m
+      amount: 0.10
+  - linear:
+      name: "30 min linear"
+      hourlyrate: 1.60
+      duration: 30m
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 1.10
+      duration: 1h
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 1.00
+      duration: 2h
+  - linear:
+      name: "3rdhourlyrate"
+      hourlyrate: 0.50
+      duration: 3h
+  - fixedrate:
+      name: "flat1"
+      duration: 10m
+      amount: 1.0
+  - fixedrate:
+      name: "flat2"
+      duration: 10m
+      amount: 2.0
+  - fixedrate:
+      name: "flat3"
+      duration: 10m
+      amount: 8.0
+  - fixedrate:
+      name: "FPS"
+      duration: 30m
+      amount: 13.0

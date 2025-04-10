@@ -2,20 +2,20 @@ version: "0.1"
 config:
   window: 30d
 nonpaying:
-  - name: "night"
-    start: pattern(*/* 19:00)
-    end: pattern(*/* 09:00)
+- name: "night"
+  start: pattern(*/* 19:00)
+  end: pattern(*/* 09:00)
 
 sequences:
-  - name: "ROS1 Summer"
-    start: pattern(06/01 00:00)
-    end: pattern(09/30 23:59:59)
-    rules:
-      - fixedrate:
-          name: "minamount"
-          duration: 30m
-          amount: 0.50
-      - linear:
-          name: "hourlyrate"
-          hourlyrate: 1.0
-          duration: 3h
+- name: "ROS1 Summer"
+  start: pattern(06/01 00:00)
+  end: pattern(09/30 23:59:59)
+  rules:
+  - fixedrate:
+      name: "minamount"
+      duration: 30m
+      amount: 0.50
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 1.0
+      duration: 3h
