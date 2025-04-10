@@ -1,6 +1,6 @@
 version: "0.1"
 config:
-  window: 30d
+  window: 5d
 nonpaying:
 - name: "sunday"
   start: pattern(*/* SUN 00:00)

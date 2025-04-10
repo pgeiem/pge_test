@@ -179,19 +179,27 @@ func (s *Solver) Solve() {
 		fmt.Println("    >>", s.shiftableRules[i].Name(), s.shiftableRules[i].From, s.shiftableRules[i].To, s.shiftableRules[i].StartAmount, s.shiftableRules[i].EndAmount)
 	}
 
-	// TODO solve fixed rules first
-	s.SolveContinousFixedRules()
+	// Solve potential continuous fixed rules starting from t=0
+	s.SolveContinousFixedRules(time.Duration(0))
 
 	// Solve all shiftable rules against all fixed rules
 	for i := range s.shiftableRules {
 		s.solveShiftableVsFixedRules(s.shiftableRules[i])
 	}
+
+	// Solve potential continuous fixed rules at the end of the last rule
+	_, start := s.sumAllSolvedRules()
+	s.SolveContinousFixedRules(start)
 }
 
 // SolveContinousFixedRules appends all potentially continous fixed rules in the solved rules collection
-func (s *Solver) SolveContinousFixedRules() {
-	time := time.Duration(0)
+func (s *Solver) SolveContinousFixedRules(start time.Duration) {
+	time := start
 	s.fixedRules.Ascend(func(rule *SolverRule) bool {
+		// Skip rules which are completely before the current time
+		if rule.To <= time {
+			return true
+		}
 		if rule.From <= time {
 			s.solvedRules.ReplaceOrInsert(rule)
 			time = rule.To
@@ -288,7 +296,6 @@ func (s *Solver) buildFixedRulesList(lpRule *SolverRule) *btree.BTreeG[*SolverRu
 			fmt.Println(" >> truncate flatrate rule before flatrate activation", activatedAfter)
 		}
 
-		//fixedRules.ReplaceOrInsert(flatRateRule)
 		s.solveAndAppend(flatRateRule, fixedRules)
 
 		fmt.Println(" >> append flatrate rule", flatRateRule)
