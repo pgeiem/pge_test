@@ -13,6 +13,7 @@ type TariffSequence struct {
 	Quota          Quota
 	Rules          SolvableRules
 	Solver         Solver
+	Limits         TariffLimits
 }
 
 // New TariffSequence from a name, a recurrent segment and a quota
@@ -100,8 +101,16 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 
 	// Merge all sequences
 	scheduler.entries.Ascend(func(entry SchedulerEntry) bool {
-		out = append(out, entry.Sequence.Solver.ExtractRulesInRange(entry.RelativeTimeSpan)...)
-		fmt.Println("Merging", entry.Sequence.Name, "rules:\n", out)
+		rules := entry.Sequence.Solver.ExtractRulesInRange(entry.RelativeTimeSpan)
+		fmt.Println("Merging", entry.Sequence.Name, "rules between", entry.RelativeTimeSpan, "with", len(out), "rules in output")
+
+		// Calcul the position of the rules in the output and apply the sequence limits
+		limits := entry.Sequence.Limits
+		offsetAmout, offsetDuration := out.SumAll()
+		limits.AddOffset(offsetAmout, offsetDuration)
+		rules = rules.ApplyLimits(limits)
+
+		out = append(out, rules...)
 		return true
 	})
 
@@ -123,6 +132,7 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 		ValidityPeriod RecurrentTimeSpan `yaml:",inline"`
 		Quota          string            `yaml:"quota,"`
 		Rules          SolvableRules     `yaml:"rules"`
+		Limits         TariffLimits      `yaml:",inline"`
 	}{}
 	err := unmarshal(&temp)
 	if err != nil {
@@ -137,6 +147,7 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 		seq.Name = n.Name
 		seq.ValidityPeriod = n.ValidityPeriod
 		seq.Rules = n.Rules
+		seq.Limits = n.Limits
 
 		// Search the coresponding quota
 		if n.Quota != "" {

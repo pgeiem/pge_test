@@ -3,7 +3,6 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"time"
 )
 
@@ -67,35 +66,4 @@ func (segs Output) AmountForDuration(targetDuration time.Duration) Amount {
 		return Amount(0)
 	}
 	return totAmount
-}
-
-func (s *SolverRules) GenerateOutput(now time.Time, detailed bool) Output {
-	var out Output
-	var previous SolverRule
-
-	out.Now = now
-
-	fmt.Println("Generating output for", len(*s), "rules")
-	for _, rule := range *s {
-		fmt.Println("   Rule", rule)
-		// If there is a gap between the previous rule and the current one this is the end of the output
-		if previous.To != rule.From {
-			fmt.Println("   >> Gap detected, end of output", previous, rule)
-			break
-		}
-		seg := OutputSegment{
-			Duration:     int(math.Round(rule.To.Seconds() - previous.To.Seconds())),
-			Amount:       rule.EndAmount.Simplify(),
-			Islinear:     !rule.IsFlatRate(),
-			DurationType: rule.DurationType,
-			Meta:         rule.Meta,
-		}
-		if detailed {
-			seg.SegName = rule.Name()
-			seg.Trace = rule.Trace
-		}
-		out.Table = append(out.Table, seg)
-		previous = rule
-	}
-	return out
 }

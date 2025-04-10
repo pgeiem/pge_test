@@ -96,8 +96,22 @@ func (rule *SolverRule) And(timespan RelativeTimeSpan) (*SolverRule, bool) {
 }
 
 func (rule *SolverRule) DurationForAmount(amount Amount) time.Duration {
-	fmt.Println(" >> DurationForAmount", rule.Name(), amount, rule.StartAmount, rule.EndAmount, rule.Duration())
+	//fmt.Println(" >> DurationForAmount", rule.Name(), amount, rule.StartAmount, rule.EndAmount, rule.Duration())
 	return rule.From + time.Duration(float64(rule.Duration())*float64(amount)/float64(rule.EndAmount-rule.StartAmount))
+}
+
+func (rule SolverRule) TruncateAfterAmount(amount Amount) SolverRule {
+	if amount >= rule.EndAmount {
+		return rule
+	}
+	rule.To = rule.DurationForAmount(amount)
+	rule.EndAmount = amount
+	if rule.StartAmount > rule.EndAmount {
+		rule.StartAmount = rule.EndAmount
+	}
+	fmt.Println(" >> TruncateAfterAmount", amount, "->", rule.To)
+	rule.Trace = append(rule.Trace, fmt.Sprintf("truncate after amount %s", amount.String()))
+	return rule
 }
 
 type Solver struct {

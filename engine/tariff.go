@@ -15,6 +15,7 @@ type TariffDefinition struct {
 type TariffConfig struct {
 	// Window of time to consider for the tarif computation
 	Window time.Duration `yaml:"window"`
+	Limits TariffLimits  `yaml:",inline"`
 }
 
 func DefaultConfig() TariffConfig {
@@ -36,6 +37,8 @@ func (td TariffDefinition) Compute(now time.Time, history []AssignedRight) Outpu
 
 	// Merge all sequences together
 	rules, _ := td.Sequences.Merge(now, td.Config.Window) //TODO handle error if needed
+
+	rules = rules.ApplyLimits(td.Config.Limits)
 
 	return rules.GenerateOutput(now, true)
 }

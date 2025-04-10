@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -191,4 +192,114 @@ func (rule SolverRule) Name() string {
 func (rule SolverRule) String() string {
 	return fmt.Sprintf("%s(%s -> %s; %s -> %s)",
 		rule.Name(), rule.From.String(), rule.To.String(), rule.StartAmount, rule.EndAmount)
+}
+
+type TariffLimits struct {
+	// MaxAmount is the maximum amount allowed for the rules
+	MaxAmount Amount `yaml:"maxamount"`
+	// MaxDuration is the maximum duration allowed for the rules
+	MaxDuration time.Duration `yaml:"maxduration"`
+}
+
+func (limits TariffLimits) String() string {
+	return fmt.Sprintf("MaxAmount %f, MaxDuration %s", limits.MaxAmount, limits.MaxDuration)
+}
+
+func (limits *TariffLimits) AddOffset(offsetAmout Amount, offsetDuration time.Duration) {
+	if limits.MaxAmount > 0 {
+		limits.MaxAmount += offsetAmout
+	}
+	if limits.MaxDuration > 0 {
+		limits.MaxDuration += offsetDuration
+	}
+}
+
+func (rules SolverRules) ApplyLimits(limits TariffLimits) SolverRules {
+	if limits.MaxAmount == 0 && limits.MaxDuration == 0 {
+		return rules
+	}
+
+	fmt.Println(" >> Applying limits to", len(rules), "rules", limits)
+	sumAmount := Amount(0)
+	overflow := false
+	out := SolverRules{}
+	for _, rule := range rules {
+
+		fmt.Println("   >> Rule", rule, sumAmount)
+
+		// check max duration limit
+		if rule.DurationType != NonPayingDuration && limits.MaxDuration > 0 {
+			if rule.From > limits.MaxDuration {
+				fmt.Println("   >> maxDuration reached, rule skipped", rule)
+				overflow = true
+			} else if rule.To > limits.MaxDuration {
+				rule = rule.TruncateAfter(limits.MaxDuration)
+				fmt.Println("   >> maxDuration reached, rule truncated", rule)
+				overflow = true
+			}
+		}
+
+		// check max amount limit
+		if limits.MaxAmount > 0 {
+			if sumAmount+rule.EndAmount > limits.MaxAmount {
+				rule = rule.TruncateAfterAmount(limits.MaxAmount - sumAmount)
+				fmt.Println("   >> maxAmount reached, rule truncated", rule)
+				overflow = true
+			}
+		}
+
+		out = append(out, rule)
+		sumAmount += rule.EndAmount
+
+		if overflow {
+			break
+		}
+	}
+	return out
+}
+
+func (rules *SolverRules) GenerateOutput(now time.Time, detailed bool) Output {
+	var out Output
+	var previous SolverRule
+
+	out.Now = now
+
+	fmt.Println("Generating output for", len(*rules), "rules")
+	for _, rule := range *rules {
+		fmt.Println("   Rule", rule)
+		// If there is a gap between the previous rule and the current one this is the end of the output
+		if previous.To != rule.From {
+			fmt.Println("   >> Gap detected, end of output", previous, rule)
+			break
+		}
+		seg := OutputSegment{
+			Duration:     int(math.Round(rule.To.Seconds() - previous.To.Seconds())),
+			Amount:       rule.EndAmount.Simplify(),
+			Islinear:     !rule.IsFlatRate(),
+			DurationType: rule.DurationType,
+			Meta:         rule.Meta,
+		}
+		if detailed {
+			seg.SegName = rule.Name()
+			seg.Trace = rule.Trace
+		}
+		out.Table = append(out.Table, seg)
+		previous = rule
+	}
+	return out
+}
+
+// sumAll returns the sum of all rules amounts and the total duration
+func (rules SolverRules) SumAll() (Amount, time.Duration) {
+	var amountSum Amount
+	var durationSum time.Duration
+
+	// Loop over all rules and determine the end amount and end duration
+	for i := range rules {
+		rule := rules[i]
+		amountSum += rule.EndAmount
+		durationSum = rule.To // last rule duration is the total duration
+	}
+
+	return amountSum, durationSum
 }
