@@ -47,17 +47,20 @@ func (segs Output) AmountForDuration(targetDuration time.Duration) Amount {
 	fmt.Println("AmountForDuration, Target duration", targetDuration, "nb rules", len(segs.Table))
 	for _, seg := range segs.Table {
 		segDuration := time.Duration(seg.Duration) * time.Second
-		if targetDuration < totDuration+segDuration {
-			if seg.Islinear {
-				fmt.Println("   >> Segment (partially)", seg.SegName, "Total amount", totAmount, "Total duration", totDuration)
-				return Amount(float64(seg.Amount)*float64(targetDuration-totDuration)/float64(segDuration)) + totAmount
-			}
-			fmt.Println("   >> Segment", seg.SegName, "Total amount", totAmount, "Total duration", totDuration)
+		// If the segement is linear and is longer than the target duration, we need to calculate the amount for the remaining duration
+		if seg.Islinear && targetDuration < totDuration+segDuration {
+			fmt.Println("   >> Segment (partial linear)", seg.SegName, "Total amount", totAmount, "Total duration", totDuration)
+			return Amount(float64(seg.Amount)*float64(targetDuration-totDuration)/float64(segDuration)) + totAmount
+		}
+		// If the segment is not linear and is longer or egual to the target duration, include it in the total
+		if !seg.Islinear && targetDuration <= totDuration+segDuration {
+			fmt.Println("   >> Segment (fixed)", seg.SegName, "Total amount", totAmount, "Total duration", totDuration)
 			return seg.Amount + totAmount
 		}
 		totAmount += seg.Amount
 		totDuration += segDuration
 		fmt.Println("   >> Segment", seg.SegName, "Total amount", totAmount, "Total duration", totDuration)
+
 	}
 	if targetDuration > totDuration {
 		fmt.Println("WARNING: Duration is greater than the total duration of the output")
