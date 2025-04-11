@@ -38,7 +38,11 @@ func (td TariffDefinition) Compute(now time.Time, history []AssignedRight) Outpu
 	// Merge all sequences together
 	rules, _ := td.Sequences.Merge(now, td.Config.Window) //TODO handle error if needed
 
+	rules.PrintAsTable(fmt.Sprintf("Output before applying limits (%d rules):", len(rules)), now)
+
 	rules = rules.ApplyLimits(td.Config.Limits)
+
+	rules.PrintAsTable(fmt.Sprintf("Output with limits applied (%d rules):", len(rules)), now)
 
 	return rules.GenerateOutput(now, true)
 }

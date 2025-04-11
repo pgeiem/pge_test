@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/iem-rd/quote-engine/table"
 )
 
 type TariffSequence struct {
@@ -37,6 +39,9 @@ func (ts TariffSequence) String() string {
 }
 
 func (ts TariffSequence) Solve(now time.Time, window time.Duration, globalNonpaying AbsoluteNonPayingRules) {
+	fmt.Println()
+	table.TitleTheme().Println("Solving sequence", ts.Name)
+
 	ts.Solver.SetWindow(now, window)
 	// Append first all global nonpaying rules...
 	for i := range globalNonpaying {
@@ -104,6 +109,8 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 		rules := entry.Sequence.Solver.ExtractRulesInRange(entry.RelativeTimeSpan)
 		fmt.Println("Merging", entry.Sequence.Name, "rules between", entry.RelativeTimeSpan, "with", len(out), "rules in output")
 
+		rules.PrintAsTable(fmt.Sprintf("Rules from %s before applying limits (%d rules):", entry.Sequence.Name, len(rules)), now)
+
 		// Calcul the position of the rules in the output and apply the sequence limits
 		limits := entry.Sequence.Limits
 		offsetAmout, offsetDuration := out.SumAll()
@@ -111,6 +118,8 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 		rules = rules.ApplyLimits(limits)
 		// FIXME: the limits are applied for each shduler entries but should be applied only once for all scheduler entries from the same sequence
 		// For example if one sequence has 2 entries, the limits are applied twice instead of once globally
+
+		rules.PrintAsTable(fmt.Sprintf("Rules from %s with limits applied (%d rules):", entry.Sequence.Name, len(rules)), now)
 
 		out = append(out, rules...)
 		return true

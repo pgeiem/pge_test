@@ -176,22 +176,25 @@ func (s *Solver) Append(rule *SolverRule) {
 }
 
 func (s *Solver) Solve() {
-
-	fmt.Println("Solving rules...")
-	fmt.Println("  >> flatrates")
+	tbl := StartRulesTable("flatrates rules", s.now)
 	s.flatrateRules.Ascend(func(rule *SolverRule) bool {
-		fmt.Println("    >>", rule.Name(), rule.From, rule.To, rule.ActivationAmount)
+		tbl.AddRule(rule)
 		return true
 	})
-	fmt.Println("  >> fixed rules")
+	tbl.Print()
+
+	tbl = StartRulesTable("fixed rules", s.now)
 	s.fixedRules.Ascend(func(rule *SolverRule) bool {
-		fmt.Println("    >>", rule.Name(), rule.From, rule.To, rule.StartAmount, rule.EndAmount)
+		tbl.AddRule(rule)
 		return true
 	})
-	fmt.Println("  >> shiftable rules")
+	tbl.Print()
+
+	tbl = StartRulesTable("shiftable rules", s.now)
 	for i := range s.shiftableRules {
-		fmt.Println("    >>", s.shiftableRules[i].Name(), s.shiftableRules[i].From, s.shiftableRules[i].To, s.shiftableRules[i].StartAmount, s.shiftableRules[i].EndAmount)
+		tbl.AddRule(s.shiftableRules[i])
 	}
+	tbl.Print()
 
 	// Solve potential continuous fixed rules starting from t=0
 	s.SolveContinousFixedRules(time.Duration(0))
@@ -234,19 +237,19 @@ func (s *Solver) solveVsSingle(lpRule SolverRule, hpRule *SolverRule) (SolverRul
 		return SolverRules{lpRule}, false
 	}
 
-	fmt.Println(" >> solveVsSingle", lpRule.Name(), "vs", hpRule.Name())
+	//fmt.Println(" >> solveVsSingle", lpRule.Name(), "vs", hpRule.Name())
 	lpRule.Trace = append(lpRule.Trace, fmt.Sprintf("solve against %s", hpRule.Name()))
 
 	switch lpRule.RuleResolutionPolicy {
 
 	// both rules overlap at least slightly, if policy is 'remove' then remove the low priority rule
 	case DeletePolicy:
-		fmt.Println("    DeletePolicy", lpRule.Name(), "vs", hpRule.Name())
+		//fmt.Println("    DeletePolicy", lpRule.Name(), "vs", hpRule.Name())
 		return SolverRules{}, true
 
 	// both rules overlap at least slightly, if policy is 'resolve' then try to split rule to fill the holes
 	case ResolvePolicy:
-		fmt.Println("   ResolvePolicy", lpRule.Name(), "vs", hpRule.Name(), lpRule, hpRule)
+		//fmt.Println("   ResolvePolicy", lpRule.Name(), "vs", hpRule.Name(), lpRule, hpRule)
 
 		// high priority rule is before low priority rule, then low priority rule is simply shifted
 		if hpRule.From <= lpRule.From {
@@ -258,7 +261,7 @@ func (s *Solver) solveVsSingle(lpRule SolverRule, hpRule *SolverRule) (SolverRul
 
 	// both rules overlap at least slightly, if policy is 'truncate' then truncate overlapping rule
 	case TruncatePolicy:
-		fmt.Println("   TruncatePolicy", lpRule.Name(), "vs", hpRule.Name(), lpRule, hpRule)
+		//fmt.Println("   TruncatePolicy", lpRule.Name(), "vs", hpRule.Name(), lpRule, hpRule)
 
 		// high priority rule is partially after low priority rule, then low priority rule end is truncated
 		if hpRule.From >= lpRule.From && hpRule.To >= lpRule.To {
@@ -316,11 +319,11 @@ func (s *Solver) buildFixedRulesList(lpRule *SolverRule) *btree.BTreeG[*SolverRu
 		return true
 	})
 
-	fmt.Println(" >> fixed rules list", fixedRules.Len(), "rules")
+	/*fmt.Println(" >> fixed rules list", fixedRules.Len(), "rules")
 	fixedRules.Ascend(func(rule *SolverRule) bool {
 		fmt.Println("    >>", rule.Name(), rule.From, rule.To, rule.StartAmount, rule.EndAmount)
 		return true
-	})
+	})*/
 
 	return fixedRules
 }
@@ -329,17 +332,17 @@ func (s *Solver) buildFixedRulesList(lpRule *SolverRule) *btree.BTreeG[*SolverRu
 // a collection of new rules is returned and current rule is not changed
 func (s *Solver) solveShiftableVsFixedRules(lpRule *SolverRule) {
 
-	fmt.Println("\n------\nSolving rule", lpRule.Name(), "from", lpRule.From, "to", lpRule.To)
+	//fmt.Println("\n------\nSolving rule", lpRule.Name(), "from", lpRule.From, "to", lpRule.To)
 
 	// Shift the rule using the current start offset
 	_, startOffset := s.sumAllSolvedRules()
 	tmp := lpRule.Shift(startOffset)
 	lpRule = &tmp
-	fmt.Println(" >> shift rule", lpRule.Name(), "at", startOffset)
+	//fmt.Println(" >> shift rule", lpRule.Name(), "at", startOffset)
 
 	solved := false
 	for !solved {
-		fmt.Println("---")
+		//fmt.Println("---")
 
 		// Build a list of fixed rules including all fixed rules and activated flatrates
 		fixedRules := s.buildFixedRulesList(lpRule)
@@ -362,7 +365,7 @@ func (s *Solver) solveShiftableVsFixedRules(lpRule *SolverRule) {
 					lpRule = &ret[1]                         // right part is the new rule to solve
 					s.solvedRules.ReplaceOrInsert(&(ret[0])) // Left part may be inserted in the new rules collection
 					s.solvedRules.ReplaceOrInsert(hpRule)    // when the rule is splitted we also insert the higher priority rule
-					fmt.Println(" >> append splitted fixed rule", ret[0], "and higher priority rule", hpRule)
+					//fmt.Println(" >> append splitted fixed rule", ret[0], "and higher priority rule", hpRule)
 				}
 			}
 			return !changed
@@ -387,7 +390,7 @@ func (s *Solver) solveAndAppend(lpRule *SolverRule, collection *btree.BTreeG[*So
 
 	// Loop over all rules in the collection and solve the current rule against each of them
 	collection.Ascend(func(hpRule *SolverRule) bool {
-		fmt.Println(" >> Solving fixed rule", lpRule.Name(), "vs", hpRule.Name())
+		//fmt.Println(" >> Solving fixed rule", lpRule.Name(), "vs", hpRule.Name())
 		ret, _ := s.solveVsSingle(*lpRule, hpRule)
 		switch len(ret) {
 		case 0: // Rule deleted

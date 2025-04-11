@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/iem-rd/quote-engine/table"
 )
 
 // DurationType represents the different type of parking duration
@@ -302,4 +304,65 @@ func (rules SolverRules) SumAll() (Amount, time.Duration) {
 	}
 
 	return amountSum, durationSum
+}
+
+// PrintAsTable prints the rules as a table using table view
+func (rules SolverRules) PrintAsTable(title string, now time.Time) {
+
+	tbl := StartRulesTable(title, now)
+	for _, rule := range rules {
+		tbl.AddRule(&rule)
+	}
+	tbl.Print()
+}
+
+type RulesTable struct {
+	now   time.Time
+	tbl   table.Table
+	title string
+	empty bool
+}
+
+func StartRulesTable(title string, now time.Time) *RulesTable {
+	tbl := table.New("Name", "From", "To", "Duration", "From (abs)", "To (abs)", "StartAmount", "EndAmount", "IsLinear", "ActivAm", "Type")
+	t := RulesTable{
+		now:   now,
+		title: title,
+		tbl:   tbl,
+		empty: true,
+	}
+	table.SetDefaultTheme(&t.tbl)
+	return &t
+}
+
+func (t *RulesTable) AddRule(rule *SolverRule) {
+
+	dateToString := func(now time.Time, delta time.Duration) string {
+		if now.IsZero() {
+			return ""
+		}
+		return now.Add(delta).Format("2006-01-02 15:04:05")
+	}
+
+	t.tbl.AddRow(rule.Name(),
+		rule.From.String(),
+		rule.To.String(),
+		rule.Duration().String(),
+		dateToString(t.now, rule.From),
+		dateToString(t.now, rule.To),
+		rule.StartAmount.String(),
+		rule.EndAmount.String(),
+		fmt.Sprintf("%t", rule.IsFlatRate()),
+		rule.ActivationAmount.String(),
+		string(rule.DurationType),
+	)
+	t.empty = false
+}
+
+func (t *RulesTable) Print() {
+	if !t.empty {
+		fmt.Println()
+		table.TitleTheme().Println(t.title)
+		t.tbl.Print()
+	}
 }
