@@ -1,0 +1,22 @@
+version: "0.1"
+config:
+  window: 30d
+nonpaying:
+  - name: "night"
+    start: pattern(*/* 18:00)
+    end: pattern(*/* 08:00)
+  - name: "lunch"
+    start: pattern(*/* 11:30)
+    end: pattern(*/* 13:30)
+
+sequences:
+  - name: "DEBARCADERE"
+    rules:
+      - fixedrate:
+          name: "minamount"
+          duration: 20m
+          amount: 0.00
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.5
+          duration: 30d

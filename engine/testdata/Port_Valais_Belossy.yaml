@@ -1,0 +1,38 @@
+version: "0.1"
+config:
+  window: 30d
+nonpaying:
+  - name: "night"
+    start: pattern(*/* 18:00)
+    end: pattern(*/* 10:00)
+
+sequences:
+  - name: "BELOSSY"
+    rules:
+      - fixedrate:
+          name: "minamount"
+          duration: 6m
+          amount: 0.10
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.00
+          duration: 4h54m
+      - fixedrate:
+          name: "freeflat"
+          duration: 3h00m
+          amount: 0.00
+      - fixedrate:
+          name: "daily"
+          duration: 8h
+          amount: 5.00
+          repeat: 3
+      - fixedrate:
+          name: "daily2"
+          duration: 24h
+          amount: 5.00
+          repeat: 1
+      - fixedrate:
+          name: "daily3"
+          duration: 8h
+          amount: 3.00
+          repeat: 18
