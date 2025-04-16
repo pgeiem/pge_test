@@ -66,13 +66,15 @@ func equal(a, b []int) bool {
 
 func TestRecurrentDatePeriodic(t *testing.T) {
 	tests := []struct {
-		pattern      string
-		now          time.Time
-		expectedNext []time.Time
-		expectedPrev []time.Time
+		pattern       string
+		now           time.Time
+		expectedFirst time.Time
+		expectedNext  []time.Time
+		expectedPrev  []time.Time
 	}{
 		{
 			"1h30m",
+			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			[]time.Time{
 				time.Date(2023, 10, 1, 1, 30, 0, 0, time.Local),
@@ -87,6 +89,7 @@ func TestRecurrentDatePeriodic(t *testing.T) {
 		},
 		{
 			"2h",
+			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			[]time.Time{
 				time.Date(2023, 10, 1, 2, 0, 0, 0, time.Local),
@@ -132,6 +135,15 @@ func TestRecurrentDatePeriodic(t *testing.T) {
 				}
 				now = prev
 			}
+
+			first, err := r.First(test.now)
+			if err != nil {
+				t.Fatalf("Next failed: %v", err)
+			}
+			if !first.Equal(test.expectedFirst) {
+				t.Errorf("Next(%v) = %v, want %v", now, first, test.expectedFirst)
+			}
+
 		})
 	}
 }
@@ -234,15 +246,17 @@ func TestBuilRRuleFromDatePattern(t *testing.T) {
 
 func TestRecurrentDatePattern(t *testing.T) {
 	tests := []struct {
-		pattern      string
-		now          time.Time
-		expectedNext []time.Time
-		expectedPrev []time.Time
-		hasError     bool
+		pattern       string
+		now           time.Time
+		expectedFirst time.Time
+		expectedNext  []time.Time
+		expectedPrev  []time.Time
+		hasError      bool
 	}{
 		{
 			"2023/10/* MON 12:00:00",
 			time.Date(2023, 10, 16, 0, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 16, 12, 0, 0, 0, time.Local),
 			[]time.Time{
 				time.Date(2023, 10, 16, 12, 0, 0, 0, time.Local),
 				time.Date(2023, 10, 23, 12, 0, 0, 0, time.Local),
@@ -257,6 +271,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 		{
 			"2023/*/* Mon-Fri 12:00:00",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local),
 			[]time.Time{
 				time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local),
 				time.Date(2023, 10, 3, 12, 0, 0, 0, time.Local),
@@ -272,6 +287,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 		{
 			"2023/9-10/* Mon,Fri,SUN 12:00:00",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 			[]time.Time{
 				time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 				time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local),
@@ -287,6 +303,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 		{
 			"2023/*/* 12,14,16,18,20,22:00:00",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 			[]time.Time{
 				time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 				time.Date(2023, 10, 1, 14, 0, 0, 0, time.Local),
@@ -302,6 +319,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 		{
 			"2023/10/* * 12,23:00",
 			time.Date(2023, 10, 8, 16, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 8, 23, 0, 0, 0, time.Local),
 			[]time.Time{
 				time.Date(2023, 10, 8, 23, 0, 0, 0, time.Local),
 				time.Date(2023, 10, 9, 12, 0, 0, 0, time.Local),
@@ -317,6 +335,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 		{
 			"2023/10/* 17:00",
 			time.Date(2023, 10, 5, 0, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 5, 17, 0, 0, 0, time.Local),
 			[]time.Time{
 				time.Date(2023, 10, 5, 17, 0, 0, 0, time.Local),
 				time.Date(2023, 10, 6, 17, 0, 0, 0, time.Local),
@@ -332,6 +351,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 		{
 			"2023/*/* Mon,FRI 12:00",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local),
 			[]time.Time{
 				time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local),
 				time.Date(2023, 10, 6, 12, 0, 0, 0, time.Local),
@@ -345,8 +365,23 @@ func TestRecurrentDatePattern(t *testing.T) {
 			false,
 		},
 		{
+			"2023/10/* MON 12:00:00",
+			time.Date(2023, 10, 16, 12, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 16, 12, 0, 0, 0, time.Local),
+			[]time.Time{
+				time.Date(2023, 10, 23, 12, 0, 0, 0, time.Local),
+				time.Date(2023, 10, 30, 12, 0, 0, 0, time.Local),
+			},
+			[]time.Time{
+				time.Date(2023, 10, 9, 12, 0, 0, 0, time.Local),
+				time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local),
+			},
+			false,
+		},
+		{
 			"2023/10/01 Mon 12:00:00:00",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Time{},
 			[]time.Time{},
 			[]time.Time{},
 			true,
@@ -354,6 +389,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 		{
 			"2023/10/01 Mon 12:00:xx",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Time{},
 			[]time.Time{},
 			[]time.Time{},
 			true,
@@ -361,6 +397,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 		{
 			"2023/10/01 Mon 12:xx:00",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Time{},
 			[]time.Time{},
 			[]time.Time{},
 			true,
@@ -368,6 +405,7 @@ func TestRecurrentDatePattern(t *testing.T) {
 		{
 			"2023/10/01 Mon xx:00:00",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Time{},
 			[]time.Time{},
 			[]time.Time{},
 			true,
@@ -408,6 +446,14 @@ func TestRecurrentDatePattern(t *testing.T) {
 					t.Errorf("Prev(%v) = %v, want %v", now, prev, expectedPrev)
 				}
 				now = prev
+			}
+
+			first, err := r.First(test.now)
+			if err != nil {
+				t.Fatalf("Next failed: %v", err)
+			}
+			if !first.Equal(test.expectedFirst) {
+				t.Errorf("Next(%v) = %v, want %v", now, first, test.expectedFirst)
 			}
 		})
 	}

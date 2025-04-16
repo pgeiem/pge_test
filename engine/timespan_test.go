@@ -344,6 +344,21 @@ func TestRecurrentSegment_Between(t *testing.T) {
 				{Start: time.Date(2023, 10, 16, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 16, 18, 0, 0, 0, time.Local)},
 			},
 		},
+		{
+			name:         "DailyPeriodic",
+			startPattern: "periodic(24h)",
+			endPattern:   "duration(1h30m)",
+			from:         time.Date(2023, 4, 1, 1, 12, 30, 0, time.Local),
+			to:           time.Date(2023, 4, 7, 0, 0, 0, 0, time.Local),
+			expected: []AbsTimeSpan{
+				{Start: time.Date(2023, 4, 1, 1, 12, 30, 0, time.Local), End: time.Date(2023, 4, 1, 2, 42, 30, 0, time.Local)},
+				{Start: time.Date(2023, 4, 2, 1, 12, 30, 0, time.Local), End: time.Date(2023, 4, 2, 2, 42, 30, 0, time.Local)},
+				{Start: time.Date(2023, 4, 3, 1, 12, 30, 0, time.Local), End: time.Date(2023, 4, 3, 2, 42, 30, 0, time.Local)},
+				{Start: time.Date(2023, 4, 4, 1, 12, 30, 0, time.Local), End: time.Date(2023, 4, 4, 2, 42, 30, 0, time.Local)},
+				{Start: time.Date(2023, 4, 5, 1, 12, 30, 0, time.Local), End: time.Date(2023, 4, 5, 2, 42, 30, 0, time.Local)},
+				{Start: time.Date(2023, 4, 6, 1, 12, 30, 0, time.Local), End: time.Date(2023, 4, 6, 2, 42, 30, 0, time.Local)},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
