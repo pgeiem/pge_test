@@ -3,10 +3,12 @@ package engine
 import (
 	"testing"
 	"time"
+
+	"github.com/iem-rd/quote-engine/timeutils"
 )
 
-func mustParseRecurrentDate(pattern string) RecurrentDate {
-	r, err := ParseRecurrentDate(pattern)
+func mustParseRecurrentDate(pattern string) timeutils.RecurrentDate {
+	r, err := timeutils.ParseRecurrentDate(pattern)
 	if err != nil {
 		panic(err)
 	}
@@ -18,7 +20,7 @@ func TestQuota_Update(t *testing.T) {
 		name             string
 		now              time.Time
 		matchingRules    []MatchingRule
-		periodicityRule  RecurrentDate
+		periodicityRule  timeutils.RecurrentDate
 		history          []AssignedRight
 		expectedDuration time.Duration
 		expectedCounter  int

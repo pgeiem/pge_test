@@ -1,4 +1,4 @@
-package engine
+package timeutils
 
 import (
 	"fmt"
@@ -7,18 +7,10 @@ import (
 	"time"
 )
 
-// Duration represents a duration with second resolution.
-type Duration time.Duration
-
-// toDuration converts Duration to time.Duration.
-func (d Duration) ToDuration() time.Duration {
-	return time.Duration(d)
-}
-
 var durationRegex = regexp.MustCompile(`^(\d+w)?(\d+d)?(\d+h)?(\d+m)?(\d+s)?$`)
 
 // ParseDuration parses a duration string with units: seconds (s), minutes (m), hours (h), days (d), weeks (w).
-func ParseDuration(s string) (Duration, error) {
+func ParseDuration(s string) (time.Duration, error) {
 	var totalSeconds int64
 	var multipliers = map[byte]int64{
 		'w': 7 * 24 * 60 * 60,
@@ -52,5 +44,5 @@ func ParseDuration(s string) (Duration, error) {
 		totalSeconds += num * multiplier
 	}
 
-	return Duration(totalSeconds * int64(time.Second)), nil
+	return time.Duration(totalSeconds) * time.Second, nil
 }

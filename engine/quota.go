@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/iem-rd/quote-engine/timeutils"
 )
 
 // DurationDetail represents the details of a parking duration
@@ -71,11 +73,11 @@ type Quota interface {
 
 // AbstractQuota is a helper to ease the implementation of different quotas types
 type AbstractQuota struct {
-	Name               string        `yaml:"name"`
-	MatchingRules      MatchingRules `yaml:"matching"`
-	PeriodicityRule    RecurrentDate `yaml:"periodicity"`
-	DefaultAreaPattern string        `yaml:"-"`
-	DefaultTypePattern string        `yaml:"-"`
+	Name               string                  `yaml:"name"`
+	MatchingRules      MatchingRules           `yaml:"matching"`
+	PeriodicityRule    timeutils.RecurrentDate `yaml:"periodicity"`
+	DefaultAreaPattern string                  `yaml:"-"`
+	DefaultTypePattern string                  `yaml:"-"`
 }
 
 func (q AbstractQuota) GetName() string {
@@ -132,7 +134,7 @@ func (q AbstractQuota) Filter(from time.Time, history []AssignedRight, matchAssi
 					}
 					if match {
 						reftime := SelectReferenceTime(rule, detail, right)
-						if !reftime.IsZero() && TimeAfterOrEqual(reftime, from) {
+						if !reftime.IsZero() && timeutils.TimeAfterOrEqual(reftime, from) {
 							matchDurationDetailsHandler(detail)
 						}
 					}
@@ -159,7 +161,7 @@ type DurationQuota struct {
 	used          time.Duration
 }
 
-func NewDurationQuota(allowance time.Duration, period RecurrentDate, rules []MatchingRule) *DurationQuota {
+func NewDurationQuota(allowance time.Duration, period timeutils.RecurrentDate, rules []MatchingRule) *DurationQuota {
 	return &DurationQuota{
 		AbstractQuota: AbstractQuota{
 			MatchingRules:      rules,
@@ -211,7 +213,7 @@ type CounterQuota struct {
 	used          int
 }
 
-func NewCounterQuota(allowance int, period RecurrentDate, rules []MatchingRule) *CounterQuota {
+func NewCounterQuota(allowance int, period timeutils.RecurrentDate, rules []MatchingRule) *CounterQuota {
 	return &CounterQuota{
 		AbstractQuota: AbstractQuota{
 			MatchingRules:      rules,

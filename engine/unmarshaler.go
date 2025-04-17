@@ -3,34 +3,30 @@ package engine
 import (
 	"strings"
 	"time"
+
+	"github.com/iem-rd/quote-engine/timeutils"
 )
 
 func unmarshalTimeDuration(duration *time.Duration, data []byte) error {
 	str := strings.Trim(string(data), `"`)
-	d, err := ParseDuration(str)
+	d, err := timeutils.ParseDuration(str)
 	if err != nil {
 		return err
 	}
-	*duration = d.ToDuration()
+	if duration != nil {
+		*duration = d
+	}
 	return nil
 }
 
-func unmarshalDuration(duration *Duration, data []byte) error {
+func unmarshalRecurrentDate(rec *timeutils.RecurrentDate, data []byte) error {
 	str := strings.Trim(string(data), `"`)
-	d, err := ParseDuration(str)
+	tmp, err := timeutils.ParseRecurrentDate(str)
 	if err != nil {
 		return err
 	}
-	*duration = d
-	return nil
-}
-
-func unmarshalRecurrentDate(rec *RecurrentDate, data []byte) error {
-	str := strings.Trim(string(data), `"`)
-	tmp, err := ParseRecurrentDate(str)
-	if err != nil {
-		return err
+	if rec != nil {
+		*rec = tmp
 	}
-	*rec = tmp
 	return nil
 }

@@ -1,4 +1,4 @@
-package engine
+package timeutils
 
 import (
 	"fmt"
@@ -75,6 +75,29 @@ func NewRecurrentTimeSpanFromPatterns(start, end string) (RecurrentTimeSpan, err
 	}, nil
 }
 
+func (rs *RecurrentTimeSpan) First(now time.Time) (AbsTimeSpan, error) {
+
+	// Check if "now" is already inside an occurrence starting before "now" and ending after "now"
+	s, err := rs.Prev(now)
+	if err != nil {
+		return s, err
+	}
+	if s.End.After(now) {
+		return s, nil
+	}
+
+	// if not, return the first occurrence
+	s.Start, err = rs.Start.First(now)
+	if err != nil {
+		return s, err
+	}
+	s.End, err = rs.End.Next(s.Start)
+	if err != nil {
+		return s, err
+	}
+	return s, nil
+}
+
 func (rs *RecurrentTimeSpan) Next(now time.Time) (AbsTimeSpan, error) {
 	var err error
 	s := AbsTimeSpan{}
@@ -115,21 +138,18 @@ func (rs *RecurrentTimeSpan) Between(from, to time.Time) []AbsTimeSpan {
 
 func (rs *RecurrentTimeSpan) BetweenIterator(from, to time.Time, iterator func(AbsTimeSpan) bool) {
 
-	// Check if from is already in the first occurrence
-	segment, err := rs.Prev(from.Add(1))
+	// Handle the first occurrence
+	segment, err := rs.First(from)
 	if err != nil {
 		fmt.Println("Error when unrolling RRule:", err)
 		return
 	}
-
-	if segment.End.After(from) {
-		if !iterator(segment) {
-			return
-		}
+	if !iterator(segment) {
+		return
 	}
 
-	// loop through all others occurrences
-	now := from
+	// loop through all others following occurrences
+	now := segment.Start
 	for now.Before(to) {
 		segment, err := rs.Next(now)
 		if err != nil {
