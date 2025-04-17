@@ -22,7 +22,6 @@ func decoderOptions() []yaml.DecodeOption {
 	//validate := validator.New()
 	return []yaml.DecodeOption{
 		yaml.Strict(),
-		yaml.CustomUnmarshaler(unmarshalDuration),
 		yaml.CustomUnmarshaler(unmarshalTimeDuration),
 		yaml.CustomUnmarshaler(unmarshalRecurrentDate),
 		yaml.CustomUnmarshaler(unmarshalQuota),
