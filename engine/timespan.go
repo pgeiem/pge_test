@@ -76,8 +76,17 @@ func NewRecurrentTimeSpanFromPatterns(start, end string) (RecurrentTimeSpan, err
 }
 
 func (rs *RecurrentTimeSpan) First(now time.Time) (AbsTimeSpan, error) {
-	var err error
-	s := AbsTimeSpan{}
+
+	// Check if "now" is already inside an occurrence starting before "now" and ending after "now"
+	s, err := rs.Prev(now)
+	if err != nil {
+		return s, err
+	}
+	if s.End.After(now) {
+		return s, nil
+	}
+
+	// if not, return the first occurrence
 	s.Start, err = rs.Start.First(now)
 	if err != nil {
 		return s, err
@@ -129,20 +138,8 @@ func (rs *RecurrentTimeSpan) Between(from, to time.Time) []AbsTimeSpan {
 
 func (rs *RecurrentTimeSpan) BetweenIterator(from, to time.Time, iterator func(AbsTimeSpan) bool) {
 
-	// Check if "from" is already inside an occurrence starting before "from" and ending after "from"
-	segment, err := rs.Prev(from)
-	if err != nil {
-		fmt.Println("Error when unrolling RRule:", err)
-		return
-	}
-	if segment.End.After(from) {
-		if !iterator(segment) {
-			return
-		}
-	}
-
 	// Handle the first occurrence
-	segment, err = rs.First(from)
+	segment, err := rs.First(from)
 	if err != nil {
 		fmt.Println("Error when unrolling RRule:", err)
 		return
