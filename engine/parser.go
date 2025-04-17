@@ -19,14 +19,11 @@ type ParserTariffRoot struct {
 }
 
 func decoderOptions() []yaml.DecodeOption {
-	//validate := validator.New()
 	return []yaml.DecodeOption{
 		yaml.Strict(),
 		yaml.CustomUnmarshaler(unmarshalTimeDuration),
 		yaml.CustomUnmarshaler(unmarshalRecurrentDate),
 		yaml.CustomUnmarshaler(unmarshalQuota),
-		//yaml.CustomUnmarshaler(unmarshalTariffRule),
-		//yaml.Validator(validate),
 	}
 }
 

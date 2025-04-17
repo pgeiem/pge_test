@@ -311,12 +311,12 @@ func (s *Solver) buildFixedRulesList(lpRule *SolverRule) *btree.BTreeG[*SolverRu
 		if activatedAfter > 0 {
 			tmp := flatRateRule.TruncateBefore(activatedAfter)
 			flatRateRule = &tmp
-			fmt.Println(" >> truncate flatrate rule before flatrate activation", activatedAfter)
+			//fmt.Println(" >> truncate flatrate rule before flatrate activation", activatedAfter)
 		}
 
 		s.solveAndAppend(flatRateRule, fixedRules)
 
-		fmt.Println(" >> append flatrate rule", flatRateRule)
+		//fmt.Println(" >> append flatrate rule", flatRateRule)
 		return true
 	})
 
