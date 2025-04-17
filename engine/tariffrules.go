@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/iem-rd/quote-engine/timeutils"
 )
 
 type BaseRule struct {
@@ -55,15 +57,15 @@ func (r FixedRateSequentialRule) String() string {
 }
 
 type LinearFixedRule struct {
-	BaseRule          `yaml:",inline"`
-	RecurrentTimeSpan `yaml:",inline"`
-	HourlyRate        Amount `yaml:"hourlyrate"`
+	BaseRule                    `yaml:",inline"`
+	timeutils.RecurrentTimeSpan `yaml:",inline"`
+	HourlyRate                  Amount `yaml:"hourlyrate"`
 }
 
 // Unrolling the recurrent segment into a list of solver rules
 func (r LinearFixedRule) ToSolverRules(from, to time.Time, appender func(SolverRule)) {
 	cnt := 0
-	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
+	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan timeutils.AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
 		solverRule := NewLinearFixedRule(r.RuleName, ts, r.HourlyRate, r.Meta)
 		solverRule.Trace = append(solverRule.Trace, fmt.Sprintf("Occurence no%d", cnt))
@@ -78,14 +80,14 @@ func (r LinearFixedRule) String() string {
 }
 
 type FixedRateFixedRule struct {
-	BaseRule          `yaml:",inline"`
-	RecurrentTimeSpan `yaml:",inline"`
-	Amount            Amount `yaml:"amount"`
+	BaseRule                    `yaml:",inline"`
+	timeutils.RecurrentTimeSpan `yaml:",inline"`
+	Amount                      Amount `yaml:"amount"`
 }
 
 func (r FixedRateFixedRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
 	cnt := 0
-	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
+	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan timeutils.AbsTimeSpan) bool {
 		fmt.Println("####### FixedRateFixedRule", timespan, cnt)
 		ts := timespan.ToRelativeTimeSpan(from)
 		solverRule := NewFixedRateFixedRule(r.RuleName, ts, r.Amount, r.Meta)
@@ -101,14 +103,14 @@ func (r FixedRateFixedRule) String() string {
 }
 
 type FlatRateFixedRule struct {
-	BaseRule          `yaml:",inline"`
-	RecurrentTimeSpan `yaml:",inline"`
-	Amount            Amount `yaml:"amount"`
+	BaseRule                    `yaml:",inline"`
+	timeutils.RecurrentTimeSpan `yaml:",inline"`
+	Amount                      Amount `yaml:"amount"`
 }
 
 func (r FlatRateFixedRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
 	cnt := 0
-	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
+	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan timeutils.AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
 		solverRule := NewFlatRateFixedRule(r.RuleName, ts, r.Amount, r.Meta)
 		solverRule.Trace = append(solverRule.Trace, fmt.Sprintf("Occurence no%d", cnt))
@@ -123,15 +125,15 @@ func (r FlatRateFixedRule) String() string {
 }
 
 type NonPayingFixedRule struct {
-	BaseRule          `yaml:",inline"`
-	RecurrentTimeSpan `yaml:",inline"`
+	BaseRule                    `yaml:",inline"`
+	timeutils.RecurrentTimeSpan `yaml:",inline"`
 }
 
 type AbsoluteNonPayingRules []NonPayingFixedRule
 
 func (r NonPayingFixedRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
 	cnt := 0
-	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan AbsTimeSpan) bool {
+	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan timeutils.AbsTimeSpan) bool {
 		ts := timespan.ToRelativeTimeSpan(from)
 		solverRule := NewNonPayingFixedRule(r.RuleName, ts, r.Meta)
 		solverRule.Trace = append(solverRule.Trace, fmt.Sprintf("Occurence no%d", cnt))

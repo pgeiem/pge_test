@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/btree"
+	"github.com/iem-rd/quote-engine/timeutils"
 )
 
 func InterpolAmountNoOffset(rule SolverRule, at time.Duration) Amount {
@@ -71,7 +72,7 @@ func (rule SolverRule) Split(splitStart, splitEnd time.Duration) SolverRules {
 	return SolverRules{ruleA, ruleB}
 }
 
-func (rule *SolverRule) And(timespan RelativeTimeSpan) (*SolverRule, bool) {
+func (rule *SolverRule) And(timespan timeutils.RelativeTimeSpan) (*SolverRule, bool) {
 	// rule is fully inside timespan, then rule is not touched
 	if rule.From >= timespan.From && rule.To <= timespan.To {
 		return rule, true
@@ -478,7 +479,7 @@ func (s *Solver) findFlatRateActivationTime(flatRateRule *SolverRule, extraRules
 	return activatedAfter, activated
 }
 
-func (s *Solver) ExtractRulesInRange(timespan RelativeTimeSpan) SolverRules {
+func (s *Solver) ExtractRulesInRange(timespan timeutils.RelativeTimeSpan) SolverRules {
 	var out SolverRules
 	s.solvedRules.Ascend(func(rule *SolverRule) bool {
 		r, _ := rule.And(timespan)

@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"github.com/google/btree"
+	"github.com/iem-rd/quote-engine/timeutils"
 )
 
 type SchedulerEntry struct {
-	RelativeTimeSpan
+	timeutils.RelativeTimeSpan
 	Sequence *TariffSequence
 }
 

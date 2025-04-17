@@ -3,6 +3,8 @@ package engine
 import (
 	"testing"
 	"time"
+
+	"github.com/iem-rd/quote-engine/timeutils"
 )
 
 func TestParseDuration(t *testing.T) {
@@ -32,7 +34,7 @@ func TestParseDuration(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.input, func(t *testing.T) {
-			result, err := ParseDuration(test.input)
+			result, err := timeutils.ParseDuration(test.input)
 			if (err != nil) != test.hasError {
 				t.Errorf("ParseDuration(%q) error = %v, wantErr %v", test.input, err, test.hasError)
 				return

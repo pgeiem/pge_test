@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/iem-rd/quote-engine/table"
+	"github.com/iem-rd/quote-engine/timeutils"
 )
 
 type TariffSequence struct {
 	Name           string
-	ValidityPeriod RecurrentTimeSpan
+	ValidityPeriod timeutils.RecurrentTimeSpan
 	Quota          Quota
 	Rules          SolvableRules
 	Solver         Solver
@@ -88,7 +89,7 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 	// If there is only one sequence, return its rules directly, skipping merging
 	if len(inventory) == 1 {
 		fmt.Println("Single sequence, skipping merging")
-		return inventory[0].Solver.ExtractRulesInRange(RelativeTimeSpan{0, window}), nil
+		return inventory[0].Solver.ExtractRulesInRange(timeutils.RelativeTimeSpan{From: 0, To: window}), nil
 	}
 
 	// Create a scheduler and solve all sequences excepted the last one
@@ -99,7 +100,7 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 	}
 	// Add latest sequences. Lowest priority sequence must always match the window as it's the default one
 	scheduler.Append(SchedulerEntry{
-		RelativeTimeSpan: RelativeTimeSpan{0, window},
+		RelativeTimeSpan: timeutils.RelativeTimeSpan{From: 0, To: window},
 		Sequence:         &inventory[len(inventory)-1],
 	})
 	fmt.Println("Scheduler:", scheduler.String())
@@ -139,11 +140,11 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 
 	// Temporarily unmarshal the sequences section in a temporary struct
 	temp := []struct {
-		Name           string            `yaml:"name"`
-		ValidityPeriod RecurrentTimeSpan `yaml:",inline"`
-		Quota          string            `yaml:"quota,"`
-		Rules          SolvableRules     `yaml:"rules"`
-		Limits         TariffLimits      `yaml:",inline"`
+		Name           string                      `yaml:"name"`
+		ValidityPeriod timeutils.RecurrentTimeSpan `yaml:",inline"`
+		Quota          string                      `yaml:"quota,"`
+		Rules          SolvableRules               `yaml:"rules"`
+		Limits         TariffLimits                `yaml:",inline"`
 	}{}
 	err := unmarshal(&temp)
 	if err != nil {

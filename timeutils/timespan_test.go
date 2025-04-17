@@ -1,4 +1,4 @@
-package engine
+package timeutils
 
 import (
 	"fmt"
@@ -457,6 +457,14 @@ func TestRecurrentSegment_IsWithin(t *testing.T) {
 			time:         time.Date(2023, 10, 15, 18, 0, 0, 0, time.Local),
 			expected:     false,
 			expectedSeg:  AbsTimeSpan{},
+		},
+		{
+			name:         "Periodic",
+			startPattern: "periodic(24h)",
+			endPattern:   "duration(1h30m)",
+			time:         time.Date(2023, 4, 1, 1, 12, 30, 0, time.Local),
+			expected:     true,
+			expectedSeg:  AbsTimeSpan{Start: time.Date(2023, 4, 1, 1, 12, 30, 0, time.Local), End: time.Date(2023, 4, 1, 2, 42, 30, 0, time.Local)},
 		},
 	}
 

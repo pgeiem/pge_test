@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/iem-rd/quote-engine/table"
+	"github.com/iem-rd/quote-engine/timeutils"
 )
 
 // DurationType represents the different type of parking duration
@@ -58,7 +59,7 @@ const (
 type SolverRule struct {
 	RuleName string
 	// Starting/End point in time
-	RelativeTimeSpan
+	timeutils.RelativeTimeSpan
 	// Amount in cents at the beginning of the rule segment (non 0 values are step)
 	StartAmount Amount
 	// Amount in cents at the end of the rule segment
@@ -93,7 +94,7 @@ func NewLinearSequentialRule(name string, duration time.Duration, hourlyRate Amo
 	return SolverRule{
 		RuleName:             name,
 		Meta:                 meta,
-		RelativeTimeSpan:     RelativeTimeSpan{From: time.Duration(0), To: duration},
+		RelativeTimeSpan:     timeutils.RelativeTimeSpan{From: time.Duration(0), To: duration},
 		StartAmount:          0,
 		EndAmount:            Amount(float64(hourlyRate) * duration.Hours()),
 		StartTimePolicy:      ShiftablePolicy,
@@ -106,7 +107,7 @@ func NewFixedRateSequentialRule(name string, duration time.Duration, amount Amou
 	return SolverRule{
 		RuleName:             name,
 		Meta:                 meta,
-		RelativeTimeSpan:     RelativeTimeSpan{From: time.Duration(0), To: duration},
+		RelativeTimeSpan:     timeutils.RelativeTimeSpan{From: time.Duration(0), To: duration},
 		StartAmount:          amount,
 		EndAmount:            amount,
 		StartTimePolicy:      ShiftablePolicy,
@@ -115,7 +116,7 @@ func NewFixedRateSequentialRule(name string, duration time.Duration, amount Amou
 	}
 }
 
-func NewLinearFixedRule(name string, timespan RelativeTimeSpan, hourlyRate Amount, meta MetaData) SolverRule {
+func NewLinearFixedRule(name string, timespan timeutils.RelativeTimeSpan, hourlyRate Amount, meta MetaData) SolverRule {
 	if !timespan.IsValid() {
 		panic(fmt.Errorf("invalid rule timespan %v", timespan))
 	}
@@ -130,7 +131,7 @@ func NewLinearFixedRule(name string, timespan RelativeTimeSpan, hourlyRate Amoun
 		DurationType:         DurationTypeFromAmount(hourlyRate),
 	}
 }
-func NewFixedRateFixedRule(name string, timespan RelativeTimeSpan, amount Amount, meta MetaData) SolverRule {
+func NewFixedRateFixedRule(name string, timespan timeutils.RelativeTimeSpan, amount Amount, meta MetaData) SolverRule {
 	if !timespan.IsValid() {
 		panic(fmt.Errorf("invalid rule timespan %v", timespan))
 	}
@@ -146,7 +147,7 @@ func NewFixedRateFixedRule(name string, timespan RelativeTimeSpan, amount Amount
 	}
 }
 
-func NewFlatRateFixedRule(name string, timespan RelativeTimeSpan, amount Amount, meta MetaData) SolverRule {
+func NewFlatRateFixedRule(name string, timespan timeutils.RelativeTimeSpan, amount Amount, meta MetaData) SolverRule {
 	if !timespan.IsValid() {
 		panic(fmt.Errorf("invalid rule timespan %v", timespan))
 	}
@@ -163,7 +164,7 @@ func NewFlatRateFixedRule(name string, timespan RelativeTimeSpan, amount Amount,
 	}
 }
 
-func NewNonPayingFixedRule(name string, timespan RelativeTimeSpan, meta MetaData) SolverRule {
+func NewNonPayingFixedRule(name string, timespan timeutils.RelativeTimeSpan, meta MetaData) SolverRule {
 	r := NewFlatRateFixedRule(name, timespan, 0, meta)
 	r.DurationType = NonPayingDuration
 	return r
