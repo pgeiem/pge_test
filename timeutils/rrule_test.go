@@ -559,6 +559,13 @@ func TestParseRecurrentDate(t *testing.T) {
 			false,
 		},
 		{
+			"duration(2h)",
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Date(2025, 04, 29, 20, 0, 0, 0, time.Local),
+			time.Date(2025, 04, 29, 16, 0, 0, 0, time.Local),
+			false,
+		},
+		{
 			"invalid(1h30m)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Time{},
@@ -624,6 +631,20 @@ func TestParseRecurrentDate(t *testing.T) {
 		{
 			"(2023/10/* MON 12:00:00)",
 			time.Time{},
+			time.Time{},
+			time.Time{},
+			true,
+		},
+		{
+			"date(2025-04-29T18:00) + pattern(*/* * 20:00)", // mélange invalide
+			time.Date(2025, 04, 29, 17, 59, 0, 0, time.Local),
+			time.Time{},
+			time.Time{},
+			true,
+		},
+		{
+			"pattern(*/* * 20:00) + date(2025-04-29T18:00)", // mélange invalide
+			time.Date(2025, 04, 29, 17, 0, 0, 0, time.Local),
 			time.Time{},
 			time.Time{},
 			true,
