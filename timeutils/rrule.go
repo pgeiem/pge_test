@@ -47,6 +47,11 @@ func ParseRecurrentDate(pattern string) (RecurrentDate, error) {
 			err := r.ParseFromRRule(arg)
 			return r, err
 		},
+		"date": func(arg string) (RecurrentDate, error) {
+			r := RecurrentDateFixed{}
+			err := r.Parse(arg)
+			return r, err
+		},
 	}
 
 	// Split function name and function arguments
@@ -175,6 +180,53 @@ func (r RecurrentDatePattern) Between(from, to time.Time) []time.Time {
 // Stringer for RecurrentDatePattern, print the rule
 func (r RecurrentDatePattern) String() string {
 	return fmt.Sprintf("rrule(%s)", r.origPattern)
+}
+
+// RecurrentDateFixed represents a fixed date (non-recurrent)
+type RecurrentDateFixed struct {
+	value time.Time
+}
+
+func (r *RecurrentDateFixed) Parse(pattern string) error {
+	t, err := time.ParseInLocation("2006-01-02T15:04:05", pattern, time.Local)
+	if err != nil {
+		// Try to parse without seconds
+		t, err = time.ParseInLocation("2006-01-02T15:04", pattern, time.Local)
+		if err != nil {
+			return fmt.Errorf("invalid fixed date format: %s", pattern)
+		}
+	}
+	r.value = t
+	return nil
+}
+
+func (r RecurrentDateFixed) First(now time.Time) (time.Time, error) {
+	return r.value, nil
+}
+
+func (r RecurrentDateFixed) Next(now time.Time) (time.Time, error) {
+	if !now.After(r.value) {
+		return r.value, nil
+	}
+	return time.Time{}, fmt.Errorf("no next occurrence")
+}
+
+func (r RecurrentDateFixed) Prev(now time.Time) (time.Time, error) {
+	if now.After(r.value) {
+		return r.value, nil
+	}
+	return time.Time{}, fmt.Errorf("no previous occurrence")
+}
+
+func (r RecurrentDateFixed) Between(from, to time.Time) []time.Time {
+	if (r.value.After(from) || r.value.Equal(from)) && r.value.Before(to) {
+		return []time.Time{r.value}
+	}
+	return []time.Time{}
+}
+
+func (r RecurrentDateFixed) String() string {
+	return fmt.Sprintf("date(%s)", r.value.Format("2006-01-02T15:04:05"))
 }
 
 // Take a string describing a list or a range or a mix of both and return a list of integers representing the expanded list of values

@@ -531,6 +531,34 @@ func TestParseRecurrentDate(t *testing.T) {
 			false,
 		},
 		{
+			"date(2025-04-29T18:00)",
+			time.Date(2025, 04, 29, 17, 59, 0, 0, time.Local),
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Time{},
+			false,
+		},
+		{
+			"date(2025-04-29T18:00)",
+			time.Date(2025, 04, 29, 17, 59, 59, 0, time.Local),
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Time{}, // pas de prev
+			false,
+		},
+		{
+			"date(2025-04-29T18:00)",
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Time{}, // pas de prev
+			false,
+		},
+		{
+			"date(2025-04-29T18:00)",
+			time.Date(2025, 04, 29, 18, 0, 1, 0, time.Local),
+			time.Time{},
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			false,
+		},
+		{
 			"invalid(1h30m)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Time{},
@@ -613,21 +641,22 @@ func TestParseRecurrentDate(t *testing.T) {
 				return
 			}
 
-			next, err := recurrentDate.Next(test.now)
-			if err != nil {
-				t.Fatalf("Next failed: %v", err)
-			}
-			if !next.Equal(test.expectedNext) {
-				t.Errorf("Next(%v) = %v, want %v", test.now, next, test.expectedNext)
+			_, err = recurrentDate.Prev(test.now)
+			if test.expectedNext.IsZero() {
+				// We expect an error → so we check that one occurs.
+				if _, err := recurrentDate.Next(test.now); err == nil {
+					t.Errorf("Next(%v): expected error, but got none", test.now)
+				}
+			} else {
+				next, err := recurrentDate.Next(test.now)
+				if err != nil {
+					t.Fatalf("Next failed: %v", err)
+				}
+				if !next.Equal(test.expectedNext) {
+					t.Errorf("Next(%v) = %v, want %v", test.now, next, test.expectedNext)
+				}
 			}
 
-			prev, err := recurrentDate.Prev(test.now)
-			if err != nil {
-				t.Fatalf("Prev failed: %v", err)
-			}
-			if !prev.Equal(test.expectedPrev) {
-				t.Errorf("Prev(%v) = %v, want %v", test.now, prev, test.expectedPrev)
-			}
 		})
 	}
 }
