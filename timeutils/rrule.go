@@ -201,25 +201,25 @@ func (r *RecurrentDateFixed) Parse(pattern string) error {
 }
 
 func (r RecurrentDateFixed) First(now time.Time) (time.Time, error) {
-	return r.value, nil
-}
-
-func (r RecurrentDateFixed) Next(now time.Time) (time.Time, error) {
 	if !now.After(r.value) {
 		return r.value, nil
 	}
-	return time.Time{}, fmt.Errorf("no next occurrence")
+	return time.Time{}, nil
+}
+
+func (r RecurrentDateFixed) Next(now time.Time) (time.Time, error) {
+	return time.Time{}, nil
 }
 
 func (r RecurrentDateFixed) Prev(now time.Time) (time.Time, error) {
 	if now.After(r.value) {
 		return r.value, nil
 	}
-	return time.Time{}, fmt.Errorf("no previous occurrence")
+	return time.Time{}, nil
 }
 
 func (r RecurrentDateFixed) Between(from, to time.Time) []time.Time {
-	if (r.value.After(from) || r.value.Equal(from)) && r.value.Before(to) {
+	if TimeAfterOrEqual(r.value, from) && r.value.Before(to) {
 		return []time.Time{r.value}
 	}
 	return []time.Time{}
