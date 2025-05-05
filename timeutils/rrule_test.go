@@ -1,6 +1,7 @@
 package timeutils
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -38,8 +39,8 @@ func TestExpandDateComponentList(t *testing.T) {
 		{"1-2,3-1000000000000", nil, true}, // Out of range
 	}
 
-	for _, test := range tests {
-		t.Run(clearString(test.input), func(t *testing.T) {
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%2d-%s", i, clearString(test.input)), func(t *testing.T) {
 			result, err := expandDateComponentList(test.input)
 			if (err != nil) != test.hasError {
 				t.Errorf("ExpandDateComponentList(%q) error = %v, wantErr %v", test.input, err, test.hasError)
@@ -104,8 +105,8 @@ func TestRecurrentDatePeriodic(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(clearString(test.pattern), func(t *testing.T) {
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%2d-%s", i, clearString(test.pattern)), func(t *testing.T) {
 			r := &RecurrentDatePeriodic{}
 			err := r.Parse(test.pattern)
 			if err != nil {
@@ -227,8 +228,8 @@ func TestBuilRRuleFromDatePattern(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(clearString(test.pattern), func(t *testing.T) {
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%2d-%s", i, clearString(test.pattern)), func(t *testing.T) {
 			rrule, err := buildRRuleFromDatePattern(test.pattern)
 			if (err != nil) != test.hasError {
 				t.Errorf("BuilRRuleFromDatePattern(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
@@ -412,8 +413,8 @@ func TestRecurrentDatePattern(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(clearString(test.pattern), func(t *testing.T) {
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%2d-%s", i, clearString(test.pattern)), func(t *testing.T) {
 			r := &RecurrentDatePattern{}
 			err := r.ParseFromDatePattern(test.pattern)
 			if (err != nil) != test.hasError {
@@ -461,14 +462,16 @@ func TestRecurrentDatePattern(t *testing.T) {
 
 func TestParseRecurrentDate(t *testing.T) {
 	tests := []struct {
-		pattern      string
-		now          time.Time
-		expectedNext time.Time
-		expectedPrev time.Time
-		hasError     bool
+		pattern       string
+		now           time.Time
+		expectedFirst time.Time
+		expectedNext  time.Time
+		expectedPrev  time.Time
+		hasError      bool
 	}{
 		{
 			"periodic(1h30m)",
+			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 1, 1, 30, 0, 0, time.Local),
 			time.Date(2023, 9, 30, 22, 30, 0, 0, time.Local),
@@ -478,12 +481,14 @@ func TestParseRecurrentDate(t *testing.T) {
 			"pattern(2023/10/* MON 12:00:00)",
 			time.Date(2023, 10, 16, 0, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 16, 12, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 16, 12, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 9, 12, 0, 0, 0, time.Local),
 			false,
 		},
 		{
 			"pattern(2023/*/* Mon-Fri 12:00:00)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local),
 			time.Date(2023, 9, 29, 12, 0, 0, 0, time.Local),
 			false,
@@ -492,12 +497,14 @@ func TestParseRecurrentDate(t *testing.T) {
 			"pattern(2023/9-10/* Mon,Fri,SUN 12:00:00)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 			time.Date(2023, 9, 29, 12, 0, 0, 0, time.Local),
 			false,
 		},
 		{
 			"pattern(2023/*/* 12:00:00)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 			time.Date(2023, 9, 30, 12, 0, 0, 0, time.Local),
 			false,
@@ -506,12 +513,14 @@ func TestParseRecurrentDate(t *testing.T) {
 			"pattern(2023/10/01 * 12,23:00)",
 			time.Date(2023, 10, 1, 16, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 1, 23, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 1, 23, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 			false,
 		},
 		{
 			"pattern(2023/10/* 17:00)",
 			time.Date(2023, 10, 3, 0, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 3, 17, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 3, 17, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 2, 17, 0, 0, 0, time.Local),
 			false,
@@ -520,6 +529,7 @@ func TestParseRecurrentDate(t *testing.T) {
 			"pattern(2023/*/* Mon,FRI 12:00)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local),
+			time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local),
 			time.Date(2023, 9, 29, 12, 0, 0, 0, time.Local),
 			false,
 		},
@@ -527,12 +537,70 @@ func TestParseRecurrentDate(t *testing.T) {
 			"pattern(12/25 12:00)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Date(2023, 12, 25, 12, 0, 0, 0, time.Local),
+			time.Date(2023, 12, 25, 12, 0, 0, 0, time.Local),
 			time.Date(2022, 12, 25, 12, 0, 0, 0, time.Local),
+			false,
+		},
+		{
+			"date(2025/04/29 18:00)",
+			time.Date(2025, 04, 29, 17, 59, 0, 0, time.Local),
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Time{},
+			time.Time{},
+			false,
+		},
+		{
+			"date(2025/04/29 18:00)",
+			time.Date(2025, 04, 29, 17, 59, 59, 0, time.Local),
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Time{},
+			time.Time{}, // pas de prev
+			false,
+		},
+		{
+			"date(2025/04/29 18:00)",
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Time{},
+			time.Time{}, // pas de prev
+			false,
+		},
+		{
+			"date(2025/04/29 18:00)",
+			time.Date(2025, 04, 29, 18, 0, 1, 0, time.Local),
+			time.Time{},
+			time.Time{},
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			false,
+		},
+		{
+			"date(2025/07/12 5:12:23)",
+			time.Date(2025, 07, 01, 0, 0, 0, 0, time.Local),
+			time.Date(2025, 07, 12, 5, 12, 23, 0, time.Local),
+			time.Time{},
+			time.Time{},
+			false,
+		},
+		{
+			"date(2025/07/12 5:12:23)",
+			time.Date(2025, 07, 25, 0, 0, 0, 0, time.Local),
+			time.Time{},
+			time.Time{},
+			time.Date(2025, 07, 12, 5, 12, 23, 0, time.Local),
+			false,
+		},
+		{
+			"duration(2h)",
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Date(2025, 04, 29, 20, 0, 0, 0, time.Local),
+			time.Date(2025, 04, 29, 16, 0, 0, 0, time.Local),
 			false,
 		},
 		{
 			"invalid(1h30m)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Time{},
 			time.Time{},
 			time.Time{},
 			true,
@@ -542,11 +610,13 @@ func TestParseRecurrentDate(t *testing.T) {
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Time{},
 			time.Time{},
+			time.Time{},
 			true,
 		},
 		{
 			"pattern(invalid)",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Time{},
 			time.Time{},
 			time.Time{},
 			true,
@@ -556,11 +626,13 @@ func TestParseRecurrentDate(t *testing.T) {
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Time{},
 			time.Time{},
+			time.Time{},
 			true,
 		},
 		{
 			"()",
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			time.Time{},
 			time.Time{},
 			time.Time{},
 			true,
@@ -570,6 +642,7 @@ func TestParseRecurrentDate(t *testing.T) {
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Time{},
 			time.Time{},
+			time.Time{},
 			true,
 		},
 		{
@@ -577,10 +650,12 @@ func TestParseRecurrentDate(t *testing.T) {
 			time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			time.Time{},
 			time.Time{},
+			time.Time{},
 			true,
 		},
 		{
 			"(1h30m)",
+			time.Time{},
 			time.Time{},
 			time.Time{},
 			time.Time{},
@@ -591,6 +666,7 @@ func TestParseRecurrentDate(t *testing.T) {
 			time.Time{},
 			time.Time{},
 			time.Time{},
+			time.Time{},
 			true,
 		},
 		{
@@ -598,12 +674,29 @@ func TestParseRecurrentDate(t *testing.T) {
 			time.Time{},
 			time.Time{},
 			time.Time{},
+			time.Time{},
+			true,
+		},
+		{
+			"date(2025/04/* 18:00)",
+			time.Date(2025, 04, 29, 17, 59, 0, 0, time.Local),
+			time.Time{},
+			time.Time{},
+			time.Time{},
+			true,
+		},
+		{
+			"date(04/01 18:00)",
+			time.Date(2025, 04, 29, 17, 0, 0, 0, time.Local),
+			time.Time{},
+			time.Time{},
+			time.Time{},
 			true,
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(clearString(test.pattern), func(t *testing.T) {
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%2d-%s", i, clearString(test.pattern)), func(t *testing.T) {
 			recurrentDate, err := ParseRecurrentDate(test.pattern)
 			if (err != nil) != test.hasError {
 				t.Errorf("ParseRecurrentDate(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)
@@ -611,6 +704,14 @@ func TestParseRecurrentDate(t *testing.T) {
 			}
 			if err != nil {
 				return
+			}
+
+			first, err := recurrentDate.First(test.now)
+			if err != nil {
+				t.Fatalf("First failed: %v", err)
+			}
+			if !first.Equal(test.expectedFirst) {
+				t.Errorf("First(%v) = %v, want %v", test.now, first, test.expectedFirst)
 			}
 
 			next, err := recurrentDate.Next(test.now)
@@ -628,6 +729,7 @@ func TestParseRecurrentDate(t *testing.T) {
 			if !prev.Equal(test.expectedPrev) {
 				t.Errorf("Prev(%v) = %v, want %v", test.now, prev, test.expectedPrev)
 			}
+
 		})
 	}
 }
