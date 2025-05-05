@@ -1,0 +1,16 @@
+version: "0.1"
+config:
+  window: 5d
+
+nonpaying:
+- name: "easter 25"
+  start: date(2025/04/20 00:00)
+  end: duration(24h)
+
+sequences:
+- name: "Test"
+  rules:
+  - linear:
+      name: "hourly"
+      duration: 48h
+      hourlyrate: 1.0
