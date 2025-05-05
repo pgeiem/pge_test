@@ -1,0 +1,35 @@
+version: "0.1"
+config:
+  window: 4d
+nonpaying:
+  - name: "night"
+    start: pattern(*/* 20:00)
+    end: pattern(*/* 01:00)
+  - name: "sunday"
+    start: pattern(*/* SUN 00:00)
+    end: pattern(*/* MON 00:00)
+
+sequences:
+  - name: "main"
+    rules:
+      - absfixedrate:
+          name: "nightfixedrate"
+          start: pattern(*/* 01:00)
+          end: pattern(*/* 08:00)
+          amount: 6.00
+      - fixedrate:
+          name: "minamount"
+          duration: 2h
+          amount: 4.00
+      - fixedrate:
+          name: "step1"
+          duration: 2h
+          amount: 2.00
+      - fixedrate:
+          name: "step2"
+          duration: 2h
+          amount: 2.50
+      - fixedrate:
+          name: "step3"
+          duration: 6h
+          amount: 1.50
