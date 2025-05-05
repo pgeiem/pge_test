@@ -531,31 +531,45 @@ func TestParseRecurrentDate(t *testing.T) {
 			false,
 		},
 		{
-			"date(2025-04-29T18:00)",
+			"date(2025/04/29 18:00)",
 			time.Date(2025, 04, 29, 17, 59, 0, 0, time.Local),
 			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
 			time.Time{},
 			false,
 		},
 		{
-			"date(2025-04-29T18:00)",
+			"date(2025/04/29 18:00)",
 			time.Date(2025, 04, 29, 17, 59, 59, 0, time.Local),
 			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
 			time.Time{}, // pas de prev
 			false,
 		},
 		{
-			"date(2025-04-29T18:00)",
+			"date(2025/04/29 18:00)",
 			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
 			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
 			time.Time{}, // pas de prev
 			false,
 		},
 		{
-			"date(2025-04-29T18:00)",
+			"date(2025/04/29 18:00)",
 			time.Date(2025, 04, 29, 18, 0, 1, 0, time.Local),
 			time.Time{},
 			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			false,
+		},
+		{
+			"date(2025/07/12 5:12:23)",
+			time.Date(2025, 07, 01, 0, 0, 0, 0, time.Local),
+			time.Date(2025, 07, 12, 5, 12, 23, 0, time.Local),
+			time.Time{},
+			false,
+		},
+		{
+			"date(2025/07/12 5:12:23)",
+			time.Date(2025, 07, 25, 0, 0, 0, 0, time.Local),
+			time.Time{},
+			time.Date(2025, 07, 12, 5, 12, 23, 0, time.Local),
 			false,
 		},
 		{
@@ -636,14 +650,14 @@ func TestParseRecurrentDate(t *testing.T) {
 			true,
 		},
 		{
-			"date(2025-04-29T18:00) + pattern(*/* * 20:00)", // mélange invalide
+			"date(2025/04/* 18:00)",
 			time.Date(2025, 04, 29, 17, 59, 0, 0, time.Local),
 			time.Time{},
 			time.Time{},
 			true,
 		},
 		{
-			"pattern(*/* * 20:00) + date(2025-04-29T18:00)", // mélange invalide
+			"date(04/01 18:00)",
 			time.Date(2025, 04, 29, 17, 0, 0, 0, time.Local),
 			time.Time{},
 			time.Time{},

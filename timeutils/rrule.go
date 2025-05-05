@@ -188,10 +188,10 @@ type RecurrentDateFixed struct {
 }
 
 func (r *RecurrentDateFixed) Parse(pattern string) error {
-	t, err := time.ParseInLocation("2006-01-02T15:04:05", pattern, time.Local)
+	t, err := time.ParseInLocation("2006/01/02 15:04:05", pattern, time.Local)
 	if err != nil {
 		// Try to parse without seconds
-		t, err = time.ParseInLocation("2006-01-02T15:04", pattern, time.Local)
+		t, err = time.ParseInLocation("2006/01/02 15:04", pattern, time.Local)
 		if err != nil {
 			return fmt.Errorf("invalid fixed date format: %s", pattern)
 		}
