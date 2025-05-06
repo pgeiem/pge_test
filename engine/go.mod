@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	github.com/goccy/go-yaml v1.15.17
 	github.com/google/btree v1.1.3
-	github.com/iem-rd/quote-engine/table v0.1.2
+	github.com/iem-rd/quote-engine/table v0.0.1
 	github.com/iem-rd/quote-engine/timeutils v0.1.2
 )
 

@@ -4,6 +4,10 @@ github.com/goccy/go-yaml v1.15.17 h1:dK4FbbTTEOZTLH/NW3/xBqg0JdC14YKVmYwS9GT3H60
 github.com/goccy/go-yaml v1.15.17/go.mod h1:XBurs7gK8ATbW4ZPGKgcbrY1Br56PdM69F7LkFRi1kA=
 github.com/google/btree v1.1.3 h1:CVpQJjYgC4VbzxeGVHfvZrv1ctoYCAI8vbl07Fcxlyg=
 github.com/google/btree v1.1.3/go.mod h1:qOPhT0dTNdNzV6Z/lhRX0YXUafgPLFUh+gZMl761Gm4=
+github.com/iem-rd/quote-engine/table v0.0.1 h1:Jtv1O6TuG/CAM6pYJoknVB3JQbsFYOu4iM4ojehRgHU=
+github.com/iem-rd/quote-engine/table v0.0.1/go.mod h1:mIrnYhrCydc3s2FBOGIKNkAtTz2VXuTGt5IlDACTky4=
+github.com/iem-rd/quote-engine/timeutils v0.1.2 h1:8GypDLPhWE0T3FMzKDmgXKiWol3z4YiUX1zJXGplR/k=
+github.com/iem-rd/quote-engine/timeutils v0.1.2/go.mod h1:+h1/x+TjhooQ8bs0bHyPpZTwgyZ0gylUDOkQWlmTT5k=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=
 github.com/mattn/go-colorable v0.1.13/go.mod h1:7S9/ev0klgBDR4GtXTXX8a3vIGJpMovkB8vQcUbaXHg=
 github.com/mattn/go-isatty v0.0.16/go.mod h1:kYGgaQfpe5nmfYZH+SKPsOc2e4SrIfOl2e/yFXSvRLM=
