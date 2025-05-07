@@ -545,7 +545,7 @@ func TestParseRecurrentDate(t *testing.T) {
 			"date(2025/04/29 18:00)",
 			time.Date(2025, 04, 29, 17, 59, 0, 0, time.Local),
 			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
-			time.Time{},
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
 			time.Time{},
 			false,
 		},
@@ -553,16 +553,16 @@ func TestParseRecurrentDate(t *testing.T) {
 			"date(2025/04/29 18:00)",
 			time.Date(2025, 04, 29, 17, 59, 59, 0, time.Local),
 			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
 			time.Time{},
-			time.Time{}, // pas de prev
 			false,
 		},
 		{
 			"date(2025/04/29 18:00)",
 			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
 			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
 			time.Time{},
-			time.Time{}, // pas de prev
 			false,
 		},
 		{
@@ -577,7 +577,7 @@ func TestParseRecurrentDate(t *testing.T) {
 			"date(2025/07/12 5:12:23)",
 			time.Date(2025, 07, 01, 0, 0, 0, 0, time.Local),
 			time.Date(2025, 07, 12, 5, 12, 23, 0, time.Local),
-			time.Time{},
+			time.Date(2025, 07, 12, 5, 12, 23, 0, time.Local),
 			time.Time{},
 			false,
 		},
@@ -696,7 +696,7 @@ func TestParseRecurrentDate(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		t.Run(fmt.Sprintf("%2d-%s", i, clearString(test.pattern)), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%02d-%s", i, clearString(test.pattern)), func(t *testing.T) {
 			recurrentDate, err := ParseRecurrentDate(test.pattern)
 			if (err != nil) != test.hasError {
 				t.Errorf("ParseRecurrentDate(%q) error = %v, wantErr %v", test.pattern, err, test.hasError)

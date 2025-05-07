@@ -226,6 +226,30 @@ func TestRecurrentSegment_NextAndPrev(t *testing.T) {
 			expectedNext: AbsTimeSpan{Start: time.Date(2023, 4, 2, 0, 0, 0, 0, time.Local), End: time.Date(2023, 4, 7, 8, 0, 0, 0, time.Local)},
 			expectedPrev: AbsTimeSpan{Start: time.Date(2023, 3, 31, 0, 0, 0, 0, time.Local), End: time.Date(2023, 4, 7, 8, 0, 0, 0, time.Local)},
 		},
+		{
+			name:         "FixedDateBefore",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			now:          time.Date(2023, 10, 03, 0, 0, 0, 0, time.Local),
+			expectedNext: AbsTimeSpan{Start: time.Date(2023, 10, 07, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 8, 18, 0, 0, 0, time.Local)},
+			expectedPrev: AbsTimeSpan{},
+		},
+		{
+			name:         "FixedDateAfter",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			now:          time.Date(2023, 10, 15, 0, 0, 0, 0, time.Local),
+			expectedNext: AbsTimeSpan{},
+			expectedPrev: AbsTimeSpan{Start: time.Date(2023, 10, 07, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 8, 18, 0, 0, 0, time.Local)},
+		},
+		{
+			name:         "FixedDateInBetween",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			now:          time.Date(2023, 10, 8, 2, 0, 0, 0, time.Local),
+			expectedNext: AbsTimeSpan{},
+			expectedPrev: AbsTimeSpan{Start: time.Date(2023, 10, 07, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 8, 18, 0, 0, 0, time.Local)},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -359,6 +383,44 @@ func TestRecurrentSegment_Between(t *testing.T) {
 				{Start: time.Date(2023, 4, 6, 1, 12, 30, 0, time.Local), End: time.Date(2023, 4, 6, 2, 42, 30, 0, time.Local)},
 			},
 		},
+		{
+			name:         "FixedBetweenFullyInside",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			from:         time.Date(2023, 10, 03, 0, 0, 0, 0, time.Local),
+			to:           time.Date(2023, 10, 15, 0, 0, 0, 0, time.Local),
+			expected: []AbsTimeSpan{
+				{Start: time.Date(2023, 10, 07, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 8, 18, 0, 0, 0, time.Local)},
+			},
+		},
+		{
+			name:         "FixedBetweenPartiallyBefore",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			from:         time.Date(2023, 10, 8, 0, 0, 0, 0, time.Local),
+			to:           time.Date(2023, 10, 15, 0, 0, 0, 0, time.Local),
+			expected: []AbsTimeSpan{
+				{Start: time.Date(2023, 10, 07, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 8, 18, 0, 0, 0, time.Local)},
+			},
+		},
+		{
+			name:         "FixedBetweenPartiallyAfter",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			from:         time.Date(2023, 10, 4, 0, 0, 0, 0, time.Local),
+			to:           time.Date(2023, 10, 8, 0, 0, 0, 0, time.Local),
+			expected: []AbsTimeSpan{
+				{Start: time.Date(2023, 10, 07, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 8, 18, 0, 0, 0, time.Local)},
+			},
+		},
+		{
+			name:         "FixedBetweenNonOverlapping",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			from:         time.Date(2023, 10, 3, 0, 0, 0, 0, time.Local),
+			to:           time.Date(2023, 10, 5, 0, 0, 0, 0, time.Local),
+			expected:     []AbsTimeSpan{},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -465,6 +527,46 @@ func TestRecurrentSegment_IsWithin(t *testing.T) {
 			time:         time.Date(2023, 4, 1, 1, 12, 30, 0, time.Local),
 			expected:     true,
 			expectedSeg:  AbsTimeSpan{Start: time.Date(2023, 4, 1, 1, 12, 30, 0, time.Local), End: time.Date(2023, 4, 1, 2, 42, 30, 0, time.Local)},
+		},
+		{
+			name:         "WithinFixedSegment",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			time:         time.Date(2023, 10, 8, 14, 0, 0, 0, time.Local),
+			expected:     true,
+			expectedSeg:  AbsTimeSpan{Start: time.Date(2023, 10, 07, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 8, 18, 0, 0, 0, time.Local)},
+		},
+		{
+			name:         "BeforeFixedSegment",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			time:         time.Date(2023, 10, 5, 10, 0, 0, 0, time.Local),
+			expected:     false,
+			expectedSeg:  AbsTimeSpan{},
+		},
+		{
+			name:         "AfterFixedSegment",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			time:         time.Date(2023, 10, 15, 19, 0, 0, 0, time.Local),
+			expected:     false,
+			expectedSeg:  AbsTimeSpan{},
+		},
+		{
+			name:         "AtFixedSegmentStart",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			time:         time.Date(2023, 10, 07, 12, 0, 0, 0, time.Local),
+			expected:     true,
+			expectedSeg:  AbsTimeSpan{Start: time.Date(2023, 10, 07, 12, 0, 0, 0, time.Local), End: time.Date(2023, 10, 8, 18, 0, 0, 0, time.Local)},
+		},
+		{
+			name:         "AtFixedSegmentEnd",
+			startPattern: "date(2023/10/07 12:00:00)",
+			endPattern:   "date(2023/10/08 18:00:00)",
+			time:         time.Date(2023, 10, 8, 18, 0, 0, 0, time.Local),
+			expected:     false,
+			expectedSeg:  AbsTimeSpan{},
 		},
 	}
 

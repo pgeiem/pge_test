@@ -208,6 +208,9 @@ func (r RecurrentDateFixed) First(now time.Time) (time.Time, error) {
 }
 
 func (r RecurrentDateFixed) Next(now time.Time) (time.Time, error) {
+	if now.Before(r.value) {
+		return r.value, nil
+	}
 	return time.Time{}, nil
 }
 
@@ -226,7 +229,7 @@ func (r RecurrentDateFixed) Between(from, to time.Time) []time.Time {
 }
 
 func (r RecurrentDateFixed) String() string {
-	return fmt.Sprintf("date(%s)", r.value.Format("2006-01-02T15:04:05"))
+	return fmt.Sprintf("date(%s)", r.value.Format("2006/01/02 15:04:05"))
 }
 
 // Take a string describing a list or a range or a mix of both and return a list of integers representing the expanded list of values
