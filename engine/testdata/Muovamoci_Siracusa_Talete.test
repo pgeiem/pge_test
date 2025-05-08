@@ -1,0 +1,53 @@
+- name: "Minimum charge"
+  now: 2025-06-03T08:00:00
+  end: 2025-06-03T09:00:00
+  desc: "Exactly 1 hour = min fixed rate"
+  amount: 1.50
+
+- name: "3 hours linear"
+  now: 2025-06-03T08:00:00
+  end: 2025-06-03T11:00:00
+  desc: "3 × 1.50 €/h = 4.50 €"
+  amount: 4.50
+
+- name: "9 hours linear max"
+  now: 2025-06-03T08:00:00
+  end: 2025-06-03T17:00:00
+  desc: "Max linear before day rate: 9 × 1.50 € = 13.50 €"
+  amount: 13.50
+
+- name: "13h triggers 1-day rate"
+  now: 2025-06-03T08:00:00
+  end: 2025-06-03T21:00:00
+  desc: "Above 9h linear limit but ≤ 14h → 5.00 €"
+  amount: 19.50
+
+- name: "14h triggers 2-day rate"
+  now: 2025-06-03T08:00:00
+  end: 2025-06-04T00:00:00
+  desc: "Exactly 16h → beyond 14h → 2-day fixed (15.00 €)"
+  amount: 15.00
+
+- name: "23h = still 2-day rate"
+  now: 2025-06-03T08:00:00
+  end: 2025-06-04T07:00:00
+  desc: "Still under 24h → still 2-day flat rate"
+  amount: 15.00
+
+- name: "25h triggers third day"
+  now: 2025-06-03T08:00:00
+  end: 2025-06-04T09:00:00
+  desc: "Above 24h → fallback to second 15.00 € fixed (if repeating)"
+  amount: 30.00
+
+- name: "3 days full"
+  now: 2025-06-03T08:00:00
+  end: 2025-06-06T08:00:00
+  desc: "Assuming 3 × 15.00 €"
+  amount: 45.00
+
+- name: "Over 3 days = capped"
+  now: 2025-06-03T08:00:00
+  end: 2025-06-07T08:00:00
+  desc: "Capped at max amount"
+  amount: 45.00

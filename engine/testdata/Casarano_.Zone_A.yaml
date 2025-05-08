@@ -1,0 +1,22 @@
+version: "0.1"
+config:
+  window: 30d
+  maxamount: 8.00
+nonpaying:
+  - name: "sunday"
+    start: pattern(*/* SUN 00:00)
+    end: pattern(*/* MON 00:00)
+  - name: "night"
+    start: pattern(*/* 18:30)
+    end: pattern(*/* 08:30)
+sequences:
+  - name: "CRAP"
+    rules:
+      - fixedrate:
+          name: "minamount"
+          duration: 22m30s
+          amount: 0.30
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 0.80
+          duration: 10h

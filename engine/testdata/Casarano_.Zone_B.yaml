@@ -1,0 +1,45 @@
+version: "0.1"
+config:
+  window: 30d
+  maxamount: 8.00
+nonpaying:
+  - name: "sunday"
+    start: pattern(*/* SUN 00:00)
+    end: pattern(*/* MON 00:00)
+sequences:
+  - name: "CRBI"
+    rules:
+      - nonpaying:
+          name: "night"
+          start: pattern(*/* 20:00)
+          end: pattern(*/* 09:00)
+      - nonpaying:
+          name: "lunch"
+          start: pattern(*/* 13:00)
+          end: pattern(*/* 16:00)
+      - fixedrate:
+          name: "minamount"
+          duration: 22m30s
+          amount: 0.30
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 0.80
+          duration: 10h
+  - name: "CRBE"
+    rules:
+      - nonpaying:
+          name: "night"
+          start: pattern(*/* 21:00)
+          end: pattern(*/* 09:00)
+      - nonpaying:
+          name: "lunch"
+          start: pattern(*/* 13:00)
+          end: pattern(*/* 17:00)
+      - fixedrate:
+          name: "minamount"
+          duration: 22m30s
+          amount: 0.30
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 0.80
+          duration: 10h

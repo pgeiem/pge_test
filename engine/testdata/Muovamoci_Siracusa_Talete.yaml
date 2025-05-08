@@ -1,0 +1,27 @@
+version: "0.1"
+config:
+  window: 30d
+  maxamount: 45.00
+sequences:
+  - name: "SR01"
+    rules:
+      - fixedrate:
+          name: "minamount"
+          duration: 1h
+          amount: 1.50
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.50
+          duration: 9h
+      - fixedrate:
+          name: "1day"
+          duration: 14h
+          amount: 5.00
+      - fixedrate:
+          name: "2days"
+          duration: 24h
+          amount: 15.00
+      - fixedrate:
+          name: "3days"
+          duration: 24h
+          amount: 15.0
