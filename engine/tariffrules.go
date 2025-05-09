@@ -88,7 +88,6 @@ type FixedRateFixedRule struct {
 func (r FixedRateFixedRule) ToSolverRules(from, to time.Time, iterator func(SolverRule)) {
 	cnt := 0
 	r.RecurrentTimeSpan.BetweenIterator(from, to, func(timespan timeutils.AbsTimeSpan) bool {
-		fmt.Println("####### FixedRateFixedRule", timespan, cnt)
 		ts := timespan.ToRelativeTimeSpan(from)
 		solverRule := NewFixedRateFixedRule(r.RuleName, ts, r.Amount, r.Meta)
 		solverRule.Trace = append(solverRule.Trace, fmt.Sprintf("Occurence no%d", cnt))

@@ -108,7 +108,7 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 	// Merge all sequences
 	scheduler.entries.Ascend(func(entry SchedulerEntry) bool {
 		rules := entry.Sequence.Solver.ExtractRulesInRange(entry.RelativeTimeSpan)
-		fmt.Println("Merging", entry.Sequence.Name, "rules between", entry.RelativeTimeSpan, "with", len(out), "rules in output")
+		fmt.Println("\nMerging", entry.Sequence.Name, len(rules), "rules between", entry.RelativeTimeSpan, "to", len(out), "rules already in output")
 
 		rules.PrintAsTable(fmt.Sprintf("Rules from %s before applying limits (%d rules):", entry.Sequence.Name, len(rules)), now)
 
@@ -117,7 +117,7 @@ func (inventory TariffSequenceInventory) Merge(now time.Time, window time.Durati
 		offsetAmout, offsetDuration := out.SumAll()
 		limits.AddOffset(offsetAmout, offsetDuration)
 		rules = rules.ApplyLimits(limits)
-		// FIXME: the limits are applied for each shduler entries but should be applied only once for all scheduler entries from the same sequence
+		// FIXME: the limits are applied for each sheduler entries but should be applied only once for all scheduler entries from the same sequence
 		// For example if one sequence has 2 entries, the limits are applied twice instead of once globally
 
 		rules.PrintAsTable(fmt.Sprintf("Rules from %s with limits applied (%d rules):", entry.Sequence.Name, len(rules)), now)

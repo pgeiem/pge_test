@@ -54,18 +54,18 @@ func TestTariffs(t *testing.T) {
 				t.Run(testName+"-"+testCase.Name, func(t *testing.T) {
 					tariff, err := ParseTariffDefinition(tariffDescr)
 					if err != nil {
-						t.Errorf("failed to parse tariff definition: %v", err)
+						t.Fatalf("failed to parse tariff definition: %v", err)
 					}
 					now, err := time.ParseInLocation("2006-01-02T15:04:05", testCase.Now, time.Local)
 					if err != nil {
-						t.Errorf("failed to parse now time: %v", err)
+						t.Fatalf("failed to parse now time: %v", err)
 					}
 					end, err := time.ParseInLocation("2006-01-02T15:04:05", testCase.End, time.Local)
 					if err != nil {
-						t.Errorf("failed to parse end time: %v", err)
+						t.Fatalf("failed to parse end time: %v", err)
 					}
 					if end.Before(now) {
-						t.Errorf("invalid test case, end time is before now time: %v < %v", end, now)
+						t.Fatalf("invalid test case, end time is before now time: %v < %v", end, now)
 					}
 					out := tariff.Compute(now, []AssignedRight{})
 					amount := out.AmountForDuration(end.Sub(now))
