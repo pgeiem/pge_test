@@ -8,8 +8,6 @@ nonpaying:
 
 sequences:
 - name: "ROS1 Summer"
-  start: pattern(06/01 00:00)
-  end: pattern(09/30 23:59:59)
   rules:
   - fixedrate:
       name: "minamount"
