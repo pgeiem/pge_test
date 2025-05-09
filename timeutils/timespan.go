@@ -116,7 +116,7 @@ func (rs *RecurrentTimeSpan) Prev(now time.Time) (AbsTimeSpan, error) {
 	var err error
 	s := AbsTimeSpan{}
 	s.Start, err = rs.Start.Prev(now)
-	if err != nil {
+	if err != nil || s.Start.IsZero() {
 		return s, err
 	}
 	s.End, err = rs.End.Next(s.Start)
@@ -142,6 +142,9 @@ func (rs *RecurrentTimeSpan) BetweenIterator(from, to time.Time, iterator func(A
 	segment, err := rs.First(from)
 	if err != nil {
 		fmt.Println("Error when unrolling RRule:", err)
+		return
+	}
+	if segment.Start.IsZero() || segment.Start.After(to) {
 		return
 	}
 	if !iterator(segment) {
