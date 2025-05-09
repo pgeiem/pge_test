@@ -153,13 +153,24 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 
 	// Convert the temporary struct into the final struct and link the referred quotas
 	*out = make(TariffSequenceInventory, 0, len(temp))
-	for _, n := range temp {
+	for i, n := range temp {
 
 		seq := NewTariffSequence()
 		seq.Name = n.Name
 		seq.ValidityPeriod = n.ValidityPeriod
 		seq.Rules = n.Rules
 		seq.Limits = n.Limits
+
+		// Some validity check
+		isValidityPeriodValid := n.ValidityPeriod.Start != nil && n.ValidityPeriod.End != nil
+		isLastSequence := i == len(temp)-1
+		if !isValidityPeriodValid && !isLastSequence {
+			return fmt.Errorf("validity period is not valid for sequence %s", n.Name)
+		}
+		if isValidityPeriodValid && isLastSequence {
+			// Last sequence must have an empty validity period
+			return fmt.Errorf("last sequence must have an empty validity period")
+		}
 
 		// Search the coresponding quota
 		if n.Quota != "" {
