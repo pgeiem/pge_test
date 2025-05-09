@@ -16,7 +16,7 @@ sequences:
       - fixedrate:
           name: "1day"
           duration: 14h
-          amount: 5.00
+          amount: 0.00
       - fixedrate:
           name: "2days"
           duration: 24h
@@ -24,4 +24,4 @@ sequences:
       - fixedrate:
           name: "3days"
           duration: 24h
-          amount: 15.0
+          amount: 15.00

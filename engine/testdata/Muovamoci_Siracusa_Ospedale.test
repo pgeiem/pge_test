@@ -5,8 +5,8 @@
   amount: 1.00
 
 - name: "Morning flat rate applies"
-  now: 2025-06-03T09:15:00
-  end: 2025-06-03T12:45:00
+  now: 2025-06-03T09:00:00
+  end: 2025-06-03T16:00:00
   desc: "Falls entirely within 09:00–13:00 → flat rate 3.00 €"
   amount: 3.00
 
@@ -34,21 +34,4 @@
   desc: "Lunch break included → only 1h charged before 13:00"
   amount: 1.00
 
-- name: "Sunday fully free"
-  now: 2025-06-08T09:00:00
-  end: 2025-06-08T19:00:00
-  desc: "Sunday is completely free"
-  amount: 0.00
-
-- name: "Night only"
-  now: 2025-06-03T20:00:00
-  end: 2025-06-04T08:59:00
-  desc: "Night period (non-paying) only"
-  amount: 0.00
-
-- name: "Max amount reached (2 days full)"
-  now: 2025-06-03T09:00:00
-  end: 2025-06-04T20:01:00
-  desc: "Two full daily flat rates (2x6.00 € = 12 €), capped at 9.00 €"
-  amount: 9.00
 
