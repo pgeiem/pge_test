@@ -19,15 +19,20 @@ type DurationDetail struct {
 
 // AssignedRight represents the parking assigned rights (a ticket)
 type AssignedRight struct {
-	ParkingArea []string
-	Start       time.Time
+	TariffCode string    // Identifier of the tariff
+	Flags      []string  // list of flags of parking assigned rights (such as PMR, etc.)
+	LayerCode  []string  // Zone codes
+	StartDate  time.Time // Start date of the parking assigned right
 	//End         time.Time
-	Details []DurationDetail
+	DurationDetails []DurationDetail // List of duration details
 }
 
-func (ar AssignedRight) MatchParkingArea(pattern string) (bool, error) {
-	for _, area := range ar.ParkingArea {
-		match, err := globMatch(pattern, area)
+func (ar AssignedRight) MatchLayerCode(pattern string) (bool, error) {
+	if len(ar.LayerCode) == 0 {
+		return globMatch(pattern, "")
+	}
+	for _, layercode := range ar.LayerCode {
+		match, err := globMatch(pattern, layercode)
 		if err != nil {
 			return false, err
 		}
@@ -38,15 +43,37 @@ func (ar AssignedRight) MatchParkingArea(pattern string) (bool, error) {
 	return false, nil
 }
 
+func (ar AssignedRight) MatchFlags(pattern string) (bool, error) {
+	if len(ar.Flags) == 0 {
+		return globMatch(pattern, "")
+	}
+	for _, flag := range ar.Flags {
+		match, err := globMatch(pattern, flag)
+		if err != nil {
+			return false, err
+		}
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (ar AssignedRight) MatchTariffCode(pattern string) (bool, error) {
+	return globMatch(pattern, ar.TariffCode)
+}
+
 // MatchingRule represents a rule to match the parking assigned rights to be used in a quota
 type MatchingRule struct {
-	ParkingAreaPattern  string `yaml:"area"`
+	TariffCodePattern   string `yaml:"tariff"`
+	LayerCodePattern    string `yaml:"layer"`
 	DurationTypePattern string `yaml:"type"`
+	FlagsPattern        string `yaml:"flags"`
 }
 
 // Stringer for MatchingRule, print the area and type patterns
 func (m MatchingRule) String() string {
-	return fmt.Sprintf("(%s, %s)", m.ParkingAreaPattern, m.DurationTypePattern)
+	return fmt.Sprintf("(%s, %s)", m.LayerCodePattern, m.DurationTypePattern)
 }
 
 // MatchingRules is a list of MatchingRule
@@ -73,11 +100,13 @@ type Quota interface {
 
 // AbstractQuota is a helper to ease the implementation of different quotas types
 type AbstractQuota struct {
-	Name               string                  `yaml:"name"`
-	MatchingRules      MatchingRules           `yaml:"matching"`
-	PeriodicityRule    timeutils.RecurrentDate `yaml:"periodicity"`
-	DefaultAreaPattern string                  `yaml:"-"`
-	DefaultTypePattern string                  `yaml:"-"`
+	Name                       string                  `yaml:"name"`
+	MatchingRules              MatchingRules           `yaml:"matching"`
+	PeriodicityRule            timeutils.RecurrentDate `yaml:"periodicity"`
+	DefaultTariffCodePattern   string                  `yaml:"-"`
+	DefaultLayerCodePattern    string                  `yaml:"-"`
+	DefaultDurationTypePattern string                  `yaml:"-"`
+	DefaultFlagsPattern        string                  `yaml:"-"`
 }
 
 func (q AbstractQuota) GetName() string {
@@ -109,15 +138,41 @@ func (q AbstractQuota) Filter(from time.Time, history []AssignedRight, matchAssi
 	for _, rule := range rules {
 		// Iterate over all assigned rights in the history
 		for _, right := range history {
-			areaPattern := rule.ParkingAreaPattern
-			if areaPattern == "" {
-				areaPattern = q.DefaultAreaPattern
+
+			// Check if the assigned right tariffCode matches
+			tariffCodePattern := rule.TariffCodePattern
+			if tariffCodePattern == "" {
+				tariffCodePattern = q.DefaultTariffCodePattern
 			}
-			match, err := right.MatchParkingArea(areaPattern)
+			matchTariffCode, err := right.MatchTariffCode(tariffCodePattern)
 			if err != nil {
 				return err
 			}
+
+			// Check if the assigned right layerCode matches
+			layerCodePattern := rule.LayerCodePattern
+			if layerCodePattern == "" {
+				layerCodePattern = q.DefaultLayerCodePattern
+			}
+			matchLayerCode, err := right.MatchLayerCode(layerCodePattern)
+			if err != nil {
+				return err
+			}
+
+			// Check if the assigned right flags matches
+			flagsPattern := rule.FlagsPattern
+			if flagsPattern == "" {
+				flagsPattern = q.DefaultFlagsPattern
+			}
+			matchFlags, err := right.MatchFlags(flagsPattern)
+			if err != nil {
+				return err
+			}
+
 			// If set, call the Assigned Right callback
+			fmt.Println("Match", rule.String(), "TariffCode:", matchTariffCode, "LayerCode:", matchLayerCode, "Flags:", matchFlags)
+			// Check if all the matching rules match
+			match := matchTariffCode && matchLayerCode && matchFlags
 			if match && matchAssignedRightHandler != nil {
 				matchAssignedRightHandler(right)
 			}
@@ -125,9 +180,9 @@ func (q AbstractQuota) Filter(from time.Time, history []AssignedRight, matchAssi
 			if match && matchDurationDetailsHandler != nil {
 				typePattern := rule.DurationTypePattern
 				if typePattern == "" {
-					typePattern = q.DefaultTypePattern
+					typePattern = q.DefaultDurationTypePattern
 				}
-				for _, detail := range right.Details {
+				for _, detail := range right.DurationDetails {
 					match, err := globMatch(typePattern, string(detail.Type))
 					if err != nil {
 						return err
@@ -164,10 +219,12 @@ type DurationQuota struct {
 func NewDurationQuota(allowance time.Duration, period timeutils.RecurrentDate, rules []MatchingRule) *DurationQuota {
 	return &DurationQuota{
 		AbstractQuota: AbstractQuota{
-			MatchingRules:      rules,
-			PeriodicityRule:    period,
-			DefaultAreaPattern: "*",
-			DefaultTypePattern: string(FreeDuration),
+			MatchingRules:              rules,
+			PeriodicityRule:            period,
+			DefaultTariffCodePattern:   "*",
+			DefaultLayerCodePattern:    "*",
+			DefaultFlagsPattern:        "*",
+			DefaultDurationTypePattern: string(FreeDuration),
 		},
 		Allowance: allowance,
 	}
@@ -216,9 +273,12 @@ type CounterQuota struct {
 func NewCounterQuota(allowance int, period timeutils.RecurrentDate, rules []MatchingRule) *CounterQuota {
 	return &CounterQuota{
 		AbstractQuota: AbstractQuota{
-			MatchingRules:      rules,
-			PeriodicityRule:    period,
-			DefaultAreaPattern: "*",
+			MatchingRules:              rules,
+			PeriodicityRule:            period,
+			DefaultTariffCodePattern:   "*",
+			DefaultLayerCodePattern:    "*",
+			DefaultFlagsPattern:        "*",
+			DefaultDurationTypePattern: string(FreeDuration),
 		},
 		Allowance: allowance,
 	}
