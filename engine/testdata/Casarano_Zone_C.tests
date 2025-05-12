@@ -1,0 +1,35 @@
+# 4h of parking for 3.20€
+- name: Simple ticket
+  now: '2025-03-17T10:00:00'
+  tests:
+  - amount: 3.2
+    end: '2025-03-17T14:00:00'
+
+# 12 hours of parking for 9.60€
+- name: 2 days of parking
+  now: '2025-03-17T07:45:00'
+  tests:
+  - amount: 9.6
+    end: '2025-03-19T11:00:00'
+
+# 5 days of parking for 20€ paying parking start 18 at 09:00
+- name: 5 days of parking with late arrival
+  now: '2025-03-17T20:00:00'
+  tests:
+  - amount: 20.0
+    end: '2025-03-23T09:00:00'
+
+# 30 minutes of parking for 0.40€
+- name: 30 minutes early arrival
+  now: '2025-03-17T05:00:00'
+  tests:
+  - amount: 0.4
+    end: '2025-03-17T09:30:00'
+
+# One week of parking for 24€ paying parking start Sundy (non paying)
+- name: One week of parking with sunday arrival
+  now: '2025-03-16T19:00:00'
+  tests:
+  - amount: 24.0
+    end: '2025-03-24T09:00:00'
+

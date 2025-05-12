@@ -1,0 +1,35 @@
+# 15 minutes only, entirely free
+- name: short stay in morning only
+  now: '2025-04-15T08:30:00'
+  tests:
+  - amount: 0.0
+    end: '2025-04-15T08:45:00'
+
+# 30 min stay, 20 min free → 10 min charged
+- name: 30 minutes in morning
+  now: '2025-04-15T09:00:00'
+  tests:
+  - amount: 0.25
+    end: '2025-04-15T09:30:00'
+
+# 8h total minus 20 min free, capped at 7€
+- name: full day capped with free 20min
+  now: '2025-04-15T08:00:00'
+  tests:
+  - amount: 7.0
+    end: '2025-04-15T18:00:00'
+
+# 2 × 8h, 20min free only once, each day capped at 7€
+- name: 2 full days, capped per day, free 20min once
+  now: '2025-04-15T08:00:00'
+  tests:
+  - amount: 14.0
+    end: '2025-04-17T08:00:00'
+
+# stay ends after period, extended to next day 08:00
+- name: ticket ends after hours, extended to next period
+  now: '2025-04-15T16:00:00'
+  tests:
+  - amount: 2.5
+    end: '2025-04-16T08:00:00'
+

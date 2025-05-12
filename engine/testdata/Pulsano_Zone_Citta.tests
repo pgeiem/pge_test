@@ -1,0 +1,26 @@
+- name: Simple Winter ticket
+  now: '2025-03-17T07:00:00'
+  tests:
+  - amount: 2.5
+    end: '2025-03-17T11:30:00'
+
+# 2 day of parking with 3€/day flatrate
+- name: Winter 2 days
+  now: '2025-03-17T09:10:00'
+  tests:
+  - amount: 6.0
+    end: '2025-03-19T09:00:00'
+
+# Dunno if it will work because of forfait and tariff change
+- name: Winter x summer
+  now: '2025-05-31T17:00:00'
+  tests:
+  - amount: 6.0
+    end: '2025-06-01T17:00:00'
+
+- name: Summer x winter
+  now: '2025-08-31T23:00:00'
+  tests:
+  - amount: 3.0
+    end: '2025-09-01T11:00:00'
+

@@ -1,0 +1,28 @@
+# 4h of parking for 3.20€
+- name: Simple ticket
+  now: '2025-03-17T10:00:00'
+  tests:
+  - amount: 3.2
+    end: '2025-03-17T14:00:00'
+
+# 2 days parking for 16€
+- name: 2 days of parking
+  now: '2025-03-17T07:15:00'
+  tests:
+  - amount: 16.0
+    end: '2025-03-19T08:30:00'
+
+# 22.5 minutes of parking for 0.30€, min amount
+- name: Late arrival
+  now: '2025-03-17T17:45:00'
+  tests:
+  - amount: 0.3
+    end: '2025-03-17T18:00:00'
+
+# First hours (10:30-18:30) is charged at 6.20€, then Sunday is free, then 2 hours on Monday to end parking at 10:30.
+- name: Two days parking ticket with week end
+  now: '2025-03-15T10:30:00'
+  tests:
+  - amount: 8.0
+    end: '2025-03-17T10:30:00'
+

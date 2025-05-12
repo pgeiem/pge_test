@@ -1,0 +1,27 @@
+# 30 min tickets (min amount)
+- name: Min amount
+  now: '2025-03-17T07:00:00'
+  tests:
+  - amount: 0.5
+    end: '2025-03-17T07:30:00'
+
+# Max amount ticket 2 hours during summer
+- name: Max amount Summer
+  now: '2025-05-07T10:00:00'
+  tests:
+  - amount: 2.0
+    end: '2025-05-07T12:00:00'
+
+- name: Summer x winter
+  now: '2025-09-30T23:00:00'
+  tests:
+  - amount: 3.0
+    end: '2025-10-01T04:00:00'
+
+# 15 first hours during winter period and 2 hours during summer period
+- name: Winter x summer
+  now: '2025-03-31T05:00:00'
+  tests:
+  - amount: 17.0
+    end: '2025-04-01T08:00:00'
+

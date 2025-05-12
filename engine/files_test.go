@@ -10,12 +10,15 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
+type Tests struct {
+	Amount float64 `yaml:"amount"`
+	End    string  `yaml:"end"`
+}
+
 type TestCase struct {
-	Name        string  `yaml:"name"`
-	Description string  `yaml:"desc"`
-	Now         string  `yaml:"now"`
-	Amount      float64 `yaml:"amount"`
-	End         string  `yaml:"end"`
+	Name  string  `yaml:"name"`
+	Now   string  `yaml:"now"`
+	Tests []Tests `yaml:"tests"`
 }
 
 func fileNameWithoutExtension(fileName string) string {
@@ -33,7 +36,7 @@ func TestTariffs(t *testing.T) {
 		if filepath.Ext(file.Name()) == ".yaml" {
 			testName := fileNameWithoutExtension(file.Name())
 			tariffFile := filepath.Join(testDir, testName) + ".yaml"
-			testFile := filepath.Join(testDir, testName) + ".test"
+			testFile := filepath.Join(testDir, testName) + ".tests"
 
 			tariffDescr, err := os.ReadFile(tariffFile)
 			if err != nil {
@@ -60,17 +63,20 @@ func TestTariffs(t *testing.T) {
 					if err != nil {
 						t.Errorf("failed to parse now time: %v", err)
 					}
-					end, err := time.ParseInLocation("2006-01-02T15:04:05", testCase.End, time.Local)
-					if err != nil {
-						t.Errorf("failed to parse end time: %v", err)
-					}
-					if end.Before(now) {
-						t.Errorf("invalid test case, end time is before now time: %v < %v", end, now)
-					}
-					out := tariff.Compute(now, []AssignedRight{})
-					amount := out.AmountForDuration(end.Sub(now))
-					if amount.Simplify() != Amount(testCase.Amount) {
-						t.Errorf("Amount mismatch: got %f, expected %f", amount.Simplify(), testCase.Amount)
+
+					for _, test := range testCase.Tests {
+						end, err := time.ParseInLocation("2006-01-02T15:04:05", test.End, time.Local)
+						if err != nil {
+							t.Errorf("failed to parse end time: %v", err)
+						}
+						if end.Before(now) {
+							t.Errorf("invalid test case, end time is before now time: %v < %v", end, now)
+						}
+						out := tariff.Compute(now, []AssignedRight{})
+						amount := out.AmountForDuration(end.Sub(now))
+						if amount.Simplify() != Amount(test.Amount) {
+							t.Errorf("Amount mismatch: got %f, expected %f", amount.Simplify(), test.Amount)
+						}
 					}
 				})
 			}

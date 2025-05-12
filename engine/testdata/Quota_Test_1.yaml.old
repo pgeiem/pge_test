@@ -1,0 +1,27 @@
+version: "0.1"
+config:
+  window: 5d
+quotas:
+- duration:
+    name: "plop"
+    periodicity: duration(4h)
+    allowance: 2h10m
+    matching:
+    - area: z*
+      type: paying
+    - area: t*
+      type: nonpaying
+
+sequences:
+- name: "BC01"
+  rules:
+  - fixedrate:
+      name: "minamount"
+      duration: 42m
+      amount: 0.70
+      quota: "plop"
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 1.0
+      duration: 10h
+      quota: "plop"
