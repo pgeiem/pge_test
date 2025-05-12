@@ -82,7 +82,7 @@ func ParseTariffDefinition(data []byte) (TariffDefinition, error) {
 			return tariff, fmt.Errorf("failed to parse quotas section: %w", err)
 		}
 	}
-	ctx = context.WithValue(ctx, "quotas", tariff.Quotas) //TODO use a proper context key
+	ctx = ContextSetQuota(ctx, tariff.Quotas)
 
 	// Decode the sequences section
 	if desc.Sequences == nil {

@@ -95,6 +95,8 @@ func (m MatchingRules) String() string {
 type Quota interface {
 	GetName() string
 	Update(now time.Time, history []AssignedRight) error
+	IsExausted() bool
+	UseDuration(duration time.Duration) time.Duration
 	String() string
 }
 
@@ -117,7 +119,7 @@ func (q AbstractQuota) GetName() string {
 func SelectReferenceTime(rule MatchingRule, detail DurationDetail, right AssignedRight) time.Time {
 	reftime := detail.Start
 	if reftime.IsZero() {
-		reftime = right.Start
+		reftime = right.StartDate
 	}
 	return reftime
 }
@@ -258,6 +260,18 @@ func (q *DurationQuota) Used() time.Duration {
 	return q.used
 }
 
+func (q *DurationQuota) IsExausted() bool {
+	return q.Available() <= 0
+}
+
+func (q *DurationQuota) UseDuration(duration time.Duration) time.Duration {
+	if duration > q.Available() {
+		duration = q.Available()
+	}
+	q.used += duration
+	return duration
+}
+
 // Stringer for DurationQuota, print the name and the used/allowed values
 func (q DurationQuota) String() string {
 	return fmt.Sprintf("DurationQuota(%s): Usage %s/%s %v", q.Name, q.used, q.Allowance, q.AbstractQuota)
@@ -310,6 +324,14 @@ func (q *CounterQuota) Available() int {
 
 func (q *CounterQuota) Used() int {
 	return q.used
+}
+
+func (q *CounterQuota) IsExausted() bool {
+	return q.Available() <= 0
+}
+
+func (q *CounterQuota) UseDuration(duration time.Duration) time.Duration {
+	return duration
 }
 
 // Stringer for CounterQuota, print the name and the used/allowed values
@@ -371,3 +393,30 @@ func (qi *QuotaInventory) UnmarshalYAML(ctx context.Context, unmarshal func(inte
 	}
 	return nil
 }
+
+/*
+type ParsableQuota struct {
+	Quota Quota
+}
+
+func (q *ParsableQuota) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	temp := struct {
+		QuotaName string `yaml:"quota"`
+	}{}
+
+	// Unmarshal the quota into a temp struct
+	// dont check the error, as we we are interested only by the quota name
+	unmarshal(&temp)
+
+	// Search the coresponding quota
+	fmt.Println(">>>>>> Quota name:", temp.QuotaName)
+	// Get the quota from the context
+	quota, exists := ContextGetQuotaByName(ctx, temp.QuotaName)
+	if !exists {
+		return fmt.Errorf("unknown quota: %s", temp.QuotaName)
+	}
+	q.Quota = quota
+
+	return nil
+}
+*/

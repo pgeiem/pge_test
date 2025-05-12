@@ -46,11 +46,11 @@ func (ts TariffSequence) Solve(now time.Time, window time.Duration, globalNonpay
 	ts.Solver.SetWindow(now, window)
 	// Append first all global nonpaying rules...
 	for i := range globalNonpaying {
-		globalNonpaying[i].ToSolverRules(now, now.Add(window), ts.Solver.AppendByValue)
+		globalNonpaying[i].ToSolverRules(now, now.Add(window), ts.Solver.Append)
 	}
 	// ... then the sequence rules
 	for i := range ts.Rules {
-		ts.Rules[i].ToSolverRules(now, now.Add(window), ts.Solver.AppendByValue)
+		ts.Rules[i].ToSolverRules(now, now.Add(window), ts.Solver.Append)
 	}
 	ts.Solver.Solve()
 }
@@ -163,12 +163,8 @@ func (out *TariffSequenceInventory) UnmarshalYAML(ctx context.Context, unmarshal
 
 		// Search the coresponding quota
 		if n.Quota != "" {
-			quotas, ok := ctx.Value("quotas").(QuotaInventory)
-			if !ok {
-				return fmt.Errorf("quotas not found in context")
-			}
-
-			quota, exists := quotas[n.Quota]
+			// Get the quota from the context
+			quota, exists := ContextGetQuotaByName(ctx, n.Quota)
 			if !exists {
 				return fmt.Errorf("unknown quota: %s", n.Quota)
 			}

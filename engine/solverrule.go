@@ -76,6 +76,8 @@ type SolverRule struct {
 	Meta MetaData
 	// DurationType defines the type of duration for each rules, this is required to build duration details in the output
 	DurationType DurationType
+	// Quota is the optional quota associated with the rule.
+	Quota Quota
 }
 
 // Define a collection of solver rule
@@ -186,6 +188,10 @@ func (rule SolverRule) IsAbsoluteFlatRate() bool {
 
 func (rule SolverRule) IsRelative() bool {
 	return rule.StartTimePolicy == ShiftablePolicy
+}
+
+func (rule SolverRule) IsEmpty() bool {
+	return rule.From == 0 && rule.To == 0
 }
 
 func (rule SolverRule) Name() string {
