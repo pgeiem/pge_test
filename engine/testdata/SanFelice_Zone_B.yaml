@@ -1,38 +1,36 @@
 version: "0.1"
 config:
-  window: 30d
+    window: 30d
 
 sequences:
-- name: "SFEB"
-  start: pattern(04/01 00:00)
-  end: pattern(10/01 00:00)
-  rules:
-  - nonpaying:
-      name: "night"
-      start: pattern(*/* 02:00)
-      end: pattern(*/* 08:00)
-  - fixedrate:
-      name: "minamount"
-      duration: 30m
-      amount: 0.50
-  - linear:
-      name: "hourlyrate"
-      hourlyrate: 1.0
-      duration: 30d
+    - name: "SFEB"
+      start: pattern(04/01 00:00)
+      end: pattern(10/01 00:00)
+      rules:
+          - nonpaying:
+                name: "night"
+                start: pattern(*/* 02:00)
+                end: pattern(*/* 08:00)
+          - fixedrate:
+                name: "minamount"
+                duration: 30m
+                amount: 0.50
+          - linear:
+                name: "hourlyrate"
+                hourlyrate: 1.0
+                duration: 30d
 
-- name: "SFIB"
-  start: pattern(10/01 00:00)
-  end: pattern(04/01 00:00)
-  rules:
-  - nonpaying:
-      name: "night"
-      start: pattern(*/* 20:00)
-      end: pattern(*/* 02:00)
-  - fixedrate:
-      name: "minamount"
-      duration: 30m
-      amount: 0.50
-  - linear:
-      name: "hourlyrate"
-      hourlyrate: 1.0
-      duration: 30d
+    - name: "SFIB"
+      rules:
+          - nonpaying:
+                name: "night"
+                start: pattern(*/* 20:00)
+                end: pattern(*/* 02:00)
+          - fixedrate:
+                name: "minamount"
+                duration: 30m
+                amount: 0.50
+          - linear:
+                name: "hourlyrate"
+                hourlyrate: 1.0
+                duration: 30d
