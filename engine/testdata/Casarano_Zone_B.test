@@ -1,25 +1,59 @@
-- name: "Simple ticket"
-  now: 2025-03-17T10:00:00
-  desc: "4h of parking for 3.20€"
-  end: 2025-03-17T17:00:00
-  amount: 3.20
-- name: "2 days of parking"
-  now: 2025-03-17T07:15:00
-  desc: "17 hours of parking for 13.60€"
-  end: 2025-03-19T10:00:00
-  amount: 13.60
-- name: "Late arrival"
-  now: 2025-03-17T20:45:00
-  desc: "30 minutes of parking for 0.40€, night is free so ticket ends the day after at 09:00."
-  end: 2025-03-18T09:22:30
+- name: "Minimum charge (morning winter)"
+  now: 2025-02-10T09:00:00
+  end: 2025-02-10T09:22:30
+  desc: "Exactly 22m30s during CRBI morning chargeable period"
   amount: 0.30
-- name: "Two days parking ticket with week end"
-  now: 2025-03-15T10:30:00
-  desc: "First hours (10:30-13:00/17:00-21:00 = 6h30), then Sunday is free, then 1 hour and 30 minutes on Monday to end parking at 10:30."
-  end: 2025-03-17T10:30:00
+
+- name: "2 hours in afternoon (winter)"
+  now: 2025-02-10T16:00:00
+  end: 2025-02-10T18:00:00
+  desc: "2h in chargeable window after lunch in CRBI"
+  amount: 1.60
+
+- name: "Full winter chargeable day"
+  now: 2025-02-10T09:00:00
+  end: 2025-02-10T20:00:00
+  desc: "09:00–13:00 and 16:00–20:00 = 8h charged"
   amount: 6.40
-- name: "winter to summer"
-  now: 2025-05-31T14:00:00
-  desc: ""
-  end: 2025-06-02T18:00:00
-  amount: 7.20
+
+- name: "Minimum charge (evening summer)"
+  now: 2025-07-10T17:00:00
+  end: 2025-07-10T17:22:30
+  desc: "Exactly 22m30s during CRBE evening chargeable period"
+  amount: 0.30
+
+- name: "3 hours in morning (summer)"
+  now: 2025-07-10T09:00:00
+  end: 2025-07-10T12:00:00
+  desc: "3h in chargeable period before lunch"
+  amount: 2.40
+
+- name: "Full summer chargeable day"
+  now: 2025-07-10T09:00:00
+  end: 2025-07-10T21:00:00
+  desc: "09:00–13:00 and 17:00–21:00 = 8h charged"
+  amount: 6.40
+
+- name: "Sunday full day (free)"
+  now: 2025-07-13T08:00:00
+  end: 2025-07-13T22:00:00
+  desc: "All day Sunday is non-paying"
+  amount: 0.00
+
+- name: "Max amount reached across 2 days"
+  now: 2025-07-10T09:00:00
+  end: 2025-07-11T11:00:00
+  desc: "More than 10 chargeable hours → capped at €8.00"
+  amount: 8.00
+
+- name: "Winter x summer"
+  now: 2025-05-31T18:00:00
+  end: 2025-06-02T11:00:00
+  desc: "More than 10 chargeable hours → capped at €8.00"
+  amount: 3.20 
+
+- name: "Summer x winter"
+  now: 2025-08-30T17:00:00
+  end: 2025-09-01T12:00:00
+  desc: "august 31 its sunday, so 7 hours of parking"
+  amount: 5.60    
