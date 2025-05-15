@@ -85,11 +85,11 @@ func testSingleTariff(t *testing.T, path string, tariffDescr []byte, testCases [
 
 			tariff, err := ParseTariffDefinition(tariffDescr)
 			if err != nil {
-				t.Errorf("failed to parse tariff definition: %v", err)
+				t.Fatalf("failed to parse tariff definition: %v", err)
 			}
 			now, err := time.ParseInLocation("2006-01-02T15:04:05", testCase.Now, time.Local)
 			if err != nil {
-				t.Errorf("failed to parse now time: %v", err)
+				t.Fatalf("failed to parse now time: %v", err)
 			}
 
 			// Load parking right history if specified
@@ -109,10 +109,10 @@ func testSingleTariff(t *testing.T, path string, tariffDescr []byte, testCases [
 			for _, test := range testCase.Tests {
 				end, err := time.ParseInLocation("2006-01-02T15:04:05", test.End, time.Local)
 				if err != nil {
-					t.Errorf("failed to parse end time: %v", err)
+					t.Fatalf("failed to parse end time: %v", err)
 				}
 				if end.Before(now) {
-					t.Errorf("invalid test case, end time is before now time: %v < %v", end, now)
+					t.Fatalf("invalid test case, end time is before now time: %v < %v", end, now)
 				}
 				amount := table.AmountForDuration(end.Sub(now))
 				if amount.Simplify() != Amount(test.Amount) {
