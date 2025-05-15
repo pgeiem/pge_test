@@ -1,0 +1,39 @@
+version: "0.1"
+config:
+  window: 30d
+  maxamount: 9.00
+nonpaying:
+  - name: "night"
+    start: pattern(*/* 20:00)
+    end: pattern(*/* 08:00)
+sequences:
+  - name: "SRTB"
+    rules:
+      - fixedrate:
+          name: "minamount"
+          duration: 6m
+          amount: 0.10
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.00
+          duration: 2h54m
+      - fixedrate:
+          name: "4 hours"
+          duration: 1h
+          amount: 0.00
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.00
+          duration: 2h54m
+      - fixedrate:
+          name: "8 hours"
+          duration: 1h
+          amount: 0.00
+      - linear:
+          name: "hourlyrate"
+          hourlyrate: 1.00
+          duration: 2h54m
+      - fixedrate:
+          name: "12 hours"
+          duration: 1h
+          amount: 0.00

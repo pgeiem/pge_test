@@ -1,0 +1,36 @@
+- name: "Winter Min amount"
+  now: 2025-03-05T08:00:00
+  end: 2025-03-05T08:30:00
+  desc: ""
+  amount: 0.50
+
+- name: "Winter max amount"
+  now: 2025-03-05T09:00:00
+  end: 2025-03-07T10:00:00
+  desc: ""
+  amount: 25.00
+
+- name: "Summer Min amount"
+  now: 2025-07-08T08:00:00
+  end: 2025-07-08T08:30:00
+  desc: ""
+  amount: 0.50
+
+- name: "Summer with 6h pay"
+  now: 2025-07-08T00:00:00
+  end: 2025-07-08T08:00:00
+  desc: "2h payées de 00:00 à 02:00"
+  amount: 2.00
+
+- name: "Winter to Summer"
+  now: 2025-03-31T19:00:00
+  end: 2025-04-01T10:00:00
+  desc: "1h payante en hiver, 4h payantes en été (00:00–02:00 et 08:00–10:00)"
+  amount: 5.00
+
+- name: "Summer to Winter"
+  now: 2025-09-30T01:00:00
+  end: 2025-10-01T10:00:00
+  desc: "1h + 16h payées en été, 2h payées en hiver"
+  amount: 19.00
+
