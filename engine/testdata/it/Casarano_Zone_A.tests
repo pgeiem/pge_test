@@ -1,28 +1,49 @@
-# 4h of parking for 3.20€
-- name: Simple ticket
-  now: '2025-03-17T10:00:00'
-  tests:
-  - amount: 3.2
-    end: '2025-03-17T14:00:00'
-
-# 2 days parking for 16€
-- name: 2 days of parking
-  now: '2025-03-17T07:15:00'
-  tests:
-  - amount: 16.0
-    end: '2025-03-19T08:30:00'
-
-# 22.5 minutes of parking for 0.30€, min amount
-- name: Late arrival
-  now: '2025-03-17T17:45:00'
+# Exactly 22m30s during a paying period
+- name: Minimum charge
+  now: '2025-04-08T08:30:00'
   tests:
   - amount: 0.3
-    end: '2025-03-17T18:00:00'
+    end: '2025-04-08T08:52:30'
 
-# First hours (10:30-18:30) is charged at 6.20€, then Sunday is free, then 2 hours on Monday to end parking at 10:30.
-- name: Two days parking ticket with week end
-  now: '2025-03-15T10:30:00'
+# 30 minutes within a chargeable window, exceeds minimum
+- name: 30-minute charge
+  now: '2025-04-08T08:30:00'
+  tests:
+  - amount: 0.4
+    end: '2025-04-08T09:00:00'
+
+# 5 hours at €0.80/h = €4.00
+- name: 5 hours charged
+  now: '2025-04-08T08:30:00'
+  tests:
+  - amount: 4.0
+    end: '2025-04-08T13:30:00'
+
+# 10 consecutive chargeable hours on same day
+- name: Max charge reached (10h)
+  now: '2025-04-08T08:30:00'
   tests:
   - amount: 8.0
-    end: '2025-03-17T10:30:00'
+    end: '2025-04-08T18:30:00'
+
+# Entire Sunday is non-paying
+- name: Full Sunday (free)
+  now: '2025-04-13T08:00:00'
+  tests:
+  - amount: 0.0
+    end: '2025-04-13T18:00:00'
+
+# Fully within the night non-paying window
+- name: Full night (free)
+  now: '2025-04-08T18:30:00'
+  tests:
+  - amount: 0.0
+    end: '2025-04-09T08:30:00'
+
+# 30min charged before night (0.40 €) + 1h charged next morning (0.80 €)
+- name: Night then morning charge
+  now: '2025-04-08T18:00:00'
+  tests:
+  - amount: 1.2
+    end: '2025-04-09T09:30:00'
 

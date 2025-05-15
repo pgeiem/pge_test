@@ -23,3 +23,15 @@
   - amount: 3.0
     end: '2025-07-28T11:12:00'
 
+- name: winter free
+  now: '2025-12-04T15:00:00'
+  tests:
+  - amount: 0.0
+    end: '2025-12-06T18:00:00'
+
+- name: winter to summer
+  now: '2025-05-31T15:00:00'
+  tests:
+  - amount: 2.0
+    end: '2025-06-01T11:00:00'
+

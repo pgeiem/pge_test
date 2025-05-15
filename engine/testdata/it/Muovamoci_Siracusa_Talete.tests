@@ -1,0 +1,42 @@
+# Exactly 1 hour = min fixed rate
+- name: Minimum charge
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 1.5
+    end: '2025-06-03T09:00:00'
+
+# 3 × 1.50 €/h = 4.50 €
+- name: 3 hours linear
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 4.5
+    end: '2025-06-03T11:00:00'
+
+# Max linear before day rate: 9 × 1.50 € = 13.50 €
+- name: 9 hours linear max
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 13.5
+    end: '2025-06-03T17:00:00'
+
+# 24h
+- name: 1 day of parking
+  now: '2025-06-03T11:00:00'
+  tests:
+  - amount: 15.0
+    end: '2025-06-04T11:00:00'
+
+# 48h
+- name: 2 days of parking
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 30.0
+    end: '2025-06-05T08:00:00'
+
+# 72h
+- name: 3 day of parking
+  now: '2025-06-03T14:30:00'
+  tests:
+  - amount: 45.0
+    end: '2025-06-06T14:30:00'
+

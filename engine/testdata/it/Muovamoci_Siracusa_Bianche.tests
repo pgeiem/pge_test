@@ -1,0 +1,70 @@
+# Exactly 6 minutes = 0.10 €
+- name: Minimum charge (6 minutes)
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 0.1
+    end: '2025-06-03T08:06:00'
+
+# Over 6min, falls into linear zone: 0.25 €
+- name: 15 minutes
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 0.25
+    end: '2025-06-03T08:15:00'
+
+# 0.10 € for 6min + 2h54min charged = 3.00 €
+- name: First block fully charged
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 3.0
+    end: '2025-06-03T11:00:00'
+
+# First paid block + 1h free = still 3.00 €
+- name: First free hour included
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 3.0
+    end: '2025-06-03T11:54:00'
+
+# Second linear block of 2h54min starts after 1h free
+- name: Second paid block starts
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 5.9
+    end: '2025-06-03T14:54:00'
+
+# 5.90 € unchanged due to second free hour
+- name: Second free hour included
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 5.9
+    end: '2025-06-03T15:48:00'
+
+# Final linear block of 2h54min after second 1h free
+- name: Third paid block starts
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 8.8
+    end: '2025-06-03T18:48:00'
+
+# Still 8.80 € thanks to 12th hour being free
+- name: Third free hour included
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 8.8
+    end: '2025-06-03T19:42:00'
+
+# Total paid time hits 8.80 €, below max cap
+- name: Capped at max amount
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 8.8
+    end: '2025-06-03T19:00:00'
+
+# Night time only = free
+- name: Fully in night (free)
+  now: '2025-06-03T20:00:00'
+  tests:
+  - amount: 0.0
+    end: '2025-06-04T08:00:00'
+

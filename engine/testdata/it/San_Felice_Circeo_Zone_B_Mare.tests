@@ -1,0 +1,36 @@
+- name: 'Winter Min amount '
+  now: '2025-03-05T08:00:00'
+  tests:
+  - amount: 0.5
+    end: '2025-03-05T08:30:00'
+
+- name: Winter max amount
+  now: '2025-03-05T09:00:00'
+  tests:
+  - amount: 25.0
+    end: '2025-03-07T10:00:00'
+
+- name: 'Summer Min amount '
+  now: '2025-07-08T09:00:00'
+  tests:
+  - amount: 0.5
+    end: '2025-07-08T09:30:00'
+
+- name: Summer Max parking
+  now: '2025-07-08T01:00:00'
+  tests:
+  - amount: 2.0
+    end: '2025-07-08T09:00:00'
+
+- name: Winter to Summer
+  now: '2025-03-31T19:00:00'
+  tests:
+  - amount: 4.0
+    end: '2025-04-01T10:00:00'
+
+- name: Summer to Winter
+  now: '2025-09-30T18:00:00'
+  tests:
+  - amount: 11.0
+    end: '2025-10-01T17:00:00'
+
