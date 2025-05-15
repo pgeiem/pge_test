@@ -21,7 +21,7 @@ func TestQuota_Update(t *testing.T) {
 		now              time.Time
 		matchingRules    []MatchingRule
 		periodicityRule  timeutils.RecurrentDate
-		history          []AssignedRight
+		history          AssignedRights
 		expectedDuration time.Duration
 		expectedCounter  int
 		expectedError    bool
@@ -33,9 +33,9 @@ func TestQuota_Update(t *testing.T) {
 				{LayerCodePattern: "area1", DurationTypePattern: "free"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					LayerCode: []string{"area1"},
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
 					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 10, 4, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 						{Type: PayingDuration, Start: time.Date(2023, 10, 9, 12, 30, 0, 0, time.Local), Duration: 2 * time.Hour},
@@ -65,24 +65,24 @@ func TestQuota_Update(t *testing.T) {
 				{LayerCodePattern: "area*", DurationTypePattern: "free"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(2d)"),
-			history: []AssignedRight{
-				{
-					LayerCode: []string{"area1"},
-					StartDate: time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
+					StartDate:  time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
 					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Duration: 2 * time.Hour},
 					},
 				},
-				{
-					LayerCode: []string{"area2"},
-					StartDate: time.Date(2023, 10, 3, 0, 0, 0, 0, time.Local),
+				AssignedRight{
+					LayerCodes: []string{"area2"},
+					StartDate:  time.Date(2023, 10, 3, 0, 0, 0, 0, time.Local),
 					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Duration: 3 * time.Hour},
 					},
 				},
-				{
-					LayerCode: []string{"area3"},
-					StartDate: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+				AssignedRight{
+					LayerCodes: []string{"area3"},
+					StartDate:  time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Duration: 3 * time.Hour},
 					},
@@ -97,10 +97,10 @@ func TestQuota_Update(t *testing.T) {
 			now:             time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 			matchingRules:   []MatchingRule{},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					LayerCode: []string{"area1"},
-					StartDate: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
+					StartDate:  time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 					DurationDetails: []DurationDetail{
 						{Type: PayingDuration, Duration: 1 * time.Hour},
 						{Type: FreeDuration, Duration: 2 * time.Hour},
@@ -118,9 +118,9 @@ func TestQuota_Update(t *testing.T) {
 				{LayerCodePattern: "area*", DurationTypePattern: "free"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					LayerCode: []string{"area1"},
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
 					DurationDetails: []DurationDetail{
 						{Type: PayingDuration, Duration: 1 * time.Hour},
 						{Type: FreeDuration, Duration: 2 * time.Hour},
@@ -138,16 +138,16 @@ func TestQuota_Update(t *testing.T) {
 				{LayerCodePattern: "area*", DurationTypePattern: "free"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					LayerCode: []string{"area1"},
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
 					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 						{Type: PayingDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 2 * time.Hour},
 					},
 				},
-				{
-					LayerCode: []string{"area2"},
+				AssignedRight{
+					LayerCodes: []string{"area2"},
 					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 4 * time.Hour},
 						{Type: PayingDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 8 * time.Hour},
@@ -166,9 +166,9 @@ func TestQuota_Update(t *testing.T) {
 				{LayerCodePattern: "area1", DurationTypePattern: "free"},
 			},
 			periodicityRule: mustParseRecurrentDate("pattern(*/*/* MON 12:00:00)"),
-			history: []AssignedRight{
-				{
-					LayerCode: []string{"area1"},
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
 					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 13, 0, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 						{Type: FreeDuration, Start: time.Date(2023, 10, 9, 12, 0, 0, 0, time.Local), Duration: 2 * time.Hour},
@@ -188,15 +188,15 @@ func TestQuota_Update(t *testing.T) {
 				{LayerCodePattern: "area2", DurationTypePattern: "free"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					LayerCode: []string{"area1"},
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
 					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 					},
 				},
-				{
-					LayerCode: []string{"area3", "area2"},
+				AssignedRight{
+					LayerCodes: []string{"area3", "area2"},
 					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 2 * time.Hour},
 					},
@@ -213,9 +213,9 @@ func TestQuota_Update(t *testing.T) {
 				{LayerCodePattern: "area1", DurationTypePattern: "free*"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					LayerCode: []string{"area1"},
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
 					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 2 * time.Hour},
@@ -235,17 +235,17 @@ func TestQuota_Update(t *testing.T) {
 				{LayerCodePattern: "area2", DurationTypePattern: "paying"},
 			},
 			periodicityRule: mustParseRecurrentDate("pattern(*/*/* 12:00:00)"),
-			history: []AssignedRight{
-				{
-					LayerCode: []string{"area1"},
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
 					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 13, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 						{Type: PayingDuration, Start: time.Date(2023, 10, 1, 14, 0, 0, 0, time.Local), Duration: 2 * time.Hour},
 					},
 				},
-				{
-					LayerCode: []string{"area4", "area2"},
-					StartDate: time.Date(2023, 10, 1, 15, 0, 0, 0, time.Local),
+				AssignedRight{
+					LayerCodes: []string{"area4", "area2"},
+					StartDate:  time.Date(2023, 10, 1, 15, 0, 0, 0, time.Local),
 					DurationDetails: []DurationDetail{
 						{Type: PayingDuration, Duration: 4 * time.Hour},
 						{Type: FreeDuration, Duration: 8 * time.Hour},
@@ -264,9 +264,9 @@ func TestQuota_Update(t *testing.T) {
 				{LayerCodePattern: "]", DurationTypePattern: "free"},
 			},
 			periodicityRule: mustParseRecurrentDate("pattern(*/*/* 12:00:00)"),
-			history: []AssignedRight{
-				{
-					LayerCode:       []string{"area1"},
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes:      []string{"area1"},
 					DurationDetails: []DurationDetail{},
 				},
 			},
@@ -281,9 +281,9 @@ func TestQuota_Update(t *testing.T) {
 				{LayerCodePattern: "*", DurationTypePattern: "]"},
 			},
 			periodicityRule: mustParseRecurrentDate("pattern(*/*/* 12:00:00)"),
-			history: []AssignedRight{
-				{
-					LayerCode:       []string{"area1"},
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes:      []string{"area1"},
 					DurationDetails: []DurationDetail{},
 				},
 			},
@@ -297,7 +297,7 @@ func TestQuota_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Test the duration quota
-			durationQuota := NewDurationQuota(time.Duration(0), tt.periodicityRule, tt.matchingRules)
+			durationQuota := NewDurationQuota("TestDurationQuota", time.Duration(0), tt.periodicityRule, tt.matchingRules)
 			err := durationQuota.Update(tt.now, tt.history)
 			if (err != nil) != tt.expectedError {
 				t.Fatalf("expected error %v, got %v", tt.expectedError, err)
@@ -308,7 +308,7 @@ func TestQuota_Update(t *testing.T) {
 			}
 
 			// Tests the counter quota
-			counterQuota := NewCounterQuota(0, tt.periodicityRule, tt.matchingRules)
+			counterQuota := NewCounterQuota("TestCounterQuota", 0, tt.periodicityRule, tt.matchingRules)
 			err = counterQuota.Update(tt.now, tt.history)
 			if tt.expectedError {
 				t.Fatalf("expected error %v, got %v", tt.expectedError, err)

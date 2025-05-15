@@ -24,7 +24,7 @@ func DefaultConfig() TariffConfig {
 	}
 }
 
-func (td TariffDefinition) Compute(now time.Time, history []AssignedRight) Output {
+func (td TariffDefinition) Compute(now time.Time, history AssignedRights) Output {
 
 	now = now.Local().Truncate(time.Second)
 	fmt.Println("Now is", now)

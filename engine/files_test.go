@@ -16,9 +16,10 @@ type Tests struct {
 }
 
 type TestCase struct {
-	Name  string  `yaml:"name"`
-	Now   string  `yaml:"now"`
-	Tests []Tests `yaml:"tests"`
+	Name    string  `yaml:"name"`
+	Now     string  `yaml:"now"`
+	History string  `yaml:"history"`
+	Tests   []Tests `yaml:"tests"`
 }
 
 func fileNameWithoutExtension(fileName string) string {
@@ -69,17 +70,19 @@ func TestTariffs(t *testing.T) {
 						t.Fatalf("failed to unmarshal yaml data: %v", err)
 					}
 
-					testSingleTariff(t, tariffDescr, testCases)
+					testSingleTariff(t, path, tariffDescr, testCases)
 				})
 			}
 		})
 	}
 }
 
-func testSingleTariff(t *testing.T, tariffDescr []byte, testCases []TestCase) {
+func testSingleTariff(t *testing.T, path string, tariffDescr []byte, testCases []TestCase) {
 	// Iterate over each test case
+
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
+
 			tariff, err := ParseTariffDefinition(tariffDescr)
 			if err != nil {
 				t.Errorf("failed to parse tariff definition: %v", err)
@@ -88,6 +91,19 @@ func testSingleTariff(t *testing.T, tariffDescr []byte, testCases []TestCase) {
 			if err != nil {
 				t.Errorf("failed to parse now time: %v", err)
 			}
+
+			// Load parking right history if specified
+			var history AssignedRights
+			if testCase.History != "" {
+				filename := filepath.Join(path, testCase.History)
+				history, err = LoadHistoryFromFile(filename)
+				if err != nil {
+					t.Fatalf("failed to load history from file: %v", err)
+				}
+			}
+
+			// Compute the tariff table
+			table := tariff.Compute(now, history)
 
 			// Iterate over each test in the test case
 			for _, test := range testCase.Tests {
@@ -98,12 +114,19 @@ func testSingleTariff(t *testing.T, tariffDescr []byte, testCases []TestCase) {
 				if end.Before(now) {
 					t.Errorf("invalid test case, end time is before now time: %v < %v", end, now)
 				}
-				out := tariff.Compute(now, []AssignedRight{})
-				amount := out.AmountForDuration(end.Sub(now))
+				amount := table.AmountForDuration(end.Sub(now))
 				if amount.Simplify() != Amount(test.Amount) {
 					t.Errorf("Amount mismatch: got %f, expected %f", amount.Simplify(), test.Amount)
 				}
 			}
 		})
 	}
+}
+
+func LoadHistoryFromFile(filename string) (AssignedRights, error) {
+	historyData, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return NewAssignedRightHistoryFromYAML(historyData)
 }
