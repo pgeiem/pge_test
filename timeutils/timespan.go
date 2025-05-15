@@ -159,7 +159,6 @@ func (rs *RecurrentTimeSpan) BetweenIterator(from, to time.Time, iterator func(A
 			fmt.Println("Error when unrolling RRule:", err)
 			break
 		}
-		fmt.Println("segment", segment, "now", now)
 		if segment.Start.IsZero() || segment.Start.After(to) {
 			break
 		}
