@@ -355,6 +355,10 @@ func (q *CounterQuota) IsExausted() bool {
 }
 
 func (q *CounterQuota) UseDuration(duration time.Duration) time.Duration {
+	if q.Available() <= 0 {
+		duration = 0
+	}
+	q.used++
 	return duration
 }
 
