@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -13,22 +14,38 @@ import (
 
 // DurationDetail represents the details of a parking duration
 type DurationDetail struct {
-	Type     DurationType  `yaml:"type"`     // Type of the duration (Free, Paid, etc.)
-	Start    time.Time     `yaml:"start"`    // Start date of the duration (used for advanced quota types)
-	Duration time.Duration `yaml:"duration"` // Duration of the parking
+	Type     DurationType  // Type of the duration (Free, Paid, etc.)
+	Start    time.Time     // Start date of the duration (used for advanced quota types)
+	Duration time.Duration // Duration of the parking
 }
 
 // AssignedRight represents the parking assigned rights (a ticket)
 type AssignedRight struct {
-	TariffCode      string           `yaml:"tariffCode"`      // Identifier of the tariff
-	Flags           []string         `yaml:"flags"`           // list of flags of parking assigned rights (such as PMR, etc.)
-	LayerCode       string           `yaml:"layerCode"`       // Zone code
-	LayerCodes      []string         `yaml:"layerCodes"`      // Zone codes
-	StartDate       time.Time        `yaml:"startDate"`       // Start date of the parking assigned right
-	DurationDetails []DurationDetail `yaml:"durationDetails"` // List of duration details
+	TariffCode      string           `json:"tariffCode"`      // Identifier of the tariff
+	Flags           []string         `json:"flags"`           // list of flags of parking assigned rights (such as PMR, etc.)
+	LayerCode       string           `json:"layerCode"`       // Zone code
+	LayerCodes      []string         `json:"layerCodes"`      // Zone codes
+	StartDate       time.Time        `json:"startDate"`       // Start date of the parking assigned right
+	DurationDetails []DurationDetail `json:"durationDetails"` // List of duration details
 }
 
 type AssignedRights []AssignedRight
+
+func (dd *DurationDetail) UnmarshalJSON(data []byte) error {
+	var temp struct {
+		Type     DurationType `json:"type"`
+		Start    time.Time    `json:"start"`
+		Duration int          `json:"duration"` //Duration as seconds
+	}
+	err := yaml.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	dd.Type = temp.Type
+	dd.Start = temp.Start
+	dd.Duration = time.Duration(temp.Duration) * time.Second
+	return nil
+}
 
 func (ar AssignedRight) MatchLayerCode(pattern string) (bool, error) {
 	if len(ar.LayerCodes) == 0 {
@@ -66,10 +83,10 @@ func (ar AssignedRight) MatchTariffCode(pattern string) (bool, error) {
 	return globMatch(pattern, ar.TariffCode)
 }
 
-// LoadAssignedRights loads the assigned rights from a JSON/YAML payload
-func NewAssignedRightHistoryFromYAML(data []byte) (AssignedRights, error) {
+// LoadAssignedRights loads the assigned rights from a JSON payload
+func LoadAssignedRightHistoryFromJSON(data []byte) (AssignedRights, error) {
 	var history AssignedRights
-	err := yaml.Unmarshal(data, &history)
+	err := json.Unmarshal(data, &history)
 	if err != nil {
 		return nil, err
 	}
@@ -424,30 +441,3 @@ func (qi *QuotaInventory) UnmarshalYAML(ctx context.Context, unmarshal func(inte
 	}
 	return nil
 }
-
-/*
-type ParsableQuota struct {
-	Quota Quota
-}
-
-func (q *ParsableQuota) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	temp := struct {
-		QuotaName string `yaml:"quota"`
-	}{}
-
-	// Unmarshal the quota into a temp struct
-	// dont check the error, as we we are interested only by the quota name
-	unmarshal(&temp)
-
-	// Search the coresponding quota
-	fmt.Println(">>>>>> Quota name:", temp.QuotaName)
-	// Get the quota from the context
-	quota, exists := ContextGetQuotaByName(ctx, temp.QuotaName)
-	if !exists {
-		return fmt.Errorf("unknown quota: %s", temp.QuotaName)
-	}
-	q.Quota = quota
-
-	return nil
-}
-*/

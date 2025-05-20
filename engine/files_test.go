@@ -128,5 +128,5 @@ func LoadHistoryFromFile(filename string) (AssignedRights, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewAssignedRightHistoryFromYAML(historyData)
+	return LoadAssignedRightHistoryFromJSON(historyData)
 }

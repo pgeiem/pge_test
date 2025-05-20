@@ -7,7 +7,7 @@
     "durationDetails": [
       {
         "type": "p",
-        "duration": "2h"
+        "duration": 7200
       }
     ]
   },
@@ -19,7 +19,7 @@
     "durationDetails": [
       {
         "type": "p",
-        "duration": "2h"
+        "duration": 7200
       }
     ]
   },
@@ -31,7 +31,7 @@
     "durationDetails": [
       {
         "type": "p",
-        "duration": "2h"
+        "duration": 7200
       }
     ]
   },
@@ -43,7 +43,7 @@
     "durationDetails": [
       {
         "type": "p",
-        "duration": "2h"
+        "duration": 7200
       }
     ]
   },
@@ -55,7 +55,7 @@
     "durationDetails": [
       {
         "type": "p",
-        "duration": "2h"
+        "duration": 7200
       }
     ]
   },
@@ -67,7 +67,7 @@
     "durationDetails": [
       {
         "type": "f",
-        "duration": "2h"
+        "duration": 7200
       }
     ]
   },
@@ -80,7 +80,7 @@
       {
         "start": "2025-03-10T10:30:00Z",
         "type": "p",
-        "duration": "2h"
+        "duration": 7200
       }
     ]
   }

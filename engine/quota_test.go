@@ -27,10 +27,10 @@ func TestQuota_Update(t *testing.T) {
 		expectedError    bool
 	}{
 		{
-			name: "Single area with free and paying duration",
+			name: "1 Single area with free and paying duration",
 			now:  time.Date(2023, 10, 10, 12, 30, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{LayerCodePattern: "area1", DurationTypePattern: "free"},
+				{LayerCodePattern: "area1", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
 			history: AssignedRights{
@@ -48,10 +48,10 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Empty History",
+			name: "2 Empty History",
 			now:  time.Date(2023, 10, 10, 12, 30, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{LayerCodePattern: "area1", DurationTypePattern: "free"},
+				{LayerCodePattern: "area1", DurationTypePattern: "f"},
 			},
 			periodicityRule:  mustParseRecurrentDate("duration(1d)"),
 			expectedDuration: 0,
@@ -59,10 +59,10 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Multiple areas with free duration",
+			name: "3 Multiple areas with free duration",
 			now:  time.Date(2023, 10, 4, 0, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{LayerCodePattern: "area*", DurationTypePattern: "free"},
+				{LayerCodePattern: "area*", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(2d)"),
 			history: AssignedRights{
@@ -93,7 +93,7 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name:            "No matching rules",
+			name:            "4 No matching rules",
 			now:             time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 			matchingRules:   []MatchingRule{},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
@@ -112,10 +112,10 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "No start defined",
+			name: "5 No start defined",
 			now:  time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{LayerCodePattern: "area*", DurationTypePattern: "free"},
+				{LayerCodePattern: "area*", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
 			history: AssignedRights{
@@ -132,10 +132,10 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Multiple areas with mixed types",
+			name: "6 Multiple areas with mixed types",
 			now:  time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{LayerCodePattern: "area*", DurationTypePattern: "free"},
+				{LayerCodePattern: "area*", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
 			history: AssignedRights{
@@ -160,10 +160,10 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Single area with multiple free durations",
+			name: "7 Single area with multiple free durations",
 			now:  time.Date(2023, 10, 15, 0, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{LayerCodePattern: "area1", DurationTypePattern: "free"},
+				{LayerCodePattern: "area1", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("pattern(*/*/* MON 12:00:00)"),
 			history: AssignedRights{
@@ -182,10 +182,10 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Different area pattern",
+			name: "8 Different area pattern",
 			now:  time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{LayerCodePattern: "area2", DurationTypePattern: "free"},
+				{LayerCodePattern: "area2", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
 			history: AssignedRights{
@@ -207,10 +207,10 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Glob pattern for Type",
+			name: "9 Glob pattern for Type",
 			now:  time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{LayerCodePattern: "area1", DurationTypePattern: "free*"},
+				{LayerCodePattern: "area1", DurationTypePattern: "f*"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
 			history: AssignedRights{
@@ -228,11 +228,11 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Multiple matching rules",
+			name: "10 Multiple matching rules",
 			now:  time.Date(2023, 10, 1, 20, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{LayerCodePattern: "area1", DurationTypePattern: "free"},
-				{LayerCodePattern: "area2", DurationTypePattern: "paying"},
+				{LayerCodePattern: "area1", DurationTypePattern: "f"},
+				{LayerCodePattern: "area2", DurationTypePattern: "p"},
 			},
 			periodicityRule: mustParseRecurrentDate("pattern(*/*/* 12:00:00)"),
 			history: AssignedRights{
@@ -258,10 +258,10 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Invalid area pattern",
+			name: "11 Invalid area pattern",
 			now:  time.Date(2023, 10, 1, 20, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{LayerCodePattern: "]", DurationTypePattern: "free"},
+				{LayerCodePattern: "]", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("pattern(*/*/* 12:00:00)"),
 			history: AssignedRights{
@@ -275,7 +275,7 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Invalid type pattern",
+			name: "12 Invalid type pattern",
 			now:  time.Date(2023, 10, 1, 20, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
 				{LayerCodePattern: "*", DurationTypePattern: "]"},
