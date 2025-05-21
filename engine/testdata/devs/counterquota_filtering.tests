@@ -1,5 +1,6 @@
 - name: EmptyHistory
   now: '2025-03-17T06:00:00'
+  expiry: '2025-03-20T02:30:00'
   tests:
   - amount: 0.5
     end: '2025-03-17T06:30:00'
@@ -10,6 +11,7 @@
 
 - name: WithHistory
   now: '2025-03-17T06:00:00'
+  expiry: '2025-03-19T16:30:00'
   history: history1.rights
   tests:
   - amount: 0.5
