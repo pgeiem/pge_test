@@ -44,5 +44,10 @@ func (td TariffDefinition) Compute(now time.Time, history AssignedRights) Output
 
 	rules.PrintAsTable(fmt.Sprintf("Output with limits applied (%d rules):", len(rules)), now)
 
-	return rules.GenerateOutput(now, true)
+	out := rules.GenerateOutput(now, true)
+
+	_, maxDuration := rules.SumAll()
+	out.ExpiryDate = td.Quotas.GetExpiryDate(now.Add(maxDuration))
+
+	return out
 }

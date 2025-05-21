@@ -31,7 +31,8 @@ Exemple:
 
 ## En-tête
 
-- `now`: Date de référence du début du tarif au format RFC3339
+- `now`: Date et heure de référence du début du tarif au format RFC3339
+- `expiry`: Date et heure au format RFC3339 définissant le moment où le droit de stationnement associé cesse d'influencer le calcul du prochain quota.
 
 ## Table 
 

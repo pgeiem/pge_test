@@ -320,3 +320,96 @@ func TestQuota_Update(t *testing.T) {
 		})
 	}
 }
+
+func TestQuotaInventory_GetExpiryDate(t *testing.T) {
+	tests := []struct {
+		name          string
+		now           time.Time
+		quotas        QuotaInventory
+		expectedDate  time.Time
+		expectedError bool
+	}{
+		{
+			name: "1 Single quota starting at the same time",
+			now:  time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("pattern(*/*/* 12:00:00)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 11, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "2 Single quota starting before",
+			now:  time.Date(2023, 10, 10, 9, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("pattern(*/*/* 12:00:00)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "3 Single quota starting after",
+			now:  time.Date(2023, 10, 10, 12, 1, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("pattern(*/*/* 12:00:00)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 11, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "4 Multiple quotas with different expiry dates",
+			now:  time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("pattern(*/*/* 12:00:00)"), nil),
+				"Quota2": NewDurationQuota("Quota2", 5*time.Hour, mustParseRecurrentDate("pattern(*/*/* 18:00:00)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 11, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "5 Single quota with periodic rule",
+			now:  time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("duration(48h)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 12, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "6 Two quotas with duration patterns",
+			now:  time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("duration(24h)"), nil),
+				"Quota2": NewDurationQuota("Quota2", 5*time.Hour, mustParseRecurrentDate("duration(48h)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 12, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "7 Combined pattern and duration quotas",
+			now:  time.Date(2023, 10, 10, 13, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("pattern(*/*/* 12:00:00)"), nil),
+				"Quota2": NewDurationQuota("Quota2", 5*time.Hour, mustParseRecurrentDate("duration(48h)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 12, 13, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name:          "8 No quotas in inventory",
+			now:           time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			quotas:        QuotaInventory{},
+			expectedDate:  time.Time{},
+			expectedError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expiryDate := tt.quotas.GetExpiryDate(tt.now)
+			if !expiryDate.Equal(tt.expectedDate) {
+				t.Errorf("expected expiry date %v, got %v", tt.expectedDate, expiryDate)
+			}
+		})
+	}
+}

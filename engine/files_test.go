@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,16 +11,17 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-type Tests struct {
+type TestPoint struct {
 	Amount float64 `yaml:"amount"`
 	End    string  `yaml:"end"`
 }
 
 type TestCase struct {
-	Name    string  `yaml:"name"`
-	Now     string  `yaml:"now"`
-	History string  `yaml:"history"`
-	Tests   []Tests `yaml:"tests"`
+	Name           string      `yaml:"name"`
+	Now            string      `yaml:"now"`
+	History        string      `yaml:"history"`
+	TestPoints     []TestPoint `yaml:"tests"`
+	ExpectedExpiry string      `yaml:"expiry"`
 }
 
 func fileNameWithoutExtension(fileName string) string {
@@ -105,8 +107,26 @@ func testSingleTariff(t *testing.T, path string, tariffDescr []byte, testCases [
 			// Compute the tariff table
 			table := tariff.Compute(now, history)
 
-			// Iterate over each test in the test case
-			for _, test := range testCase.Tests {
+			//Display JSON output
+			json, err := table.ToJson()
+			if err != nil {
+				t.Fatalf("failed to convert table to JSON: %v", err)
+			}
+			fmt.Println(string(json))
+
+			// Check the expiry date
+			expectedExpiry, err := time.ParseInLocation("2006-01-02T15:04:05", testCase.ExpectedExpiry, time.Local)
+			if err == nil && !expectedExpiry.IsZero() {
+				if table.ExpiryDate.Before(now) {
+					t.Errorf("Invalid expiry date: %v is before now time: %v", table.ExpiryDate, now)
+				}
+				if table.ExpiryDate != expectedExpiry {
+					t.Errorf("Expiry date mismatch: got %v, expected %v", table.ExpiryDate, expectedExpiry)
+				}
+			}
+
+			// Iterate over each testpoints in the current test case
+			for _, test := range testCase.TestPoints {
 				end, err := time.ParseInLocation("2006-01-02T15:04:05", test.End, time.Local)
 				if err != nil {
 					t.Fatalf("failed to parse end time: %v", err)

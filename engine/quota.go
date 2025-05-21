@@ -127,6 +127,7 @@ type Quota interface {
 	Update(now time.Time, history AssignedRights) error
 	IsExausted() bool
 	UseDuration(duration time.Duration) time.Duration
+	GetRightExpiryDate(now time.Time) (time.Time, error)
 	String() string
 }
 
@@ -238,6 +239,10 @@ func (q AbstractQuota) Filter(from time.Time, history AssignedRights, matchAssig
 
 func (q AbstractQuota) PeriodStart(now time.Time) (time.Time, error) {
 	return q.PeriodicityRule.Prev(now)
+}
+
+func (q AbstractQuota) GetRightExpiryDate(now time.Time) (time.Time, error) {
+	return q.PeriodicityRule.Next(now)
 }
 
 // Stringer for AbstractQuota, print the matching rule and periodicity rule
@@ -396,6 +401,22 @@ func (qi QuotaInventory) Update(now time.Time, history AssignedRights) error {
 		}
 	}
 	return nil
+}
+
+// GetExpiryDate Return the parking right expiry date based on the longest quota periodicity
+func (qi QuotaInventory) GetExpiryDate(now time.Time) time.Time {
+	expiry := time.Time{}
+	for _, quota := range qi {
+		exp, err := quota.GetRightExpiryDate(now)
+		if err != nil {
+			fmt.Println("Error getting expiry date for quota", quota.GetName(), ":", err)
+			return expiry
+		}
+		if expiry.IsZero() || exp.After(expiry) {
+			expiry = exp
+		}
+	}
+	return expiry
 }
 
 // Stringer for QuotaInventory, iterate over all quotas and print some details
