@@ -561,7 +561,7 @@ func TestParseRecurrentDate(t *testing.T) {
 			"date(2025/04/29 18:00)",
 			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
 			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
-			time.Date(2025, 04, 29, 18, 0, 0, 0, time.Local),
+			time.Time{},
 			time.Time{},
 			false,
 		},
