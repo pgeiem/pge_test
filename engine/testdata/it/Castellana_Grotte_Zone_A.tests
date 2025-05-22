@@ -1,0 +1,42 @@
+# Early arrival 1hour 30 minutes for 0.50€(parking start at 8:00)
+- name: Estival Simple ticket
+  now: '2025-07-10T07:55:00'
+  tests:
+  - amount: 0.5
+    end: '2025-07-10T08:30:00'
+
+# Early arrival 1hour 30 minutes for 1.50€ (parking start at 9:00)
+- name: Winter simple ticket
+  now: '2025-03-17T07:12:00'
+  tests:
+  - amount: 1.5
+    end: '2025-03-17T10:30:00'
+
+# Ticket starts in the winter season and ends in the summer season.
+- name: Winter x summer
+  now: '2025-06-14T13:00:00'
+  tests:
+  - amount: 15.0
+    end: '2025-06-17T08:00:00'
+
+# Ticket starts in the winter season and ends in the summer season.
+- name: Winter x summer 2
+  now: '2025-06-14T19:00:00'
+  tests:
+  - amount: 2.0
+    end: '2025-06-16T09:00:00'
+
+# Ticket starts in the sunner season and ends in the winter season.
+- name: summer x winter
+  now: '2025-09-15T12:00:00'
+  tests:
+  - amount: 8.0
+    end: '2025-09-16T10:00:00'
+
+# Ticket starts in the sunner season and ends in the winter season.
+- name: summer x winter
+  now: '2025-09-13T07:00:00'
+  tests:
+  - amount: 24.0
+    end: '2025-09-16T11:00:00'
+

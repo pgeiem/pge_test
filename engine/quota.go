@@ -2,32 +2,57 @@ package engine
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	"github.com/iem-rd/quote-engine/timeutils"
 )
 
 // DurationDetail represents the details of a parking duration
 type DurationDetail struct {
-	Type     DurationType
-	Start    time.Time
-	Duration time.Duration
+	Type     DurationType  // Type of the duration (Free, Paid, etc.)
+	Start    time.Time     // Start date of the duration (used for advanced quota types)
+	Duration time.Duration // Duration of the parking
 }
 
 // AssignedRight represents the parking assigned rights (a ticket)
 type AssignedRight struct {
-	ParkingArea []string
-	Start       time.Time
-	//End         time.Time
-	Details []DurationDetail
+	TariffCode      string           `json:"tariffCode"`      // Identifier of the tariff
+	Flags           []string         `json:"flags"`           // list of flags of parking assigned rights (such as PMR, etc.)
+	LayerCode       string           `json:"layerCode"`       // Zone code
+	LayerCodes      []string         `json:"layerCodes"`      // Zone codes
+	StartDate       time.Time        `json:"startDate"`       // Start date of the parking assigned right
+	DurationDetails []DurationDetail `json:"durationDetails"` // List of duration details
 }
 
-func (ar AssignedRight) MatchParkingArea(pattern string) (bool, error) {
-	for _, area := range ar.ParkingArea {
-		match, err := globMatch(pattern, area)
+type AssignedRights []AssignedRight
+
+func (dd *DurationDetail) UnmarshalJSON(data []byte) error {
+	var temp struct {
+		Type     DurationType `json:"type"`
+		Start    time.Time    `json:"start"`
+		Duration int          `json:"duration"` //Duration as seconds
+	}
+	err := yaml.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	dd.Type = temp.Type
+	dd.Start = temp.Start
+	dd.Duration = time.Duration(temp.Duration) * time.Second
+	return nil
+}
+
+func (ar AssignedRight) MatchLayerCode(pattern string) (bool, error) {
+	if len(ar.LayerCodes) == 0 {
+		return globMatch(pattern, ar.LayerCode)
+	}
+	for _, layercode := range ar.LayerCodes {
+		match, err := globMatch(pattern, layercode)
 		if err != nil {
 			return false, err
 		}
@@ -38,15 +63,47 @@ func (ar AssignedRight) MatchParkingArea(pattern string) (bool, error) {
 	return false, nil
 }
 
+func (ar AssignedRight) MatchFlags(pattern string) (bool, error) {
+	if len(ar.Flags) == 0 {
+		return globMatch(pattern, "")
+	}
+	for _, flag := range ar.Flags {
+		match, err := globMatch(pattern, flag)
+		if err != nil {
+			return false, err
+		}
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (ar AssignedRight) MatchTariffCode(pattern string) (bool, error) {
+	return globMatch(pattern, ar.TariffCode)
+}
+
+// LoadAssignedRights loads the assigned rights from a JSON payload
+func LoadAssignedRightHistoryFromJSON(data []byte) (AssignedRights, error) {
+	var history AssignedRights
+	err := json.Unmarshal(data, &history)
+	if err != nil {
+		return nil, err
+	}
+	return history, nil
+}
+
 // MatchingRule represents a rule to match the parking assigned rights to be used in a quota
 type MatchingRule struct {
-	ParkingAreaPattern  string `yaml:"area"`
+	TariffCodePattern   string `yaml:"tariff"`
+	LayerCodePattern    string `yaml:"layer"`
 	DurationTypePattern string `yaml:"type"`
+	FlagsPattern        string `yaml:"flags"`
 }
 
 // Stringer for MatchingRule, print the area and type patterns
 func (m MatchingRule) String() string {
-	return fmt.Sprintf("(%s, %s)", m.ParkingAreaPattern, m.DurationTypePattern)
+	return fmt.Sprintf("(%s, %s, %s, %s)", m.TariffCodePattern, m.LayerCodePattern, m.DurationTypePattern, m.FlagsPattern)
 }
 
 // MatchingRules is a list of MatchingRule
@@ -67,17 +124,22 @@ func (m MatchingRules) String() string {
 // Quota represents a quota to be used to limit the parking assigned rights
 type Quota interface {
 	GetName() string
-	Update(now time.Time, history []AssignedRight) error
+	Update(now time.Time, history AssignedRights) error
+	IsExausted() bool
+	UseDuration(duration time.Duration) time.Duration
+	GetRightExpiryDate(now time.Time) (time.Time, error)
 	String() string
 }
 
 // AbstractQuota is a helper to ease the implementation of different quotas types
 type AbstractQuota struct {
-	Name               string                  `yaml:"name"`
-	MatchingRules      MatchingRules           `yaml:"matching"`
-	PeriodicityRule    timeutils.RecurrentDate `yaml:"periodicity"`
-	DefaultAreaPattern string                  `yaml:"-"`
-	DefaultTypePattern string                  `yaml:"-"`
+	Name                       string                  `yaml:"name"`
+	MatchingRules              MatchingRules           `yaml:"matching"`
+	PeriodicityRule            timeutils.RecurrentDate `yaml:"periodicity"`
+	DefaultTariffCodePattern   string                  `yaml:"-"`
+	DefaultLayerCodePattern    string                  `yaml:"-"`
+	DefaultDurationTypePattern string                  `yaml:"-"`
+	DefaultFlagsPattern        string                  `yaml:"-"`
 }
 
 func (q AbstractQuota) GetName() string {
@@ -88,7 +150,7 @@ func (q AbstractQuota) GetName() string {
 func SelectReferenceTime(rule MatchingRule, detail DurationDetail, right AssignedRight) time.Time {
 	reftime := detail.Start
 	if reftime.IsZero() {
-		reftime = right.Start
+		reftime = right.StartDate
 	}
 	return reftime
 }
@@ -99,7 +161,7 @@ func globMatch(pattern, name string) (bool, error) {
 }
 
 // Filter filters the history of assigned rights based on the matching rules and calls the matchHandler for each matching detail
-func (q AbstractQuota) Filter(from time.Time, history []AssignedRight, matchAssignedRightHandler func(right AssignedRight),
+func (q AbstractQuota) Filter(from time.Time, history AssignedRights, matchAssignedRightHandler func(right AssignedRight),
 	matchDurationDetailsHandler func(detail DurationDetail)) error {
 	rules := q.MatchingRules
 	if len(rules) == 0 {
@@ -107,17 +169,47 @@ func (q AbstractQuota) Filter(from time.Time, history []AssignedRight, matchAssi
 	}
 	// Iterate over all matching rules of the quota
 	for _, rule := range rules {
+
+		fmt.Println(" >> Matching rule", rule.String(), "from", from)
+
 		// Iterate over all assigned rights in the history
-		for _, right := range history {
-			areaPattern := rule.ParkingAreaPattern
-			if areaPattern == "" {
-				areaPattern = q.DefaultAreaPattern
+		for i, right := range history {
+
+			// Check if the assigned right tariffCode matches
+			tariffCodePattern := rule.TariffCodePattern
+			if tariffCodePattern == "" {
+				tariffCodePattern = q.DefaultTariffCodePattern
 			}
-			match, err := right.MatchParkingArea(areaPattern)
+			matchTariffCode, err := right.MatchTariffCode(tariffCodePattern)
 			if err != nil {
 				return err
 			}
-			// If set, call the Assigned Right callback
+
+			// Check if the assigned right layerCode matches
+			layerCodePattern := rule.LayerCodePattern
+			if layerCodePattern == "" {
+				layerCodePattern = q.DefaultLayerCodePattern
+			}
+			matchLayerCode, err := right.MatchLayerCode(layerCodePattern)
+			if err != nil {
+				return err
+			}
+
+			// Check if the assigned right flags matches
+			flagsPattern := rule.FlagsPattern
+			if flagsPattern == "" {
+				flagsPattern = q.DefaultFlagsPattern
+			}
+			matchFlags, err := right.MatchFlags(flagsPattern)
+			if err != nil {
+				return err
+			}
+
+			// Check if all the matching rules match and if set, call the Assigned Right callback
+			match := matchTariffCode && matchLayerCode && matchFlags
+			if match {
+				fmt.Println("   >> Assigned right", i, "starting on", right.StartDate, "matches", rule.String())
+			}
 			if match && matchAssignedRightHandler != nil {
 				matchAssignedRightHandler(right)
 			}
@@ -125,10 +217,10 @@ func (q AbstractQuota) Filter(from time.Time, history []AssignedRight, matchAssi
 			if match && matchDurationDetailsHandler != nil {
 				typePattern := rule.DurationTypePattern
 				if typePattern == "" {
-					typePattern = q.DefaultTypePattern
+					typePattern = q.DefaultDurationTypePattern
 				}
-				for _, detail := range right.Details {
-					match, err := globMatch(typePattern, string(detail.Type))
+				for _, detail := range right.DurationDetails {
+					match, err := globMatch(typePattern, detail.Type.ShortString())
 					if err != nil {
 						return err
 					}
@@ -149,6 +241,10 @@ func (q AbstractQuota) PeriodStart(now time.Time) (time.Time, error) {
 	return q.PeriodicityRule.Prev(now)
 }
 
+func (q AbstractQuota) GetRightExpiryDate(now time.Time) (time.Time, error) {
+	return q.PeriodicityRule.Next(now)
+}
+
 // Stringer for AbstractQuota, print the matching rule and periodicity rule
 func (q AbstractQuota) String() string {
 	return fmt.Sprintf("PeriodicityRule: %v, MatchingRules: %v", q.PeriodicityRule, q.MatchingRules)
@@ -161,20 +257,24 @@ type DurationQuota struct {
 	used          time.Duration
 }
 
-func NewDurationQuota(allowance time.Duration, period timeutils.RecurrentDate, rules []MatchingRule) *DurationQuota {
+func NewDurationQuota(name string, allowance time.Duration, period timeutils.RecurrentDate, rules []MatchingRule) *DurationQuota {
 	return &DurationQuota{
 		AbstractQuota: AbstractQuota{
-			MatchingRules:      rules,
-			PeriodicityRule:    period,
-			DefaultAreaPattern: "*",
-			DefaultTypePattern: string(FreeDuration),
+			Name:                       name,
+			MatchingRules:              rules,
+			PeriodicityRule:            period,
+			DefaultTariffCodePattern:   "*",
+			DefaultLayerCodePattern:    "*",
+			DefaultFlagsPattern:        "*",
+			DefaultDurationTypePattern: FreeDuration.ShortString(),
 		},
 		Allowance: allowance,
 	}
 }
 
 // Update updates the quota based on the history of assigned rights
-func (q *DurationQuota) Update(now time.Time, history []AssignedRight) error {
+func (q *DurationQuota) Update(now time.Time, history AssignedRights) error {
+	fmt.Println("Update duration quota", q.Name)
 	total := time.Duration(0)
 	// Compute the start period of quota calculation
 	start, err := q.PeriodStart(now)
@@ -184,8 +284,10 @@ func (q *DurationQuota) Update(now time.Time, history []AssignedRight) error {
 	// Compute the total duration of matching assigned rights
 	err = q.Filter(start, history, nil, func(detail DurationDetail) {
 		total += detail.Duration
+		fmt.Println("   >> Duration detail", detail.Type, "duration", detail.Duration, "from", detail.Start)
 	})
 	q.used = total
+	fmt.Println("Duration quota", q.Name, "used", q.used, "out of", q.Allowance)
 	return err
 }
 
@@ -201,6 +303,18 @@ func (q *DurationQuota) Used() time.Duration {
 	return q.used
 }
 
+func (q *DurationQuota) IsExausted() bool {
+	return q.Available() <= 0
+}
+
+func (q *DurationQuota) UseDuration(duration time.Duration) time.Duration {
+	if duration > q.Available() {
+		duration = q.Available()
+	}
+	q.used += duration
+	return duration
+}
+
 // Stringer for DurationQuota, print the name and the used/allowed values
 func (q DurationQuota) String() string {
 	return fmt.Sprintf("DurationQuota(%s): Usage %s/%s %v", q.Name, q.used, q.Allowance, q.AbstractQuota)
@@ -213,19 +327,24 @@ type CounterQuota struct {
 	used          int
 }
 
-func NewCounterQuota(allowance int, period timeutils.RecurrentDate, rules []MatchingRule) *CounterQuota {
+func NewCounterQuota(name string, allowance int, period timeutils.RecurrentDate, rules []MatchingRule) *CounterQuota {
 	return &CounterQuota{
 		AbstractQuota: AbstractQuota{
-			MatchingRules:      rules,
-			PeriodicityRule:    period,
-			DefaultAreaPattern: "*",
+			Name:                       name,
+			MatchingRules:              rules,
+			PeriodicityRule:            period,
+			DefaultTariffCodePattern:   "*",
+			DefaultLayerCodePattern:    "*",
+			DefaultFlagsPattern:        "*",
+			DefaultDurationTypePattern: FreeDuration.ShortString(),
 		},
 		Allowance: allowance,
 	}
 }
 
 // Update updates the quota based on the history of assigned rights
-func (q *CounterQuota) Update(now time.Time, history []AssignedRight) error {
+func (q *CounterQuota) Update(now time.Time, history AssignedRights) error {
+	fmt.Println("Update counter quota", q.Name)
 	counter := 0
 	// Compute the start period of quota calculation
 	start, err := q.PeriodStart(now)
@@ -237,6 +356,7 @@ func (q *CounterQuota) Update(now time.Time, history []AssignedRight) error {
 		counter++
 	}, nil)
 	q.used = counter
+	fmt.Println("Counter quota", q.Name, "used", q.used, "out of", q.Allowance)
 	return err
 }
 
@@ -252,6 +372,18 @@ func (q *CounterQuota) Used() int {
 	return q.used
 }
 
+func (q *CounterQuota) IsExausted() bool {
+	return q.Available() <= 0
+}
+
+func (q *CounterQuota) UseDuration(duration time.Duration) time.Duration {
+	if q.Available() <= 0 {
+		duration = 0
+	}
+	q.used++
+	return duration
+}
+
 // Stringer for CounterQuota, print the name and the used/allowed values
 func (q CounterQuota) String() string {
 	return fmt.Sprintf("CounterQuota(%s): Usage %d/%d %v", q.Name, q.used, q.Allowance, q.AbstractQuota)
@@ -259,7 +391,9 @@ func (q CounterQuota) String() string {
 
 type QuotaInventory map[string]Quota
 
-func (qi QuotaInventory) Update(now time.Time, history []AssignedRight) error {
+func (qi QuotaInventory) Update(now time.Time, history AssignedRights) error {
+
+	// Iterate over all quotas and update them
 	for _, quota := range qi {
 		err := quota.Update(now, history)
 		if err != nil {
@@ -267,6 +401,22 @@ func (qi QuotaInventory) Update(now time.Time, history []AssignedRight) error {
 		}
 	}
 	return nil
+}
+
+// GetExpiryDate Return the parking right expiry date based on the longest quota periodicity
+func (qi QuotaInventory) GetExpiryDate(now time.Time) time.Time {
+	expiry := time.Time{}
+	for _, quota := range qi {
+		exp, err := quota.GetRightExpiryDate(now)
+		if err != nil {
+			fmt.Println("Error getting expiry date for quota", quota.GetName(), ":", err)
+			return expiry
+		}
+		if expiry.IsZero() || exp.After(expiry) {
+			expiry = exp
+		}
+	}
+	return expiry
 }
 
 // Stringer for QuotaInventory, iterate over all quotas and print some details
@@ -288,6 +438,7 @@ func (qi *QuotaInventory) UnmarshalYAML(ctx context.Context, unmarshal func(inte
 		CounterQuota  *CounterQuota  `yaml:"counter"`
 	}{}
 
+	// Unmarshal the quota into a temp struct
 	err := unmarshal(&temp)
 	if err != nil {
 		return err
@@ -298,9 +449,9 @@ func (qi *QuotaInventory) UnmarshalYAML(ctx context.Context, unmarshal func(inte
 		quota := Quota(nil)
 		// TODO return an error if both DurationQuota and CounterQuota are set
 		if t.DurationQuota != nil {
-			quota = t.DurationQuota
+			quota = NewDurationQuota(t.DurationQuota.Name, t.DurationQuota.Allowance, t.DurationQuota.PeriodicityRule, t.DurationQuota.MatchingRules)
 		} else if t.CounterQuota != nil {
-			quota = t.CounterQuota
+			quota = NewCounterQuota(t.CounterQuota.Name, t.CounterQuota.Allowance, t.CounterQuota.PeriodicityRule, t.CounterQuota.MatchingRules)
 		}
 		if quota != nil {
 			if quota.GetName() == "" {

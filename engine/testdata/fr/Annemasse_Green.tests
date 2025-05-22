@@ -1,0 +1,31 @@
+# min amount ticket, early arrival
+- name: min amount
+  now: '2025-04-09T08:00:00'
+  tests:
+  - amount: 0.5
+    end: '2025-04-09T09:15:00'
+
+- name: 3 hours ticket
+  now: '2025-04-09T10:00:00'
+  tests:
+  - amount: 3.5
+    end: '2025-04-09T15:00:00'
+
+- name: max amount
+  now: '2025-04-09T08:47:00'
+  tests:
+  - amount: 30.0
+    end: '2025-04-09T19:00:00'
+
+- name: ticket on 2 days max amount
+  now: '2025-04-10T15:00:00'
+  tests:
+  - amount: 30.0
+    end: '2025-04-11T15:00:00'
+
+- name: 5 hours
+  now: '2025-04-09T11:00:00'
+  tests:
+  - amount: 5.0
+    end: '2025-04-09T18:00:00'
+

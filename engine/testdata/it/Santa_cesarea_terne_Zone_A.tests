@@ -1,0 +1,26 @@
+- name: Simple ticket
+  now: '2025-03-17T06:00:00'
+  tests:
+  - amount: 3.0
+    end: '2025-03-17T10:30:00'
+
+# Need to be sure forfeit is for 24 hours
+- name: Late arrival long duration
+  now: '2025-03-21T23:15:00'
+  tests:
+  - amount: 10.9
+    end: '2025-03-24T23:15:00'
+
+# Need to be sure forfeit is for 24 hours
+- name: 2 days
+  now: '2025-03-17T14:00:00'
+  tests:
+  - amount: 15.0
+    end: '2025-03-20T08:00:00'
+
+- name: 4 hours of parking with sunday inside
+  now: '2025-03-22T22:30:00'
+  tests:
+  - amount: 4.8
+    end: '2025-03-24T10:30:00'
+

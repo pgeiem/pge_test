@@ -1,0 +1,53 @@
+[
+  {
+    "startDate": "2025-05-15T13:09:36.641+0000",
+    "endDate": "2025-05-15T19:19:36.641+0000",
+    "durationDetails": [
+      {
+        "type": "np",
+        "duration": 13824
+      },
+      {
+        "type": "p",
+        "duration": 8400
+      },
+      {
+        "type": "f",
+        "duration": 0
+      }
+    ],
+    "layerCode": "clermont-ferrand-a453",
+    "tariffCode": "clermont-ferrand-t1",
+    "flags": ["PMR"]
+  },
+  {
+    "startDate": "2025-05-15T13:09:54.028+0000",
+    "endDate": "2025-05-15T19:39:54.028+0000",
+    "durationDetails": [
+      {
+        "type": "np",
+        "duration": 13806
+      },
+      {
+        "type": "p",
+        "duration": 9600
+      },
+      {
+        "type": "f",
+        "duration": 0
+      }
+    ],
+    "layerCode": "clermont-ferrand-a453",
+    "tariffCode": "clermont-ferrand-t1",
+    "flags": []
+  },
+  {
+    "startDate": "2025-05-16T12:00:22.624+0000",
+    "endDate": "2025-05-16T12:00:22.624+0000",
+    "durationDetails": [],
+    "layerCode": "monopoli-a618",
+    "tariffCode": "iem1-monopoli_v1ei",
+    "flags": ["NO_UPDATE"]
+  }
+]
+ 

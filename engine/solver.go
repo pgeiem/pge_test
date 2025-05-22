@@ -115,6 +115,36 @@ func (rule SolverRule) TruncateAfterAmount(amount Amount) SolverRule {
 	return rule
 }
 
+// Update the rule taking into account the quota
+func (rule SolverRule) ApplyQuota() SolverRule {
+	if rule.Quota != nil {
+		fmt.Println(" >> ApplyQuota", rule.Name(), rule.Quota)
+
+		// If quota is exhausted, then remove the rule
+		if rule.Quota.IsExausted() {
+			fmt.Println(" >> quota is exhausted", rule.Name())
+			return SolverRule{}
+		}
+
+		duration := rule.Quota.UseDuration(rule.Duration())
+		fmt.Println(" >> quota use duration", rule.Name(), "for", duration, "of", rule.Duration())
+		if duration == 0 {
+			fmt.Println(" >> quota is exhausted (duration)", rule.Name())
+			return SolverRule{}
+		}
+		// if the quota available duration is smaller than rule duration
+		if duration != rule.Duration() {
+			fmt.Println(" >> quota is truncated", rule.Name(), "from", rule.Duration(), "to", duration)
+			if rule.IsFlatRate() {
+				return SolverRule{}
+			} else {
+				return rule.TruncateAfter(duration)
+			}
+		}
+	}
+	return rule
+}
+
 type Solver struct {
 	now            time.Time
 	window         time.Duration
@@ -153,26 +183,27 @@ func (s *Solver) SetWindow(now time.Time, window time.Duration) {
 
 func (s *Solver) AppendMany(rules ...SolverRule) {
 	for i := range rules {
-		s.Append(&rules[i])
+		s.Append(rules[i])
 	}
 }
 
-// TODO remove this
-func (s *Solver) AppendByValue(rule SolverRule) {
-	s.Append(&rule)
-}
+func (s *Solver) Append(rule SolverRule) {
 
-func (s *Solver) Append(rule *SolverRule) {
+	rule = rule.ApplyQuota()
+	if rule.IsEmpty() {
+		return
+	}
+
 	if rule.ActivationAmount > 0 {
 		// flatrate rules are stored in a b-tree
-		s.flatrateRules.ReplaceOrInsert(rule)
+		s.flatrateRules.ReplaceOrInsert(&rule)
 	} else if rule.StartTimePolicy == FixedPolicy {
 		// fixed rules are stored in a sorted b-tree
-		s.solveAndAppend(rule, s.fixedRules)
+		s.solveAndAppend(&rule, s.fixedRules)
 		//s.fixedRules.ReplaceOrInsert(rule)
 	} else {
 		// shiftable rules are stored in a list in the appended order
-		s.shiftableRules = append(s.shiftableRules, rule)
+		s.shiftableRules = append(s.shiftableRules, &rule)
 	}
 }
 

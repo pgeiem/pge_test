@@ -1,0 +1,56 @@
+# Exact minimum duration inside the paying window
+- name: Minimum charge in the morning
+  now: '2025-06-03T09:00:00'
+  tests:
+  - amount: 0.3
+    end: '2025-06-03T09:22:30'
+
+# 30 minutes = minimum + extra 7.5 minutes
+- name: 30 minutes charged
+  now: '2025-06-03T09:00:00'
+  tests:
+  - amount: 0.4
+    end: '2025-06-03T09:30:00'
+
+# Full 5-hour paying window charged at 0.80 €/h
+- name: 5 hours charged
+  now: '2025-06-03T09:00:00'
+  tests:
+  - amount: 4.0
+    end: '2025-06-03T14:00:00'
+
+# Fully within non-paying night period
+- name: Night period only (free)
+  now: '2025-06-03T14:00:00'
+  tests:
+  - amount: 0.0
+    end: '2025-06-04T09:00:00'
+
+# Sunday is entirely free regardless of time
+- name: Sunday full day (free)
+  now: '2025-06-08T09:00:00'
+  tests:
+  - amount: 0.0
+    end: '2025-06-08T14:00:00'
+
+# 5h on two different days → total 10h → capped at 8 €
+- name: 2x 5h sessions (max charge reached)
+  now: '2025-06-03T09:00:00'
+  tests:
+  - amount: 8.0
+    end: '2025-06-04T14:00:00'
+
+# 13:00–14:00 charged, rest is night = 1h charged
+- name: Partial paying + night
+  now: '2025-06-03T13:00:00'
+  tests:
+  - amount: 0.8
+    end: '2025-06-03T15:00:00'
+
+# Within night (08:00–09:00) = non-paying
+- name: Before and after paying period (free)
+  now: '2025-06-03T08:00:00'
+  tests:
+  - amount: 0.0
+    end: '2025-06-03T09:00:00'
+

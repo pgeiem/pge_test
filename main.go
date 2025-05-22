@@ -9,79 +9,44 @@ import (
 
 func main() {
 
-	sampleyaml := `
+	plop :=
+		`
 version: "0.1"
-
-nonpaying:
-  - name: "christmas"
-    start: pattern(12/25 00:00)
-    end: pattern(12/25 23:59:59)
-  - name: "new year"
-    start: pattern(01/01 00:00)
-    end: pattern(01/01 23:59:59)
-  - name: "sunday"
-    start: pattern(*/* SUN 00:00)
-    end: pattern(*/* SUN 23:59:59)
-  - name: "lunch"
-    start: pattern(*/* * 12:00)
-    end: pattern(*/* * 13:00)
-  - name: "night"
-    start: pattern(*/* * 22:00)
-    end: pattern(*/* * 06:00)
-
+config:
+  window: 5d
 quotas:
   - duration:
       name: "plop"
-      allowance: 2h10m
       periodicity: duration(4h)
+      allowance: 2h10m
       matching:
-        - area: z*
+        - layer: z*
           type: paying
-        - area: t*
+        - layer: t*	
           type: nonpaying
 
-  - counter:
-      name: "plip"
-      allowance: 42
-      periodicity: pattern(*/* 12:00)
-
 sequences:
-  - name: "weekend"
-    start: pattern(*/* SAT 00:00)	
-    end: pattern(*/* MON 00:00)
-    quota: plop
-    rules:
-    - linear:
-        name: "A"
-        duration: 15h
-        hourlyrate: 3.0
-  - name: "weekdays"
-    quota: plip
-    rules: 
-      - nonpaying:
-          name: "Sunday"
-          start: pattern(*/* SUN 00:00)
-          end: pattern(*/* SUN 23:59:59)
-      - nonpaying:
-          name: "night"
-          start: pattern(*/* 20:00)
-          end: pattern(*/* 8:00)
-      - absflatrate:
-          name: "Forfait du samedi"
-          start: pattern(*/* SAT 08:00)
-          end: pattern(*/* SAT 16:00)
-      - abslinear:
-          name: "Prix spécial du lundi"
-          start: pattern(*/* MON 08:00)
-          end: pattern(*/* MON 16:00)
-          hourlyrate: 1.5
-      - linear:
-          name: "A"
-          duration: 1h
-          hourlyrate: 1.0
+- name: "BC01"
+  rules:
+  - absflatrate:
+      name: "daily"
+      start: pattern(*/* 00:00)
+      end: pattern(*/* 00:00)
+      amount: 3.50
+  - fixedrate:
+      name: "minamount"
+      duration: 42m
+      amount: 0.70
+      quota: "plop"
+  - linear:
+      name: "hourlyrate"
+      hourlyrate: 1.0
+      duration: 10h
+      quota: "plop"
+
 `
 
-	t, err := engine.ParseTariffDefinition([]byte(sampleyaml))
+	t, err := engine.ParseTariffDefinition([]byte(plop))
 	if err != nil {
 		panic(err)
 	}

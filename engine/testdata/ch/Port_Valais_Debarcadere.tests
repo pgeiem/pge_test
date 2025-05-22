@@ -1,0 +1,47 @@
+# 20 minutes only, entirely free
+- name: short stay in morning only
+  now: '2025-04-15T08:30:00'
+  tests:
+  - amount: 0.0
+    end: '2025-04-15T08:50:00'
+
+# 30 minutes total, first 20 min free → 10 min charged
+- name: 30 minutes in morning
+  now: '2025-04-15T09:00:00'
+  tests:
+  - amount: 0.25
+    end: '2025-04-15T09:30:00'
+
+# full day
+- name: full day
+  now: '2025-04-15T08:00:00'
+  tests:
+  - amount: 11.5
+    end: '2025-04-16T08:00:00'
+
+# charged two full days minus 20min free per day
+- name: 2 full days
+  now: '2025-04-15T06:00:00'
+  tests:
+  - amount: 23.5
+    end: '2025-04-17T08:00:00'
+
+# charging stops after 7 full chargeable days
+- name: exceeds 7-day max
+  now: '2025-04-01T08:00:00'
+  tests:
+  - amount: 83.5
+    end: '2025-04-08T08:00:00'
+
+- name: arrival before morning period
+  now: '2025-04-15T06:45:00'
+  tests:
+  - amount: 3.0
+    end: '2025-04-15T10:20:00'
+
+- name: stay during lunch break
+  now: '2025-04-15T12:00:00'
+  tests:
+  - amount: 1.0
+    end: '2025-04-15T14:30:00'
+

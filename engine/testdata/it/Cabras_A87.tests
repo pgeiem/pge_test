@@ -1,0 +1,30 @@
+- name: 2 hours
+  now: '2025-03-17T11:10:00'
+  tests:
+  - amount: 4.0
+    end: '2025-03-17T13:10:00'
+
+- name: 4 hours
+  now: '2025-03-17T09:17:00'
+  tests:
+  - amount: 6.0
+    end: '2025-03-17T13:17:00'
+
+- name: 6 hours
+  now: '2025-03-17T08:11:00'
+  tests:
+  - amount: 8.5
+    end: '2025-03-17T14:11:00'
+
+- name: 12 hours
+  now: '2025-03-17T08:00:00'
+  tests:
+  - amount: 10.0
+    end: '2025-03-17T20:00:00'
+
+- name: Night
+  now: '2025-03-17T22:00:00'
+  tests:
+  - amount: 6.0
+    end: '2025-03-18T08:00:00'
+

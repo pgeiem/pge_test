@@ -32,8 +32,9 @@ func (segs OutputSegments) String() string {
 }
 
 type Output struct {
-	Now   time.Time      `json:"now"`
-	Table OutputSegments `json:"table"`
+	Now        time.Time      `json:"now"`
+	ExpiryDate time.Time      `json:"expiry"`
+	Table      OutputSegments `json:"table"`
 }
 
 func (segs Output) ToJson() ([]byte, error) {

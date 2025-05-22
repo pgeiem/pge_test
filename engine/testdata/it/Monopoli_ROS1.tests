@@ -1,0 +1,37 @@
+- name: Min amount
+  now: '2025-06-04T09:12:00'
+  tests:
+  - amount: 0.5
+    end: '2025-06-04T09:42:00'
+
+- name: early arrival
+  now: '2025-06-04T05:00:00'
+  tests:
+  - amount: 1.5
+    end: '2025-06-04T10:30:00'
+
+# Late arrival parking start next day at 09:00
+- name: Late arrival
+  now: '2025-06-06T22:17:00'
+  tests:
+  - amount: 3.0
+    end: '2025-06-07T12:00:00'
+
+- name: Max amount late arrival
+  now: '2025-07-27T18:12:00'
+  tests:
+  - amount: 3.0
+    end: '2025-07-28T11:12:00'
+
+- name: winter free
+  now: '2025-12-04T15:00:00'
+  tests:
+  - amount: 0.0
+    end: '2025-12-06T18:00:00'
+
+- name: winter to summer
+  now: '2025-05-31T15:00:00'
+  tests:
+  - amount: 2.0
+    end: '2025-06-01T11:00:00'
+

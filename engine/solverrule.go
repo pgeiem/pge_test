@@ -10,19 +10,16 @@ import (
 )
 
 // DurationType represents the different type of parking duration
-type DurationType string
+type DurationType int
 
 const (
-	FreeDuration      DurationType = "free"
-	NonPayingDuration DurationType = "nonpaying"
-	PayingDuration    DurationType = "paying"
-	BannedDuration    DurationType = "banned"
+	FreeDuration DurationType = iota
+	NonPayingDuration
+	PayingDuration
+	BannedDuration
 )
 
 func (dt DurationType) MarshalText() ([]byte, error) {
-	if dt == "" {
-		return []byte{}, nil
-	}
 	conv := map[DurationType]string{
 		FreeDuration:      "f",
 		NonPayingDuration: "np",
@@ -33,6 +30,41 @@ func (dt DurationType) MarshalText() ([]byte, error) {
 		return []byte(val), nil
 	}
 	return nil, fmt.Errorf("unknown duration type %s", dt)
+}
+
+func (dt *DurationType) UnmarshalText(text []byte) error {
+	conv := map[string]DurationType{
+		"f":  FreeDuration,
+		"np": NonPayingDuration,
+		"p":  PayingDuration,
+		"b":  BannedDuration,
+	}
+	if val, ok := conv[string(text)]; ok {
+		*dt = val
+		return nil
+	}
+	return fmt.Errorf("unknown duration type %s", text)
+}
+
+func (dt DurationType) ShortString() string {
+	str, err := dt.MarshalText()
+	if err != nil {
+		return ""
+	}
+	return string(str)
+}
+
+func (dt DurationType) String() string {
+	conv := map[DurationType]string{
+		FreeDuration:      "Free",
+		NonPayingDuration: "NonPaying",
+		PayingDuration:    "Paying",
+		BannedDuration:    "Banned",
+	}
+	if val, ok := conv[dt]; ok {
+		return val
+	}
+	return "unknown"
 }
 
 // StartTimePolicy defines the policy used to move or not the beginning of the rule
@@ -76,6 +108,8 @@ type SolverRule struct {
 	Meta MetaData
 	// DurationType defines the type of duration for each rules, this is required to build duration details in the output
 	DurationType DurationType
+	// Quota is the optional quota associated with the rule.
+	Quota Quota
 }
 
 // Define a collection of solver rule
@@ -186,6 +220,10 @@ func (rule SolverRule) IsAbsoluteFlatRate() bool {
 
 func (rule SolverRule) IsRelative() bool {
 	return rule.StartTimePolicy == ShiftablePolicy
+}
+
+func (rule SolverRule) IsEmpty() bool {
+	return rule.From == 0 && rule.To == 0
 }
 
 func (rule SolverRule) Name() string {
@@ -355,7 +393,7 @@ func (t *RulesTable) AddRule(rule *SolverRule) {
 		rule.EndAmount.String(),
 		fmt.Sprintf("%t", rule.IsFlatRate()),
 		rule.ActivationAmount.String(),
-		string(rule.DurationType),
+		rule.DurationType.String(),
 	)
 	t.empty = false
 }

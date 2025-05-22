@@ -1,0 +1,30 @@
+- name: Basic tariff test
+  now: '2025-03-17T10:00:00'
+  tests:
+  - amount: 2.0
+    end: '2025-03-17T12:00:00'
+
+- name: Minimum charge test before start of paying time
+  now: '2025-03-17T08:50:00'
+  tests:
+  - amount: 0.5
+    end: '2025-03-17T09:30:00'
+
+- name: Ticket during lunch break
+  now: '2025-03-17T14:00:00'
+  tests:
+  - amount: 3.0
+    end: '2025-03-17T20:00:00'
+
+- name: Night period test
+  now: '2025-03-17T20:00:00'
+  tests:
+  - amount: 6.0
+    end: '2025-03-18T18:00:00'
+
+- name: Two days parking ticket with week end
+  now: '2025-03-15T10:00:00'
+  tests:
+  - amount: 10.0
+    end: '2025-03-17T12:00:00'
+

@@ -1,0 +1,21 @@
+# 30 days of parking for 25€
+- name: 1 month
+  now: '2025-04-17T07:00:00'
+  tests:
+  - amount: 25
+    end: '2025-05-17T07:00:00'
+
+# 60 days of parking for 50€
+- name: 2 months
+  now: '2025-03-17T07:00:00'
+  tests:
+  - amount: 50
+    end: '2025-05-16T07:00:00'
+
+# 90 days of parking for 75€
+- name: 3 months
+  now: '2025-03-17T07:00:00'
+  tests:
+  - amount: 75
+    end: '2025-06-15T07:00:00'
+

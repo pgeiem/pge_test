@@ -21,22 +21,22 @@ func TestQuota_Update(t *testing.T) {
 		now              time.Time
 		matchingRules    []MatchingRule
 		periodicityRule  timeutils.RecurrentDate
-		history          []AssignedRight
+		history          AssignedRights
 		expectedDuration time.Duration
 		expectedCounter  int
 		expectedError    bool
 	}{
 		{
-			name: "Single area with free and paying duration",
+			name: "1 Single area with free and paying duration",
 			now:  time.Date(2023, 10, 10, 12, 30, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{ParkingAreaPattern: "area1", DurationTypePattern: "free"},
+				{LayerCodePattern: "area1", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					ParkingArea: []string{"area1"},
-					Details: []DurationDetail{
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
+					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 10, 4, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 						{Type: PayingDuration, Start: time.Date(2023, 10, 9, 12, 30, 0, 0, time.Local), Duration: 2 * time.Hour},
 						{Type: FreeDuration, Start: time.Date(2023, 10, 9, 12, 0, 0, 0, time.Local), Duration: 4 * time.Hour},
@@ -48,10 +48,10 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Empty History",
+			name: "2 Empty History",
 			now:  time.Date(2023, 10, 10, 12, 30, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{ParkingAreaPattern: "area1", DurationTypePattern: "free"},
+				{LayerCodePattern: "area1", DurationTypePattern: "f"},
 			},
 			periodicityRule:  mustParseRecurrentDate("duration(1d)"),
 			expectedDuration: 0,
@@ -59,31 +59,31 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Multiple areas with free duration",
+			name: "3 Multiple areas with free duration",
 			now:  time.Date(2023, 10, 4, 0, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{ParkingAreaPattern: "area*", DurationTypePattern: "free"},
+				{LayerCodePattern: "area*", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(2d)"),
-			history: []AssignedRight{
-				{
-					ParkingArea: []string{"area1"},
-					Start:       time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
-					Details: []DurationDetail{
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
+					StartDate:  time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
+					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Duration: 2 * time.Hour},
 					},
 				},
-				{
-					ParkingArea: []string{"area2"},
-					Start:       time.Date(2023, 10, 3, 0, 0, 0, 0, time.Local),
-					Details: []DurationDetail{
+				AssignedRight{
+					LayerCodes: []string{"area2"},
+					StartDate:  time.Date(2023, 10, 3, 0, 0, 0, 0, time.Local),
+					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Duration: 3 * time.Hour},
 					},
 				},
-				{
-					ParkingArea: []string{"area3"},
-					Start:       time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
-					Details: []DurationDetail{
+				AssignedRight{
+					LayerCodes: []string{"area3"},
+					StartDate:  time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Duration: 3 * time.Hour},
 					},
 				},
@@ -93,15 +93,15 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name:            "No matching rules",
+			name:            "4 No matching rules",
 			now:             time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 			matchingRules:   []MatchingRule{},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					ParkingArea: []string{"area1"},
-					Start:       time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
-					Details: []DurationDetail{
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
+					StartDate:  time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+					DurationDetails: []DurationDetail{
 						{Type: PayingDuration, Duration: 1 * time.Hour},
 						{Type: FreeDuration, Duration: 2 * time.Hour},
 					},
@@ -112,16 +112,16 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "No start defined",
+			name: "5 No start defined",
 			now:  time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{ParkingAreaPattern: "area*", DurationTypePattern: "free"},
+				{LayerCodePattern: "area*", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					ParkingArea: []string{"area1"},
-					Details: []DurationDetail{
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
+					DurationDetails: []DurationDetail{
 						{Type: PayingDuration, Duration: 1 * time.Hour},
 						{Type: FreeDuration, Duration: 2 * time.Hour},
 					},
@@ -132,23 +132,23 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Multiple areas with mixed types",
+			name: "6 Multiple areas with mixed types",
 			now:  time.Date(2023, 10, 1, 12, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{ParkingAreaPattern: "area*", DurationTypePattern: "free"},
+				{LayerCodePattern: "area*", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					ParkingArea: []string{"area1"},
-					Details: []DurationDetail{
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
+					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 						{Type: PayingDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 2 * time.Hour},
 					},
 				},
-				{
-					ParkingArea: []string{"area2"},
-					Details: []DurationDetail{
+				AssignedRight{
+					LayerCodes: []string{"area2"},
+					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 4 * time.Hour},
 						{Type: PayingDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 8 * time.Hour},
 						{Type: FreeDuration, Start: time.Date(2023, 9, 30, 0, 0, 0, 0, time.Local), Duration: 16 * time.Hour},
@@ -160,16 +160,16 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Single area with multiple free durations",
+			name: "7 Single area with multiple free durations",
 			now:  time.Date(2023, 10, 15, 0, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{ParkingAreaPattern: "area1", DurationTypePattern: "free"},
+				{LayerCodePattern: "area1", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("pattern(*/*/* MON 12:00:00)"),
-			history: []AssignedRight{
-				{
-					ParkingArea: []string{"area1"},
-					Details: []DurationDetail{
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
+					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 13, 0, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 						{Type: FreeDuration, Start: time.Date(2023, 10, 9, 12, 0, 0, 0, time.Local), Duration: 2 * time.Hour},
 						{Type: FreeDuration, Start: time.Date(2023, 10, 9, 11, 0, 0, 0, time.Local), Duration: 4 * time.Hour},
@@ -182,22 +182,22 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Different area pattern",
+			name: "8 Different area pattern",
 			now:  time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{ParkingAreaPattern: "area2", DurationTypePattern: "free"},
+				{LayerCodePattern: "area2", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					ParkingArea: []string{"area1"},
-					Details: []DurationDetail{
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
+					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 					},
 				},
-				{
-					ParkingArea: []string{"area3", "area2"},
-					Details: []DurationDetail{
+				AssignedRight{
+					LayerCodes: []string{"area3", "area2"},
+					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 2 * time.Hour},
 					},
 				},
@@ -207,16 +207,16 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Glob pattern for Type",
+			name: "9 Glob pattern for Type",
 			now:  time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{ParkingAreaPattern: "area1", DurationTypePattern: "free*"},
+				{LayerCodePattern: "area1", DurationTypePattern: "f*"},
 			},
 			periodicityRule: mustParseRecurrentDate("duration(1d)"),
-			history: []AssignedRight{
-				{
-					ParkingArea: []string{"area1"},
-					Details: []DurationDetail{
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
+					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 2 * time.Hour},
 						{Type: NonPayingDuration, Start: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local), Duration: 4 * time.Hour},
@@ -228,25 +228,25 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Multiple matching rules",
+			name: "10 Multiple matching rules",
 			now:  time.Date(2023, 10, 1, 20, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{ParkingAreaPattern: "area1", DurationTypePattern: "free"},
-				{ParkingAreaPattern: "area2", DurationTypePattern: "paying"},
+				{LayerCodePattern: "area1", DurationTypePattern: "f"},
+				{LayerCodePattern: "area2", DurationTypePattern: "p"},
 			},
 			periodicityRule: mustParseRecurrentDate("pattern(*/*/* 12:00:00)"),
-			history: []AssignedRight{
-				{
-					ParkingArea: []string{"area1"},
-					Details: []DurationDetail{
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes: []string{"area1"},
+					DurationDetails: []DurationDetail{
 						{Type: FreeDuration, Start: time.Date(2023, 10, 1, 13, 0, 0, 0, time.Local), Duration: 1 * time.Hour},
 						{Type: PayingDuration, Start: time.Date(2023, 10, 1, 14, 0, 0, 0, time.Local), Duration: 2 * time.Hour},
 					},
 				},
-				{
-					ParkingArea: []string{"area4", "area2"},
-					Start:       time.Date(2023, 10, 1, 15, 0, 0, 0, time.Local),
-					Details: []DurationDetail{
+				AssignedRight{
+					LayerCodes: []string{"area4", "area2"},
+					StartDate:  time.Date(2023, 10, 1, 15, 0, 0, 0, time.Local),
+					DurationDetails: []DurationDetail{
 						{Type: PayingDuration, Duration: 4 * time.Hour},
 						{Type: FreeDuration, Duration: 8 * time.Hour},
 						{Type: PayingDuration, Start: time.Date(2023, 10, 1, 10, 0, 0, 0, time.Local), Duration: 16 * time.Hour},
@@ -258,16 +258,16 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Invalid area pattern",
+			name: "11 Invalid area pattern",
 			now:  time.Date(2023, 10, 1, 20, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{ParkingAreaPattern: "]", DurationTypePattern: "free"},
+				{LayerCodePattern: "]", DurationTypePattern: "f"},
 			},
 			periodicityRule: mustParseRecurrentDate("pattern(*/*/* 12:00:00)"),
-			history: []AssignedRight{
-				{
-					ParkingArea: []string{"area1"},
-					Details:     []DurationDetail{},
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes:      []string{"area1"},
+					DurationDetails: []DurationDetail{},
 				},
 			},
 			expectedDuration: 0,
@@ -275,16 +275,16 @@ func TestQuota_Update(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name: "Invalid type pattern",
+			name: "12 Invalid type pattern",
 			now:  time.Date(2023, 10, 1, 20, 0, 0, 0, time.Local),
 			matchingRules: []MatchingRule{
-				{ParkingAreaPattern: "*", DurationTypePattern: "]"},
+				{LayerCodePattern: "*", DurationTypePattern: "]"},
 			},
 			periodicityRule: mustParseRecurrentDate("pattern(*/*/* 12:00:00)"),
-			history: []AssignedRight{
-				{
-					ParkingArea: []string{"area1"},
-					Details:     []DurationDetail{},
+			history: AssignedRights{
+				AssignedRight{
+					LayerCodes:      []string{"area1"},
+					DurationDetails: []DurationDetail{},
 				},
 			},
 			expectedDuration: 0,
@@ -297,7 +297,7 @@ func TestQuota_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Test the duration quota
-			durationQuota := NewDurationQuota(time.Duration(0), tt.periodicityRule, tt.matchingRules)
+			durationQuota := NewDurationQuota("TestDurationQuota", time.Duration(0), tt.periodicityRule, tt.matchingRules)
 			err := durationQuota.Update(tt.now, tt.history)
 			if (err != nil) != tt.expectedError {
 				t.Fatalf("expected error %v, got %v", tt.expectedError, err)
@@ -308,7 +308,7 @@ func TestQuota_Update(t *testing.T) {
 			}
 
 			// Tests the counter quota
-			counterQuota := NewCounterQuota(0, tt.periodicityRule, tt.matchingRules)
+			counterQuota := NewCounterQuota("TestCounterQuota", 0, tt.periodicityRule, tt.matchingRules)
 			err = counterQuota.Update(tt.now, tt.history)
 			if tt.expectedError {
 				t.Fatalf("expected error %v, got %v", tt.expectedError, err)
@@ -316,6 +316,99 @@ func TestQuota_Update(t *testing.T) {
 
 			if (err == nil) && counterQuota.Used() != tt.expectedCounter {
 				t.Errorf("expected counter %v, got %v", tt.expectedCounter, counterQuota.Used())
+			}
+		})
+	}
+}
+
+func TestQuotaInventory_GetExpiryDate(t *testing.T) {
+	tests := []struct {
+		name          string
+		now           time.Time
+		quotas        QuotaInventory
+		expectedDate  time.Time
+		expectedError bool
+	}{
+		{
+			name: "1 Single quota starting at the same time",
+			now:  time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("pattern(*/*/* 12:00:00)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 11, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "2 Single quota starting before",
+			now:  time.Date(2023, 10, 10, 9, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("pattern(*/*/* 12:00:00)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "3 Single quota starting after",
+			now:  time.Date(2023, 10, 10, 12, 1, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("pattern(*/*/* 12:00:00)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 11, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "4 Multiple quotas with different expiry dates",
+			now:  time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("pattern(*/*/* 12:00:00)"), nil),
+				"Quota2": NewDurationQuota("Quota2", 5*time.Hour, mustParseRecurrentDate("pattern(*/*/* 18:00:00)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 11, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "5 Single quota with periodic rule",
+			now:  time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("duration(48h)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 12, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "6 Two quotas with duration patterns",
+			now:  time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("duration(24h)"), nil),
+				"Quota2": NewDurationQuota("Quota2", 5*time.Hour, mustParseRecurrentDate("duration(48h)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 12, 12, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name: "7 Combined pattern and duration quotas",
+			now:  time.Date(2023, 10, 10, 13, 0, 0, 0, time.Local),
+			quotas: QuotaInventory{
+				"Quota1": NewDurationQuota("Quota1", 10*time.Hour, mustParseRecurrentDate("pattern(*/*/* 12:00:00)"), nil),
+				"Quota2": NewDurationQuota("Quota2", 5*time.Hour, mustParseRecurrentDate("duration(48h)"), nil),
+			},
+			expectedDate:  time.Date(2023, 10, 12, 13, 0, 0, 0, time.Local),
+			expectedError: false,
+		},
+		{
+			name:          "8 No quotas in inventory",
+			now:           time.Date(2023, 10, 10, 12, 0, 0, 0, time.Local),
+			quotas:        QuotaInventory{},
+			expectedDate:  time.Time{},
+			expectedError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expiryDate := tt.quotas.GetExpiryDate(tt.now)
+			if !expiryDate.Equal(tt.expectedDate) {
+				t.Errorf("expected expiry date %v, got %v", tt.expectedDate, expiryDate)
 			}
 		})
 	}

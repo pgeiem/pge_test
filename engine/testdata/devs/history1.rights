@@ -1,0 +1,87 @@
+[
+  {
+    "tariffCode": "t1",
+    "flags": ["pmr"],
+    "layerCode": "ZONE_A",
+    "startDate": "2025-03-16T10:00:00Z",
+    "durationDetails": [
+      {
+        "type": "p",
+        "duration": 7200
+      }
+    ]
+  },
+  {
+    "tariffCode": "t2",
+    "flags": ["pmr"],
+    "layerCode": "ZONE_A",
+    "startDate": "2025-03-16T10:00:00Z",
+    "durationDetails": [
+      {
+        "type": "p",
+        "duration": 7200
+      }
+    ]
+  },
+  {
+    "tariffCode": "t1",
+    "flags": ["pro"],
+    "layerCode": "ZONE_A",
+    "startDate": "2025-03-16T10:00:00Z",
+    "durationDetails": [
+      {
+        "type": "p",
+        "duration": 7200
+      }
+    ]
+  },
+  {
+    "tariffCode": "t1",
+    "flags": ["pro"],
+    "layerCode": "PLO",
+    "startDate": "2025-03-16T10:00:00Z",
+    "durationDetails": [
+      {
+        "type": "p",
+        "duration": 7200
+      }
+    ]
+  },
+  {
+    "tariffCode": "t1",
+    "flags": ["pro"],
+    "layerCode": "ZONE_A",
+    "startDate": "2025-03-10T10:00:00Z",
+    "durationDetails": [
+      {
+        "type": "p",
+        "duration": 7200
+      }
+    ]
+  },
+  {
+    "tariffCode": "t1",
+    "flags": ["pro"],
+    "layerCode": "ZONE_A",
+    "startDate": "2025-03-16T10:00:00Z",
+    "durationDetails": [
+      {
+        "type": "f",
+        "duration": 7200
+      }
+    ]
+  },
+  {
+    "tariffCode": "t1",
+    "flags": ["pro"],
+    "layerCode": "ZONE_A",
+    "startDate": "2025-03-16T10:00:00Z",
+    "durationDetails": [
+      {
+        "start": "2025-03-10T10:30:00Z",
+        "type": "p",
+        "duration": 7200
+      }
+    ]
+  }
+]

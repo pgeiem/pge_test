@@ -1,0 +1,70 @@
+# Exactly 22m30s during CRBI morning chargeable period
+- name: Minimum charge (morning winter)
+  now: '2025-02-10T09:00:00'
+  tests:
+  - amount: 0.3
+    end: '2025-02-10T09:22:30'
+
+# 2h in chargeable window after lunch in CRBI
+- name: 2 hours in afternoon (winter)
+  now: '2025-02-10T16:00:00'
+  tests:
+  - amount: 1.6
+    end: '2025-02-10T18:00:00'
+
+# 09:00–13:00 and 16:00–20:00 = 8h charged
+- name: Full winter chargeable day
+  now: '2025-02-10T09:00:00'
+  tests:
+  - amount: 6.4
+    end: '2025-02-10T20:00:00'
+
+# Exactly 22m30s during CRBE evening chargeable period
+- name: Minimum charge (evening summer)
+  now: '2025-07-10T17:00:00'
+  tests:
+  - amount: 0.3
+    end: '2025-07-10T17:22:30'
+
+# 3h in chargeable period before lunch
+- name: 3 hours in morning (summer)
+  now: '2025-07-10T09:00:00'
+  tests:
+  - amount: 2.4
+    end: '2025-07-10T12:00:00'
+
+# 09:00–13:00 and 17:00–21:00 = 8h charged
+- name: Full summer chargeable day
+  now: '2025-07-10T09:00:00'
+  tests:
+  - amount: 6.4
+    end: '2025-07-10T21:00:00'
+
+# All day Sunday is non-paying
+- name: Sunday full day (free)
+  now: '2025-07-13T08:00:00'
+  tests:
+  - amount: 0.0
+    end: '2025-07-13T22:00:00'
+
+# More than 10 chargeable hours → capped at €8.00
+- name: Max amount reached across 2 days
+  now: '2025-07-10T09:00:00'
+  tests:
+  - amount: 8.0
+    end: '2025-07-11T11:00:00'
+
+# More than 10 chargeable hours → capped at €8.00
+- name: Winter x summer
+  now: '2025-05-31T18:00:00'
+  tests:
+  - amount: 3.2
+    end: '2025-06-02T11:00:00'
+
+# august 31 its sunday, so 7 hours of parking
+- name: Summer x winter
+  now: '2025-08-30T17:00:00'
+  tests:
+  - amount: 5.6
+    end: '2025-09-01T12:00:00'
+

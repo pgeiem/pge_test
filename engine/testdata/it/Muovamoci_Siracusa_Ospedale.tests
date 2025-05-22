@@ -1,0 +1,42 @@
+# Exactly 1 hour = 1.00 € via fixedrate
+- name: Minimum charge (1 hour)
+  now: '2025-06-03T09:00:00'
+  tests:
+  - amount: 1.0
+    end: '2025-06-03T10:00:00'
+
+# Falls entirely within 09:00–13:00 → flat rate 3.00 €
+- name: Morning flat rate applies
+  now: '2025-06-03T09:00:00'
+  tests:
+  - amount: 3.0
+    end: '2025-06-03T16:00:00'
+
+# Full daytime presence triggers daily flat rate of 6.00 €
+- name: Full day flat rate applies
+  now: '2025-06-03T09:00:00'
+  tests:
+  - amount: 6.0
+    end: '2025-06-03T20:00:00'
+
+# Morning flat rate + 1h linear in afternoon
+- name: Partial day (morning + afternoon)
+  now: '2025-06-03T09:00:00'
+  tests:
+  - amount: 4.0
+    end: '2025-06-03T17:00:00'
+
+# Only 2h in afternoon → 2.00 € via linear rule
+- name: Afternoon only (not flat rate)
+  now: '2025-06-03T16:00:00'
+  tests:
+  - amount: 2.0
+    end: '2025-06-03T18:00:00'
+
+# Lunch break included → only 1h charged before 13:00
+- name: Break during lunch (no charge)
+  now: '2025-06-03T12:00:00'
+  tests:
+  - amount: 1.0
+    end: '2025-06-03T16:00:00'
+

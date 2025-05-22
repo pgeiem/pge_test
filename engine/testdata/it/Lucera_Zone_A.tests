@@ -1,0 +1,32 @@
+- name: Simple ticket
+  now: '2025-03-17T09:30:00'
+  tests:
+  - amount: 2.5
+    end: '2025-03-17T12:00:00'
+
+# Early arrival 6 hours and 30 minutes for 6.50€ with lunch during the ticket
+- name: Early arrival
+  now: '2025-03-17T06:17:00'
+  tests:
+  - amount: 6.5
+    end: '2025-03-17T17:30:00'
+
+#  7 days of parking for 63€
+- name: 7 days
+  now: '2025-03-17T08:04:00'
+  tests:
+  - amount: 63.0
+    end: '2025-03-25T08:30:00'
+
+- name: 1 hour ticket just before lunch
+  now: '2025-03-17T13:25:00'
+  tests:
+  - amount: 1.0
+    end: '2025-03-17T16:55:00'
+
+- name: Minimal ticket
+  now: '2025-03-19T08:47:00'
+  tests:
+  - amount: 0.5
+    end: '2025-03-19T09:17:00'
+
