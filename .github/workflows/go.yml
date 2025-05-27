@@ -22,7 +22,7 @@ jobs:
         go-version: '1.23.x'
     
     - name: Install dependencies
-        run: go get .
+      run: go get .
 
     - name: Test engine
       run: go test -v ./engine
