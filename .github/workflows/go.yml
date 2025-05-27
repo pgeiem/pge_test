@@ -22,8 +22,10 @@ jobs:
         go-version: '1.23.x'
     
     - name: Test engine
-      run: go test -v ./engine
+      working-directory: ./engine
+      run: go test -v .
       
     - name: Test timeutils
-      run: go test -v ./timeutils
+      working-directory: ./timeutils
+      run: go test -v .
       
