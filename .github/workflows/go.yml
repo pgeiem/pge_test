@@ -23,7 +23,9 @@ jobs:
     
     - name: Test engine
       working-directory: ./engine
-      run: go test -v .
+      run: |
+        go get 
+        go test -v .
       
     - name: Test timeutils
       working-directory: ./timeutils
